@@ -6,8 +6,6 @@ JFLAGS = -g -d $(BIN)
 JC = javac
 JI = java
 
-OBJECTS = Lox.java Scanner.java Token.java TokenType.java 
-
 default: astgen
 	$(JC) $(JFLAGS) $(SRC)*.java
 
