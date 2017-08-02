@@ -2,7 +2,7 @@ SRC = src/com/craftinginterpreters/lox/
 AST = src/com/craftinginterpreters/tool/
 BIN = bin/
 
-JFLAGS = -g -d $(BIN)
+JFLAGS = -g -d $(BIN) -cp src/
 JC = javac
 JI = java
 
