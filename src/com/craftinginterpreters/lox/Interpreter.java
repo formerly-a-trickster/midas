@@ -125,6 +125,14 @@ class Interpreter implements Expr.Visitor<Object> {
 		return null;
 	}
 
+	@Override
+	public Object visitTernaryExpr(Expr.Ternary expr) {
+		Object condition = evaluate(expr.condition);
+
+		if (isTruthy(condition)) return evaluate(expr.antecedent);
+		else return evaluate(expr.precedent);
+	}
+
 	private Object evaluate(Expr expr) {
 		return expr.accept(this);
 	}

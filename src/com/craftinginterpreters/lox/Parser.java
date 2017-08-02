@@ -24,8 +24,17 @@ class Parser {
 	}
 
 	private Expr expression() {
-		// expression -> equality;
-		return equality();
+		// expression -> equality ( "?" expression ":" expression )
+		//             | equality
+		Expr initial = equality();
+
+		if (match(QUESTION)) {
+			Expr antecedent = equality();
+			if (!match(COLON)) throw error(peek(), "Unfinished ternary operator. Expected ':'.");
+			Expr precendent = equality();
+			return new Expr.Ternary(initial, antecedent, precendent);
+		}
+		return initial;
 	}
 
 	private Expr equality() {
