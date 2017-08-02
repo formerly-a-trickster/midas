@@ -46,7 +46,7 @@ class Interpreter implements Expr.Visitor<Object> {
 					Token operator, Object left, Object right) {
 		if (left instanceof Double && right instanceof Double) return;
 
-		throw new RuntimeError(operator, "Operands must be a number");
+		throw new RuntimeError(operator, "Operands must be a number.");
 	}
 
 	private boolean isTruthy(Object object) {
