@@ -12,12 +12,18 @@ public class GenerateAST {
 			System.exit(1);
 		}
 		String outputDir = args[0];
+
 		defineAst(outputDir, "Expr", Arrays.asList(
 			"Ternary  : Expr condition, Expr antecedent, Expr precedent",
 			"Binary   : Expr left, Token operator, Expr right",
 			"Grouping : Expr expression",
 			"Literal  : Object value",
 			"Unary    : Token operator, Expr right"
+		));
+
+		defineAst(outputDir, "Stmt", Arrays.asList(
+			"Expression : Expr expression",
+			"Print      : Expr expression"
 		));
 	}
 
