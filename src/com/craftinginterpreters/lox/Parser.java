@@ -56,11 +56,28 @@ class Parser {
 
 	private Stmt statement() {
 		// statement -> exprStmt
+		//            | ifStmt
 		//            | printStmt
 		//            | block
+		if (match(IF)) return ifStatement();
 		if (match(PRINT)) return printStatement();
 		if (match(LEFT_BRACE)) return new Stmt.Block(block());
 		else return expressionStatement();
+	}
+
+	private Stmt ifStatement() {
+		// ifStmt -> "if" "(" condition ")" statement ( "else" statement )?
+		consume(LEFT_PAREN, "Expected '(' after 'if'.");
+		Expr condition = expression();
+		consume(RIGHT_PAREN, "Expected ')' after if condition.");
+
+		Stmt thenBranch = statement();
+		Stmt elseBranch = null;
+		if (match(ELSE)) {
+			elseBranch = statement();
+		}
+
+		return new Stmt.If(condition, thenBranch, elseBranch);
 	}
 
 	private Stmt printStatement() {
@@ -96,40 +113,39 @@ class Parser {
 
 	private Expr commaExpression() {
 		// commaExpression -> assignment ( "," assignment )*
-		Expr left = assignment();
+		Expr leftmost = assignment();
 
 		while (match(COMMA)) {
 			Token operator = previous();
 			Expr right = assignment();
-			left = new Expr.Binary(left, operator, right);
+			leftmost = new Expr.Binary(leftmost, operator, right);
 		}
 
-		return left;
+		return leftmost;
 	}
 
 	private Expr assignment() {
 		// assignment -> ternary ( "=" assignment )*
-		Expr expr = ternary();
+		Expr leftmost = ternary();
 
 		if (match(EQUAL)) {
 			Token equals = previous();
 			Expr value = assignment();
 
-			if (expr instanceof Expr.Variable) {
-				Token name = ((Expr.Variable)expr).name;
+			if (leftmost instanceof Expr.Variable) {
+				Token name = ((Expr.Variable)leftmost).name;
 				return new Expr.Assign(name, value);
 			}
 
 			error(equals, "Invalid assignment target");
 		}
 
-		return expr;
+		return leftmost;
 	}
 
 	private Expr ternary() {
-		// ternary -> equality ( "?" expression ":" ternary )
-		//          | equality
-		Expr leftmost = equality();
+		// ternary -> or ( "?" expression ":" ternary )?
+		Expr leftmost = or();
 
 		if (match(QUESTION)) {
 			Expr antecedent = expression();
@@ -140,17 +156,43 @@ class Parser {
 		return leftmost;
 	}
 
+	private Expr or() {
+		// or -> and ( "or" and )*
+		Expr leftmost = and();
+
+		while (match(OR)) {
+			Token operator = previous();
+			Expr right = and();
+			leftmost = new Expr.Logical(leftmost, operator, right);
+		}
+
+		return leftmost;
+	}
+
+	private Expr and() {
+		// and -> equality ( "and" equality )*
+		Expr leftmost = equality();
+
+		while (match(AND)) {
+			Token operator = previous();
+			Expr right = equality();
+			leftmost = new Expr.Logical(leftmost, operator, right);
+		}
+
+		return leftmost;
+	}
+
 	private Expr equality() {
 		// equality -> comparison ( ( "!=" | "==" ) comparison )*
-		Expr left = comparison();
+		Expr leftmost = comparison();
 
 		while (match(BANG_EQUAL, EQUAL_EQUAL)) {
 			Token operator = previous();
 			Expr right = comparison();
-			left = new Expr.Binary(left, operator, right);
+			leftmost = new Expr.Binary(leftmost, operator, right);
 		}
 
-		return left;
+		return leftmost;
 	}
 
 	private Expr comparison() {
