@@ -73,7 +73,7 @@ class Scanner {
 					// A comment goes until the end of the line
 					while (peek() != '\n' && !isAtEnd()) advance();
 				}
-				else if (match('*')) multilineComment();
+				else if (match('*')) skipBlockComment();
 				else {
 					addToken(SLASH);
 				}
@@ -105,26 +105,34 @@ class Scanner {
 		}
 	}
 
-	private void multilineComment() {
-		for (;;) {
-			if (peek() != '\0') {
-				char c = advance();
-				if (c == '*') {
-					if (peek() == '/') {
-						advance();
-						return;
-					}
-				}
-				if (c == '/') {
-					if (peek() == '*') {
-						advance();
-						multilineComment();
-					}
-				}
-			}
-			else {
+	private void skipBlockComment() {
+		int nesting = 1;
+		while (nesting > 0) {
+			if (peek() == '\0') {
+				Lox.error(line, "Unterminated block comment.");
 				return;
 			}
+
+			if (peek() == '/' && peekNext() == '*') {
+				advance();
+				advance();
+				nesting++;
+				continue;
+			}
+
+			if (peek() == '*' && peekNext() == '/') {
+				advance();
+				advance();
+				nesting--;
+				continue;
+			}
+
+			if (peek() == '\n') {
+				line++;
+			}
+
+			// Regular character.
+			advance();
 		}
 	}
 
