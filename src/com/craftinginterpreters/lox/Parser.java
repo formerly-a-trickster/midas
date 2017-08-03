@@ -57,10 +57,12 @@ class Parser {
 	private Stmt statement() {
 		// statement -> exprStmt
 		//            | ifStmt
+		//            | whileStmt
 		//            | printStmt
 		//            | block
 		if (match(IF)) return ifStatement();
 		if (match(PRINT)) return printStatement();
+		if (match(WHILE)) return whileStatement();
 		if (match(LEFT_BRACE)) return new Stmt.Block(block());
 		else return expressionStatement();
 	}
@@ -78,6 +80,17 @@ class Parser {
 		}
 
 		return new Stmt.If(condition, thenBranch, elseBranch);
+	}
+
+	private Stmt whileStatement() {
+		// whileStmt -> "while" "(" condition ")" statement
+		consume(LEFT_PAREN, "Expected '(' after 'while'.");
+		Expr condition = expression();
+		consume(RIGHT_PAREN, "Expected ')' after while condition.");
+		Stmt body = statement();
+
+		return new Stmt.While(condition, body);
+
 	}
 
 	private Stmt printStatement() {
