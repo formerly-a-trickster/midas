@@ -119,6 +119,8 @@ class Interpreter implements Expr.Visitor<Object> {
 			case STAR:
 				checkNumberOperands(expr.operator, left, right);
 				return (double)left * (double)right;
+			case COMMA:
+				return right;
 		}
 
 		// Unreachable.

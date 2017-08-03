@@ -24,22 +24,35 @@ class Parser {
 	}
 
 	private Expr expression() {
-		// expression -> ternary
-		return ternary();
+		// expression -> commaExpression
+		return commaExpression();
+	}
+
+	private Expr commaExpression() {
+		// commaExpression -> ternary ( "," ternary )*
+		Expr left = ternary();
+
+		while (match(COMMA)) {
+			Token operator = previous();
+			Expr right = ternary();
+			left = new Expr.Binary(left, operator, right);
+		}
+
+		return left;
 	}
 
 	private Expr ternary() {
-		// ternary -> equality ( "?" expression ":" expression )
+		// ternary -> equality ( "?" expression ":" ternary )
 		//          | equality
-		Expr initial = equality();
+		Expr leftmost = equality();
 
 		if (match(QUESTION)) {
 			Expr antecedent = expression();
-			if (!match(COLON)) throw error(peek(), "Unfinished ternary operator. Expected ':'.");
-			Expr precendent = expression();
-			return new Expr.Ternary(initial, antecedent, precendent);
+			consume(COLON, "Unfinished ternary operator. Expected ':'.");
+			Expr precedent = ternary();
+			return new Expr.Ternary(leftmost, antecedent, precedent);
 		}
-		return initial;
+		return leftmost;
 	}
 
 	private Expr equality() {
@@ -119,11 +132,11 @@ class Parser {
 
 		if (match(LEFT_PAREN)) {
 			Expr expr = expression();
-			consume(RIGHT_PAREN, "Expect ')' after expression.");
+			consume(RIGHT_PAREN, "Expected ')' after expression.");
 			return new Expr.Grouping(expr);
 		}
 
-		throw error(peek(), "Expect expression.");
+		throw error(peek(), "Expected expression.");
 	}
 
 	private boolean match(TokenType... types) {
