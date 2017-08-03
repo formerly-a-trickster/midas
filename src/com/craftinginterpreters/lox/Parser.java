@@ -15,14 +15,43 @@ class Parser {
 		this.tokens = tokens;
 	}
 
+	// varDecl -> "var" IDENTIFIER ( "=" expression )? ";"
+
 	List<Stmt> parse() {
 		// program -> statement* EOF
 		List<Stmt> statements = new ArrayList<>();
 		while (!isAtEnd()) {
-			statements.add(statement());
+			statements.add(declaration());
 		}
 
 		return statements;
+	}
+
+	private Stmt declaration() {
+		// declaration -> varDecl
+		//              | statement
+		try {
+			if (match(VAR)) return varDeclaration();
+
+			return statement();
+		}
+		catch (ParseError error) {
+			synchronize();
+			return null;
+		}
+	}
+
+	private Stmt varDeclaration() {
+		// varDecl -> "var" IDENTIFIER ( "=" expression )? ";"
+		Token name = consume(IDENTIFIER, "Expected variable name.");
+
+		Expr initializer = null;
+		if (match(EQUAL)) {
+			initializer = expression();
+		}
+
+		consume(SEMICOLON, "Expected ';' after variable declaration.");
+		return new Stmt.Var(name, initializer);
 	}
 
 	private Stmt statement() {
@@ -52,16 +81,35 @@ class Parser {
 	}
 
 	private Expr commaExpression() {
-		// commaExpression -> ternary ( "," ternary )*
-		Expr left = ternary();
+		// commaExpression -> assignment ( "," assignment )*
+		Expr left = assignment();
 
 		while (match(COMMA)) {
 			Token operator = previous();
-			Expr right = ternary();
+			Expr right = assignment();
 			left = new Expr.Binary(left, operator, right);
 		}
 
 		return left;
+	}
+
+	private Expr assignment() {
+		// assignment -> ternary ( "=" assignment )*
+		Expr expr = ternary();
+
+		if (match(EQUAL)) {
+			Token equals = previous();
+			Expr value = assignment();
+
+			if (expr instanceof Expr.Variable) {
+				Token name = ((Expr.Variable)expr).name;
+				return new Expr.Assign(name, value);
+			}
+
+			error(equals, "Invalid assignment target");
+		}
+
+		return expr;
 	}
 
 	private Expr ternary() {
@@ -143,20 +191,26 @@ class Parser {
 	}
 
 	private Expr primary() {
-		// primary -> NUMBER | STRING | "false" | "true" | "nil"
+		// primary -> "true" | "false" | "nil"
+		//          | NUMBER | STRING
 		//          | "(" expression ")"
-		if (match(NUMBER, STRING)) {
-			return new Expr.Literal(previous().literal);
-		}
-
+		//          | IDENTIFIER
 		if (match(FALSE)) return new Expr.Literal(false);
 		if (match(TRUE)) return new Expr.Literal(true);
 		if (match(NIL)) return new Expr.Literal(null);
+
+		if (match(NUMBER, STRING)) {
+			return new Expr.Literal(previous().literal);
+		}
 
 		if (match(LEFT_PAREN)) {
 			Expr expr = expression();
 			consume(RIGHT_PAREN, "Expected ')' after expression.");
 			return new Expr.Grouping(expr);
+		}
+
+		if (match(IDENTIFIER)) {
+			return new Expr.Variable(previous());
 		}
 
 		throw error(peek(), "Expected expression.");
