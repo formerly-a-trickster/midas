@@ -1,10 +1,17 @@
-var a = 1;
-var b = 1;
-var c = 0;
-
-for (var i = 0; i < 20; i = i + 1) {
-    c = a + b;
-    a = b;
-    b = c;
-    print c;
+fun fibonacci(n) {
+  if (n <= 1) return n;
+  return fibonacci(n-2) + fibonacci(n-1);
 }
+
+fun computation() {
+  var start = clock();
+
+  for (var i = 0; i <= 20; i = i + 1) {
+    print i ++ ", " ++ fibonacci(i);
+  }
+
+  var end = clock();
+  return end - start;
+}
+
+print "It took " ++ computation() ++ " seconds to compute that.";

@@ -1,8 +1,19 @@
-var n = 256;
-var guess = 1;
+fun heronSqrt(n) {
+    var guess = 1;
 
-for (var i = 0; i < 10; i = i + 1) {
-    guess = (guess + ( n /guess )) / 2;
+    for (var i = 0; i < 10; i = i + 1) {
+        guess = (guess + ( n /guess )) / 2;
+    }
+
+    return guess;
 }
 
-print guess;
+fun printSqrt(n) {
+    print "The square root of " ++ n
+       ++ " is " ++ heronSqrt(n);
+}
+
+printSqrt(256);
+printSqrt(16);
+printSqrt(100);
+printSqrt(2);

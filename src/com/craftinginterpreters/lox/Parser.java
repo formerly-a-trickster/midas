@@ -81,12 +81,14 @@ class Parser {
 		//            | ifStmt
 		//            | forStmt
 		//            | whileStmt
-		//            | break
+		//            | returnStmt
+		//            | breakStmt
 		//            | printStmt
 		//            | block
 		if (match(IF)) return ifStatement();
 		if (match(FOR)) return forStatement();
 		if (match(WHILE)) return whileStatement();
+		if (match(RETURN)) return returnStatement();
 		if (match(BREAK)) return breakStatement();
 		if (match(PRINT)) return printStatement();
 		if (match(LEFT_BRACE)) return new Stmt.Block(block());
@@ -177,6 +179,19 @@ class Parser {
 			loopDepth--;
 		}
 	}
+
+	private Stmt returnStatement() {
+		// returnStmt -> "return" expression? ";"
+		Token keyword = previous();
+		Expr value = null;
+		if (!check(SEMICOLON)) {
+			value = expression();
+		}
+
+		consume(SEMICOLON, "Expected ';' after return statement.");
+		return new Stmt.Return(keyword, value);
+	}
+
 
 	private Stmt breakStatement() {
 		// breakStmt -> "break" ";"

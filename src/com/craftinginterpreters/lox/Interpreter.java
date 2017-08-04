@@ -7,7 +7,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Object> {
 	private static class BreakException extends RuntimeException {}
 
 	final Environment globals = new Environment();
-	private Environment environment = new Environment();
+	private Environment environment = globals;
 
 	Interpreter() {
 		globals.define("clock", new LoxCallable() {
@@ -305,6 +305,14 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Object> {
 		Object value = evaluate(stmt.expression);
 		System.out.println(stringify(value));
 		return null;
+	}
+
+	@Override
+	public Void visitReturnStmt(Stmt.Return stmt) {
+		Object value = null;
+		if (stmt.value != null) value = evaluate(stmt.value);
+
+		throw new Return(value);
 	}
 
 	@Override
