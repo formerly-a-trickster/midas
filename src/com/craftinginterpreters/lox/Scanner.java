@@ -60,7 +60,7 @@ class Scanner {
 			case ',': addToken(COMMA); break;
 			case '.': addToken(DOT); break;
 			case '-': addToken(MINUS); break;
-			case '+': addToken(PLUS); break;
+			case '+': addToken(match('+') ? PLUS_PLUS : PLUS); break;
 			case ';': addToken(SEMICOLON); break;
 			case '?': addToken(QUESTION); break;
 			case ':': addToken(COLON); break;

@@ -28,17 +28,39 @@ class Parser {
 	}
 
 	private Stmt declaration() {
-		// declaration -> varDecl
+		// declaration -> funDecl
+		//              | varDecl
 		//              | statement
 		try {
+			if (match(FUN)) return funDeclaration();
 			if (match(VAR)) return varDeclaration();
-
 			return statement();
 		}
 		catch (ParseError error) {
 			synchronize();
 			return null;
 		}
+	}
+
+	private Stmt.Function funDeclaration() {
+		Token name = consume(IDENTIFIER, "Expected function name.");
+		consume(LEFT_PAREN, "Expected '(' after function name.");
+		List<Token> parameters = new ArrayList<>();
+		if (!check(RIGHT_PAREN)) {
+			do {
+				if (parameters.size() >= 32) {
+					error(peek(), "Cannot have more than 8 parameters.");
+				}
+
+				parameters.add(consume(IDENTIFIER, "Expected parameter name"));
+			}
+			while (match(COMMA));
+		}
+		consume(RIGHT_PAREN, "Expected ')' after parameters.");
+
+		consume(LEFT_BRACE, "Expected '{' before function body.");
+		List<Stmt> body = block();
+		return new Stmt.Function(name, parameters, body);
 	}
 
 	private Stmt varDeclaration() {
@@ -294,10 +316,10 @@ class Parser {
 	}
 
 	private Expr addition() {
-		// addition -> multiplication ( ( "-" | "+" ) multiplication )*
+		// addition -> multiplication ( ( "-" | "+" | "++" ) multiplication )*
 		Expr left = multiplication();
 
-		while (match(MINUS, PLUS)) {
+		while (match(MINUS, PLUS, PLUS_PLUS)) {
 			Token operator = previous();
 			Expr right = multiplication();
 			left = new Expr.Binary(left, operator, right);
@@ -321,14 +343,40 @@ class Parser {
 
 	private Expr unary() {
 		// unary -> ( "!" | "-" ) unary
-		//			  | primary
+		//			  | call
 		if (match(BANG, MINUS)) {
 			Token operator = previous();
 			Expr right = unary();
 			return new Expr.Unary(operator, right);
 		}
 
-		return primary();
+		return call();
+	}
+
+	private Expr call() {
+		// call -> primary ( "(" arguments? ")" )*
+		Expr expr = primary();
+
+		while (match(LEFT_PAREN)) {
+			List<Expr> arguments = new ArrayList<>();
+			if (!check(RIGHT_PAREN)) {
+				do {
+					arguments.add(expression());
+				}
+				while (match(COMMA));
+			}
+
+			if (arguments.size() >= 32) {
+				error(peek(), "Cannot have more than 32 arguments.");
+			}
+
+			Token paren = consume(RIGHT_PAREN,
+							"Expected ')' after argument list.");
+
+			expr = new Expr.Call(expr, paren, arguments);
+		}
+
+		return expr;
 	}
 
 	private Expr primary() {

@@ -7,6 +7,7 @@ enum TokenType {
 	QUESTION, COLON,
 
 	// One or two character tokens
+	PLUS_PLUS,
 	BANG, BANG_EQUAL,
 	EQUAL, EQUAL_EQUAL,
 	GREATER, GREATER_EQUAL,
