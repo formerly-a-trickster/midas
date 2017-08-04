@@ -20,6 +20,8 @@ class Scanner {
 		keywords.put("and", AND);
 		keywords.put("break", BREAK);
 		keywords.put("class", CLASS);
+		keywords.put("do", DO);
+		keywords.put("end", END);
 		keywords.put("else", ELSE);
 		keywords.put("true", TRUE);
 		keywords.put("false", FALSE);
@@ -55,8 +57,8 @@ class Scanner {
 		switch (c) {
 			case '(': addToken(LEFT_PAREN); break;
 			case ')': addToken(RIGHT_PAREN); break;
-			case '{': addToken(LEFT_BRACE); break;
-			case '}': addToken(RIGHT_BRACE); break;
+			// case '{': addToken(LEFT_BRACE); break;
+			// case '}': addToken(RIGHT_BRACE); break;
 			case ',': addToken(COMMA); break;
 			case '.': addToken(DOT); break;
 			case '-': addToken(MINUS); break;

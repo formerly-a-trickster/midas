@@ -58,7 +58,7 @@ class Parser {
 		}
 		consume(RIGHT_PAREN, "Expected ')' after parameters.");
 
-		consume(LEFT_BRACE, "Expected '{' before function body.");
+		consume(DO, "Expected 'do' before function body.");
 		List<Stmt> body = block();
 		return new Stmt.Function(name, parameters, body);
 	}
@@ -91,7 +91,7 @@ class Parser {
 		if (match(RETURN)) return returnStatement();
 		if (match(BREAK)) return breakStatement();
 		if (match(PRINT)) return printStatement();
-		if (match(LEFT_BRACE)) return new Stmt.Block(block());
+		if (match(DO)) return new Stmt.Block(block());
 		else return expressionStatement();
 	}
 
@@ -220,11 +220,11 @@ class Parser {
 		// block -> "{" declaration "}"
 		List<Stmt> statements = new ArrayList<>();
 
-		while (!check(RIGHT_BRACE) && !isAtEnd()) {
+		while (!check(END) && !isAtEnd()) {
 			statements.add(declaration());
 		}
 
-		consume(RIGHT_BRACE, "Expected '}' after block.");
+		consume(END, "Expected 'end' after block.");
 		return statements;
 	}
 

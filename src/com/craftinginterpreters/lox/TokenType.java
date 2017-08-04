@@ -2,9 +2,10 @@ package com.craftinginterpreters.lox;
 
 enum TokenType {
 	// Single character tokens
-	LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
-	COMMA, DOT, MINUS, PLUS, SEMICOLON, SLASH, STAR,
-	QUESTION, COLON,
+	// LEFT_BRACE, RIGHT_BRACE,
+	LEFT_PAREN, RIGHT_PAREN, COMMA, DOT, MINUS,
+	PLUS, SEMICOLON, SLASH, STAR,	QUESTION, COLON,
+	DO, END,
 
 	// One or two character tokens
 	PLUS_PLUS,
