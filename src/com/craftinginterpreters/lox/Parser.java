@@ -314,6 +314,13 @@ class Parser {
 		//          | NUMBER | STRING
 		//          | "(" expression ")"
 		//          | IDENTIFIER
+		// Error productions
+		//          | "or" or
+		//          | "and" and
+		//          | ( "!=" | "==" ) equality
+		//          | ( ">" | ">=" | "<" | "<=" ) comparison
+		//          | ( "+" ) addition //note unary '-' is legal
+		//          | ( "/" | "*" ) multiplication
 		if (match(FALSE)) return new Expr.Literal(false);
 		if (match(TRUE)) return new Expr.Literal(true);
 		if (match(NIL)) return new Expr.Literal(null);
@@ -330,6 +337,43 @@ class Parser {
 
 		if (match(IDENTIFIER)) {
 			return new Expr.Variable(previous());
+		}
+
+		// Error productions.
+		if (match(OR)) {
+			error(previous(), "Missing left-hand operand.");
+			or();
+			return null;
+		}
+
+		if (match((AND))) {
+			error(previous(), "Missing left-hand operand.");
+			and();
+			return null;
+		}
+
+		if (match(BANG_EQUAL, EQUAL_EQUAL)) {
+			error(previous(), "Missing left-hand operand.");
+			equality();
+			return null;
+		}
+
+		if (match(LESS, LESS_EQUAL, GREATER, GREATER_EQUAL)) {
+			error(previous(), "Missing left-hand operand.");
+			comparison();
+			return null;
+		}
+
+		if (match(PLUS)) {
+			error(previous(), "Missing left-hand operand.");
+			addition();
+			return null;
+		}
+
+		if (match(SLASH, STAR)) {
+			error(previous(), "Missing left-hand operand.");
+			multiplication();
+			return null;
 		}
 
 		throw error(peek(), "Expected expression.");
