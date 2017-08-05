@@ -5,7 +5,7 @@ enum TokenType {
 	// LEFT_BRACE, RIGHT_BRACE,
 	LEFT_PAREN, RIGHT_PAREN, COMMA, DOT, MINUS,
 	PLUS, SEMICOLON, SLASH, STAR,	QUESTION, COLON,
-	DO, END,
+	DO, END, PERCENT,
 
 	// One or two character tokens
 	PLUS_PLUS,

@@ -344,10 +344,10 @@ class Parser {
 	}
 
 	private Expr multiplication() {
-		// multiplication -> unary ( ( "/" | "*" ) unary )*
+		// multiplication -> unary ( ( "/" | "*" | "%" ) unary )*
 		Expr left = unary();
 
-		while (match(SLASH, STAR)) {
+		while (match(SLASH, STAR, PERCENT)) {
 			Token operator = previous();
 			Expr right = unary();
 			left = new Expr.Binary(left, operator, right);
