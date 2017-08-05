@@ -266,7 +266,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Object> {
 
 	@Override
 	public Void visitFunctionStmt(Stmt.Function stmt) {
-		MidasFunction function = new MidasFunction(stmt);
+		MidasFunction function = new MidasFunction(stmt, environment);
 		environment.define(stmt.name.lexeme, function);
 		return null;
 	}
