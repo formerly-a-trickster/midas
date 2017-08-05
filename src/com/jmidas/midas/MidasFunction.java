@@ -1,11 +1,11 @@
-package com.craftinginterpreters.lox;
+package com.jmidas.midas;
 
 import java.util.List;
 
-class LoxFunction implements LoxCallable {
+class MidasFunction implements MidasCallable {
 	private final Stmt.Function declaration;
 
-	LoxFunction(Stmt.Function declaration) {
+	MidasFunction(Stmt.Function declaration) {
 		this.declaration = declaration;
 	}
 

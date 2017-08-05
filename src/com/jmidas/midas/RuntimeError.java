@@ -1,4 +1,4 @@
-package com.craftinginterpreters.lox;
+package com.jmidas.midas;
 
 class RuntimeError extends RuntimeException {
 	final Token token;

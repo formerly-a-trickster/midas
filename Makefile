@@ -1,5 +1,5 @@
-SRC = src/com/craftinginterpreters/lox/
-AST = src/com/craftinginterpreters/tool/
+SRC = src/com/jmidas/midas/
+AST = src/com/jmidas/tool/
 BIN = bin/
 
 JFLAGS = -g -d $(BIN) -cp src/
@@ -11,8 +11,8 @@ default: astgen
 
 astgen:
 	$(JC) $(JFLAGS) $(AST)*.java
-	$(JI) -cp bin/ com.craftinginterpreters.tool.GenerateAST $(SRC)
+	$(JI) -cp bin/ com.jmidas.tool.GenerateAST $(SRC)
 
 clean:
 	rm -r bin/*
-	rm src/com/craftinginterpreters/lox/Expr.java
+	rm src/com/jmidas/lox/Expr.java

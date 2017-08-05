@@ -1,8 +1,8 @@
-package com.craftinginterpreters.lox;
+package com.jmidas.midas;
 
 import java.util.List;
 
-interface LoxCallable {
+interface MidasCallable {
 	int arity();
 	Object call(Interpreter interpreter, List<Object> arguments);
 }

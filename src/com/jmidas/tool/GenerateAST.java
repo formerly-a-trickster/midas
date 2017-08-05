@@ -1,4 +1,4 @@
-package com.craftinginterpreters.tool;
+package com.jmidas.tool;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -8,7 +8,7 @@ import java.util.List;
 public class GenerateAST {
 	public static void main(String[] args) throws IOException {
 		if (args.length != 1) {
-			System.err.println("Usage: generate_ast <output directory>");
+			System.err.println("Usage: GenerateAST <output directory>");
 			System.exit(1);
 		}
 		String outputDir = args[0];
@@ -44,7 +44,7 @@ public class GenerateAST {
 		String path = outputDir + "/" + baseName + ".java";
 		PrintWriter writer = new PrintWriter(path, "UTF-8");
 
-		writer.println("package com.craftinginterpreters.lox;");
+		writer.println("package com.jmidas.midas;");
 		writer.println("");
 		writer.println("import java.util.List;");
 		writer.println("");

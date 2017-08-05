@@ -1,4 +1,4 @@
-package com.craftinginterpreters.lox;
+package com.jmidas.midas;
 
 class Token {
 	final TokenType type;

@@ -1,11 +1,11 @@
-package com.craftinginterpreters.lox;
+package com.jmidas.midas;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.craftinginterpreters.lox.TokenType.*;
+import static com.jmidas.midas.TokenType.*;
 
 class Scanner {
 	private final String source;
@@ -102,7 +102,7 @@ class Scanner {
 					identifier();
 				}
 				else {
-					Lox.error(line, "Unexpected character.");
+					Midas.error(line, "Unexpected character.");
 				}
 				break;
 		}
@@ -112,7 +112,7 @@ class Scanner {
 		int nesting = 1;
 		while (nesting > 0) {
 			if (peek() == '\0') {
-				Lox.error(line, "Unterminated block comment.");
+				Midas.error(line, "Unterminated block comment.");
 				return;
 			}
 
@@ -173,7 +173,7 @@ class Scanner {
 
 		// Unterminated string.
 		if (isAtEnd()) {
-			Lox.error(line, "Unterminated string.");
+			Midas.error(line, "Unterminated string.");
 			return;
 		}
 

@@ -1,4 +1,4 @@
-package com.craftinginterpreters.lox;
+package com.jmidas.midas;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,7 +10,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Object> {
 	private Environment environment = globals;
 
 	Interpreter() {
-		globals.define("clock", new LoxCallable() {
+		globals.define("clock", new MidasCallable() {
 			@Override
 			public int arity() {
 				return 0;
@@ -31,7 +31,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Object> {
 			}
 		}
 		catch (RuntimeError error) {
-			Lox.runtimeError(error);
+			Midas.runtimeError(error);
 		}
 	}
 
@@ -208,12 +208,12 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Object> {
 			arguments.add(evaluate(argument));
 		}
 
-		if (!(callee instanceof LoxCallable)) {
+		if (!(callee instanceof MidasCallable)) {
 			throw new RuntimeError(expr.paren,
 							"Can only call functions.");
 		}
 
-		LoxCallable function = (LoxCallable)callee;
+		MidasCallable function = (MidasCallable)callee;
 		if (arguments.size() != function.arity()) {
 			throw new RuntimeError(expr.paren, "Expected " +
 							function.arity() + " arguments but got " +
@@ -266,7 +266,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Object> {
 
 	@Override
 	public Void visitFunctionStmt(Stmt.Function stmt) {
-		LoxFunction function = new LoxFunction(stmt);
+		MidasFunction function = new MidasFunction(stmt);
 		environment.define(stmt.name.lexeme, function);
 		return null;
 	}

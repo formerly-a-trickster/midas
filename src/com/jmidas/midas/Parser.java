@@ -1,10 +1,10 @@
-package com.craftinginterpreters.lox;
+package com.jmidas.midas;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.craftinginterpreters.lox.TokenType.*;
+import static com.jmidas.midas.TokenType.*;
 
 class Parser {
 	private static class ParseError extends RuntimeException {}
@@ -504,7 +504,7 @@ class Parser {
 	}
 
 	private ParseError error(Token token, String message) {
-		Lox.error(token, message);
+		Midas.error(token, message);
 		return new ParseError();
 	}
 
