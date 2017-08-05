@@ -376,7 +376,10 @@ class Parser {
 			List<Expr> arguments = new ArrayList<>();
 			if (!check(RIGHT_PAREN)) {
 				do {
-					arguments.add(expression());
+					// The assignment rule is used instead of the
+					// expression rule as otherwise, the comma
+					// operator would bind our argument list.
+					arguments.add(assignment());
 				}
 				while (match(COMMA));
 			}
