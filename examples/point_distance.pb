@@ -1,4 +1,4 @@
-// We can use closures as a kind of object
+# We can use closures as a kind of object
 fun makePoint(x, y) do
     fun closure(method) do
         if (method == "x") return x;
@@ -9,7 +9,7 @@ fun makePoint(x, y) do
     return closure;
 end
 
-// Heron's method of computing square roots
+# Heron's method of computing square roots
 fun heronSqrt(num) do
     var guess = 1;
     for (var i = 0; i < 10; i = i + 1) do

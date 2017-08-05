@@ -344,10 +344,10 @@ class Parser {
 	}
 
 	private Expr multiplication() {
-		// multiplication -> unary ( ( "/" | "*" | "%" ) unary )*
+		// multiplication -> unary ( ( "/" | "//" | "*" | "%" ) unary )*
 		Expr left = unary();
 
-		while (match(SLASH, STAR, PERCENT)) {
+		while (match(SLASH, /* SLASH_SLASH, */ STAR, PERCENT)) {
 			Token operator = previous();
 			Expr right = unary();
 			left = new Expr.Binary(left, operator, right);
@@ -405,7 +405,7 @@ class Parser {
 		//          | ( "!=" | "==" ) equality
 		//          | ( ">" | ">=" | "<" | "<=" ) comparison
 		//          | ( "+" ) addition
-		//          | ( "/" | "*" ) multiplication
+		//          | ( "/" | "//" | "*" | "%" ) multiplication
 		if (match(FALSE)) return new Expr.Literal(false);
 		if (match(TRUE)) return new Expr.Literal(true);
 		if (match(NIL)) return new Expr.Literal(null);
@@ -455,7 +455,7 @@ class Parser {
 			return null;
 		}
 
-		if (match(SLASH, STAR)) {
+		if (match(SLASH, /* SLASH_SLASH, */ STAR, PERCENT)) {
 			error(previous(), "Missing left-hand operand.");
 			multiplication();
 			return null;

@@ -1,4 +1,4 @@
-// Generator-like expression using a clojure
+# Generator-like expression using a clojure
 fun fibGenerator() do
     var a = 1;
     var b = 1;

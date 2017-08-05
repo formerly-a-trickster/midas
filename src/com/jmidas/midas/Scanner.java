@@ -57,30 +57,24 @@ class Scanner {
 		switch (c) {
 			case '(': addToken(LEFT_PAREN); break;
 			case ')': addToken(RIGHT_PAREN); break;
-			// case '{': addToken(LEFT_BRACE); break;
-			// case '}': addToken(RIGHT_BRACE); break;
 			case ',': addToken(COMMA); break;
+			case ':': addToken(COLON); break;
 			case '.': addToken(DOT); break;
 			case '-': addToken(MINUS); break;
-			case '+': addToken(match('+') ? PLUS_PLUS : PLUS); break;
-			case ';': addToken(SEMICOLON); break;
-			case '?': addToken(QUESTION); break;
-			case ':': addToken(COLON); break;
-			case '*': addToken(STAR); break;
 			case '%': addToken(PERCENT); break;
+			case '?': addToken(QUESTION); break;
+			case ';': addToken(SEMICOLON); break;
+			case '/': addToken(SLASH); break;
+			case '*': addToken(STAR); break;
+			case '+': addToken(match('+') ? PLUS_PLUS : PLUS); break;
 			case '!': addToken(match('=') ? BANG_EQUAL : BANG); break;
 			case '=': addToken(match('=') ? EQUAL_EQUAL : EQUAL); break;
 			case '<': addToken(match('=') ? LESS_EQUAL : LESS); break;
 			case '>': addToken(match('=') ? GREATER_EQUAL : GREATER); break;
-			case '/':
-				if (match('/')) {
-					// A comment goes until the end of the line
-					while (peek() != '\n' && !isAtEnd()) advance();
-				}
-				else if (match('*')) skipBlockComment();
-				else {
-					addToken(SLASH);
-				}
+			//case '/': addToken(match('/') ? SLASH_SLASH : SLASH); break;
+			case '#':
+				// A comment goes until the end of the line
+				while (peek() != '\n' && !isAtEnd()) advance();
 				break;
 
 			case ' ':
