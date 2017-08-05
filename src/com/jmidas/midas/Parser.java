@@ -229,21 +229,8 @@ class Parser {
 	}
 
 	private Expr expression() {
-		// expression -> commaExpression
-		return commaExpression();
-	}
-
-	private Expr commaExpression() {
-		// commaExpression -> assignment ( "," assignment )*
-		Expr leftmost = assignment();
-
-		while (match(COMMA)) {
-			Token operator = previous();
-			Expr right = assignment();
-			leftmost = new Expr.Binary(leftmost, operator, right);
-		}
-
-		return leftmost;
+		// expression -> assignment
+		return assignment();
 	}
 
 	private Expr assignment() {
@@ -266,8 +253,8 @@ class Parser {
 	}
 
 	private Expr ternary() {
-		// ternary -> or ( "?" expression ":" ternary )?
-		Expr leftmost = or();
+		// ternary -> stringConcat ( "?" ternary ":" ternary )?
+		Expr leftmost = stringConcat();
 
 		if (match(QUESTION)) {
 			Expr antecedent = expression();
@@ -275,6 +262,19 @@ class Parser {
 			Expr precedent = ternary();
 			return new Expr.Ternary(leftmost, antecedent, precedent);
 		}
+		return leftmost;
+	}
+
+	private Expr stringConcat() {
+		// stringConcat -> or ( "++" or )?
+		Expr leftmost = or();
+
+		while (match(PLUS_PLUS)) {
+			Token operator = previous();
+			Expr right = or();
+			leftmost = new Expr.Binary(leftmost, operator, right);
+		}
+
 		return leftmost;
 	}
 
@@ -331,10 +331,10 @@ class Parser {
 	}
 
 	private Expr addition() {
-		// addition -> multiplication ( ( "-" | "+" | "++" ) multiplication )*
+		// addition -> multiplication ( ( "-" | "+" ) multiplication )*
 		Expr left = multiplication();
 
-		while (match(MINUS, PLUS, PLUS_PLUS)) {
+		while (match(MINUS, PLUS)) {
 			Token operator = previous();
 			Expr right = multiplication();
 			left = new Expr.Binary(left, operator, right);
@@ -376,10 +376,7 @@ class Parser {
 			List<Expr> arguments = new ArrayList<>();
 			if (!check(RIGHT_PAREN)) {
 				do {
-					// The assignment rule is used instead of the
-					// expression rule as otherwise, the comma
-					// operator would bind our argument list.
-					arguments.add(assignment());
+					arguments.add(expression());
 				}
 				while (match(COMMA));
 			}
@@ -402,12 +399,12 @@ class Parser {
 		//          | NUMBER | STRING
 		//          | "(" expression ")"
 		//          | IDENTIFIER
-		// Error productions
+		// Error productions, note: unary '-' is legal
 		//          | "or" or
 		//          | "and" and
 		//          | ( "!=" | "==" ) equality
 		//          | ( ">" | ">=" | "<" | "<=" ) comparison
-		//          | ( "+" ) addition //note unary '-' is legal
+		//          | ( "+" ) addition
 		//          | ( "/" | "*" ) multiplication
 		if (match(FALSE)) return new Expr.Literal(false);
 		if (match(TRUE)) return new Expr.Literal(true);
