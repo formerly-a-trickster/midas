@@ -1,3 +1,4 @@
 .idea
+.*.swp
 src/com/jmidas/midas/Expr.java
 src/com/jmidas/midas/Stmt.java

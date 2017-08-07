@@ -4,47 +4,63 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-struct lex_state
-{
-    FILE* source;             // Source file currently read.
-    char buffer[BUFFER_SIZE]; // Double buffered input from source.
-    int current;              // Current cell of the buffer.
-    int limit;                // The index beyond which we can't roll back.
-    int lexeme;               // Start of the currently read lexeme.
-    int lineno;               // Currnet line of the source file.
-};
-
-void lex(FILE* source);
-static struct lex_state* new_lex(void);
+static struct token* token_new(enum tok_type, const char*, int, int);
 
 static void buffer_chars(struct lex_state*);
 static char next_char(struct lex_state*);
-static void roll_char(struct lex_state*);
+static void rollback(struct lex_state*);
 static bool is_at_end(struct lex_state*);
+static void skip_whitespace(struct lex_state*);
 
 void
-lex(FILE* source)
-{
-    struct lex_state* lex = new_lex();
-    lex->source = source;
-    buffer_chars(lex);
-
-    while (!is_at_end(lex))
-        printf("%c", next_char(lex));
-}
-
-static struct lex_state*
-new_lex(void)
+lex_init(struct lex_state* lex)
 {
     // XXX unchecked malloc
-    struct lex_state* lex = malloc(sizeof(struct lex_state));
     lex->source = NULL;
     lex->current = 0;
     lex->limit = 0;
     lex->lexeme = 0;
     lex->lineno = 0;
+}
 
-    return lex;
+void
+lex_feed(struct lex_state* lex, FILE* source)
+{
+    lex->source = source;
+    buffer_chars(lex);
+}
+
+struct token*
+lex_get_token(struct lex_state* lex)
+{
+    skip_whitespace(lex);
+    char c = next_char(lex);
+    switch (c)
+    {
+        case '(': return token_new(TOK_LEFT_PAREN , NULL, 2, lex->lineno);
+        case ')': return token_new(TOK_RIGHT_PAREN, NULL, 2, lex->lineno);
+        case '+': return token_new(TOK_PLUS       , NULL, 2, lex->lineno);
+        case '-': return token_new(TOK_MINUS      , NULL, 2, lex->lineno);
+        case '*': return token_new(TOK_STAR       , NULL, 2, lex->lineno);
+        case '/': return token_new(TOK_SLASH      , NULL, 2, lex->lineno);
+        case '%': return token_new(TOK_PERCENT    , NULL, 2, lex->lineno);
+        case '\0':return token_new(TOK_EOF        , NULL, 2, lex->lineno);
+        default:
+            printf("Encountered unknown symbol '%c' while parsing.\n", c);
+            exit(1);
+    }
+}
+
+static struct token* // XXX lexeme is unhandled
+token_new(enum tok_type type, const char* lexeme, int length, int lineno)
+{
+    struct token* tok = malloc(sizeof(struct token));
+
+    tok->type = type;
+    tok->length = length;
+    tok->lineno = lineno;
+
+    return tok;
 }
 
 static void
@@ -85,7 +101,7 @@ next_char(struct lex_state* lex)
 }
 
 static void
-roll_char(struct lex_state* lex)
+rollback(struct lex_state* lex)
 {
     if (lex->current == lex->limit)
     {
@@ -99,5 +115,29 @@ static bool
 is_at_end(struct lex_state* lex)
 {
     return lex->buffer[lex->current] == '\0';
+}
+
+static void
+skip_whitespace(struct lex_state* lex)
+{
+    for (;;)
+    {
+        char c = next_char(lex);
+        switch (c)
+        {
+            case ' ':
+            case '\r':
+            case '\t':
+                break;
+
+            case '\n':
+                ++lex->lineno;
+                break;
+
+            default:
+                rollback(lex);
+                return;
+        }
+    }
 }
 
