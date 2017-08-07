@@ -1,6 +1,8 @@
 SRC = src/
 BIN = bin/
 
+default: jmidas cmidas
+
 ##################
 # Java prototype #
 ##################

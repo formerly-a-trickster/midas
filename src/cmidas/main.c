@@ -17,16 +17,8 @@ int main(int argc, const char* argv[])
 void
 lex_file(const char* file)
 {
-    struct lex_state* lex = lex_new();
-
-    lex_from_file(lex, file);
-    while (1)
-    {
-        if (!lex_is_at_end(lex))
-            printf("%c", lex_next_char(lex));
-        else
-            break;
-    }
-    fclose(lex->source);
+    FILE* source = fopen(file, "r");
+    lex(source);
+    fclose(source);
 }
 

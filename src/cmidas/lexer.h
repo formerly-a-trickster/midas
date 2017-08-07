@@ -27,22 +27,6 @@ struct token
     int lineno;
 };
 
-struct lex_state
-{
-    FILE* source;             // Source file currently read.
-    char buffer[BUFFER_SIZE];   // Double buffered input from source.
-    int current;              // Current cell of the buffer.
-    int limit;                // The index beyond which we can't roll back.
-    int lexeme;               // Start of the currently read lexeme.
-    int lineno;               // Currnet line of the source file.
-};
-
-struct lex_state* lex_new(void);
-void lex_from_file(struct lex_state*, const char*);
-void lex_buffer_chars(struct lex_state*);
-
-char lex_next_char(struct lex_state*);
-void lex_roll_char(struct lex_state*);
-bool lex_is_at_end(struct lex_state*);
+void lex(FILE* source);
 
 #endif

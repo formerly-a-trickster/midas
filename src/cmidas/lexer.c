@@ -4,10 +4,40 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-struct lex_state*
-lex_new(void)
+struct lex_state
 {
-    struct lex_state* lex = malloc(sizeof(struct lex_state)); //XXX
+    FILE* source;             // Source file currently read.
+    char buffer[BUFFER_SIZE]; // Double buffered input from source.
+    int current;              // Current cell of the buffer.
+    int limit;                // The index beyond which we can't roll back.
+    int lexeme;               // Start of the currently read lexeme.
+    int lineno;               // Currnet line of the source file.
+};
+
+void lex(FILE* source);
+static struct lex_state* new_lex(void);
+
+static void buffer_chars(struct lex_state*);
+static char next_char(struct lex_state*);
+static void roll_char(struct lex_state*);
+static bool is_at_end(struct lex_state*);
+
+void
+lex(FILE* source)
+{
+    struct lex_state* lex = new_lex();
+    lex->source = source;
+    buffer_chars(lex);
+
+    while (!is_at_end(lex))
+        printf("%c", next_char(lex));
+}
+
+static struct lex_state*
+new_lex(void)
+{
+    // XXX unchecked malloc
+    struct lex_state* lex = malloc(sizeof(struct lex_state));
     lex->source = NULL;
     lex->current = 0;
     lex->limit = 0;
@@ -17,26 +47,8 @@ lex_new(void)
     return lex;
 }
 
-void
-lex_from_file(struct lex_state* lex, const char* source)
-{
-    FILE* source_file = fopen(source, "r");
-
-    if (source_file) {
-        lex->source = source_file;
-        lex_buffer_chars(lex);
-    }
-    else {
-        printf(
-            "Error in parser initialization:\nCould not open '%s'.\n",
-            source
-        );
-        exit(1);
-    }
-}
-
-void
-lex_buffer_chars(struct lex_state* lex)
+static void
+buffer_chars(struct lex_state* lex)
 {
     size_t bytes_read;
     bytes_read = fread(
@@ -46,6 +58,7 @@ lex_buffer_chars(struct lex_state* lex)
         lex->source
     );
 
+    // XXX code like this should be abstracted out
     if (bytes_read != HALF_BUFFER_SIZE * sizeof(char))
     {
         if (feof(lex->source))
@@ -58,21 +71,21 @@ lex_buffer_chars(struct lex_state* lex)
     }
 }
 
-char
-lex_next_char(struct lex_state* lex)
+static char
+next_char(struct lex_state* lex)
 {
     char next_char = lex->buffer[lex->current];
     lex->current = (lex->current + 1) % BUFFER_SIZE;
     if (lex->current % HALF_BUFFER_SIZE == 0)
     {
-        lex_buffer_chars(lex);
+        buffer_chars(lex);
         lex->limit = (lex->current + HALF_BUFFER_SIZE) % BUFFER_SIZE;
     }
     return next_char;
 }
 
-void
-lex_roll_char(struct lex_state* lex)
+static void
+roll_char(struct lex_state* lex)
 {
     if (lex->current == lex->limit)
     {
@@ -82,8 +95,8 @@ lex_roll_char(struct lex_state* lex)
     lex->current = (lex->current - 1) % BUFFER_SIZE;
 }
 
-bool
-lex_is_at_end(struct lex_state* lex)
+static bool
+is_at_end(struct lex_state* lex)
 {
     return lex->buffer[lex->current] == '\0';
 }
