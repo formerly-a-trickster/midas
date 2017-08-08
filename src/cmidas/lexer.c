@@ -86,7 +86,10 @@ lex_get_token(struct lex_state* lex)
         case '%':
             return token_new(lex, TOK_PERCENT);
         case '+':
-            return token_new(lex, TOK_PLUS);
+            if (next_matches(lex, '+'))
+                return token_new(lex, TOK_PLUS_PLUS);
+            else
+                return token_new(lex, TOK_PLUS);
         case '"':
             return string(lex);
         case ';':
@@ -169,6 +172,7 @@ number(struct lex_state* lex)
 static struct token*
 string(struct lex_state* lex)
 {
+    lex->tok_start = lex->index;
     while (lookahead(lex) != '"')
         next_char(lex);
 

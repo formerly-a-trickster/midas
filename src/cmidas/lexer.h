@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#define HALF_BUFFER_SIZE 20
+#define HALF_BUFFER_SIZE 50
 #define BUFFER_SIZE (HALF_BUFFER_SIZE * 2)
 
 enum tok_type
