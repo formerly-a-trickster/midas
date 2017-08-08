@@ -28,7 +28,10 @@ lex_file(const char* file)
     do
     {
         t = lex_get_token(&lex);
-        printf("(%i %i)", t->type, t->lineno);
+        if (t->lexeme != NULL)
+            printf("(%i %s %i)\n", t->type, t->lexeme, t->lineno);
+        else
+            printf("(%i %i)\n", t->type, t->lineno);
     }
     while (t->type != TOK_EOF);
 

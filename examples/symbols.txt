@@ -1,7 +1,7 @@
-(
-)
-+++---
-%%
-/
-///
+fun succ(num) do
+    return num + one;
+end
 
+sub puts(string) do
+    print string;
+end

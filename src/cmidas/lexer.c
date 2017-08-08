@@ -2,24 +2,33 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdbool.h>
 
-static struct token* token_new(enum tok_type, const char*, int, int);
+static struct token* token_new(struct lex_state*, enum tok_type);
+static struct token* identifier(struct lex_state*);
 
 static void buffer_chars(struct lex_state*);
 static char next_char(struct lex_state*);
-static void rollback(struct lex_state*);
-static bool is_at_end(struct lex_state*);
+static char lookahead(struct lex_state*);
+static bool next_matches(struct lex_state*, const char);
+
 static void skip_whitespace(struct lex_state*);
+static void skip_line(struct lex_state*);
+
+static bool is_at_end(struct lex_state*);
+static bool is_alpha(char);
+static bool is_numeric(char);
+static bool is_alpha_num(char);
 
 void
 lex_init(struct lex_state* lex)
 {
     // XXX unchecked malloc
     lex->source = NULL;
-    lex->current = 0;
-    lex->limit = 0;
-    lex->lexeme = 0;
+    lex->index = 0;
+    lex->chars_left = 0;
+    lex->tok_start = 0;
     lex->lineno = 0;
 }
 
@@ -33,32 +42,100 @@ lex_feed(struct lex_state* lex, FILE* source)
 struct token*
 lex_get_token(struct lex_state* lex)
 {
+    char c;
+
     skip_whitespace(lex);
-    char c = next_char(lex);
+    lex->tok_start = lex->index;
+    c = next_char(lex);
+
+    if (is_alpha(c)) return identifier(lex);
+
     switch (c)
     {
-        case '(': return token_new(TOK_LEFT_PAREN , NULL, 2, lex->lineno);
-        case ')': return token_new(TOK_RIGHT_PAREN, NULL, 2, lex->lineno);
-        case '+': return token_new(TOK_PLUS       , NULL, 2, lex->lineno);
-        case '-': return token_new(TOK_MINUS      , NULL, 2, lex->lineno);
-        case '*': return token_new(TOK_STAR       , NULL, 2, lex->lineno);
-        case '/': return token_new(TOK_SLASH      , NULL, 2, lex->lineno);
-        case '%': return token_new(TOK_PERCENT    , NULL, 2, lex->lineno);
-        case '\0':return token_new(TOK_EOF        , NULL, 2, lex->lineno);
+        case ',':
+            return token_new(lex, TOK_COMMA);
+        case '=':
+            if (next_matches(lex, '='))
+                return token_new(lex, TOK_EQUAL_EQUAL);
+            else
+                return token_new(lex, TOK_EQUAL);
+        case '>':
+            if (next_matches(lex, '='))
+                return token_new(lex, TOK_GREAT_EQUAL);
+            else
+                return token_new(lex, TOK_GREAT);
+        case '#':
+            skip_line(lex);
+            break;
+        case '<':
+            if (next_matches(lex, '='))
+                return token_new(lex, TOK_LESS_EQUAL);
+            else
+                return token_new(lex, TOK_LESS);
+        case '-':
+            return token_new(lex, TOK_MINUS);
+        case '(':
+            return token_new(lex, TOK_PAREN_LEFT);
+        case ')':
+            return token_new(lex, TOK_PAREN_RIGHT);
+        case '%':
+            return token_new(lex, TOK_PERCENT);
+        case '+':
+            return token_new(lex, TOK_PLUS);
+        case ';':
+            return token_new(lex, TOK_SEMICOLON);
+        case '/':
+            return token_new(lex, TOK_SLASH);
+        case '*':
+            return token_new(lex, TOK_STAR);
+        case '\0':
+            printf("Reached EOF\n");
+            return token_new(lex, TOK_EOF);
         default:
             printf("Encountered unknown symbol '%c' while parsing.\n", c);
             exit(1);
     }
 }
 
-static struct token* // XXX lexeme is unhandled
-token_new(enum tok_type type, const char* lexeme, int length, int lineno)
+static struct token*
+token_new(struct lex_state* lex, enum tok_type type)
 {
     struct token* tok = malloc(sizeof(struct token));
-
     tok->type = type;
-    tok->length = length;
-    tok->lineno = lineno;
+    tok->lineno = lex->lineno;
+
+    const int start = lex->tok_start;
+    const int end = lex->index;
+    char* lexeme;
+
+    if (start < end)
+    {
+        size_t size = end - start;
+
+        lexeme = malloc((size + 1) * sizeof(char));
+        memcpy(lexeme, &lex->buffer[start], size);
+        lexeme[size] = '\0';
+        tok->length = size;
+    }
+    else
+    // While reading identifier characters, the index went beyond BUFFER_SIZE,
+    // wrapping back to position 0 and triggering a buffer refill.
+    //
+    // |z|e|_|=|_|  . . .  |_|s|i|
+    //      ^                 ^
+    //      | ended here      | started here   length of 4
+    {
+        size_t first_half = BUFFER_SIZE - start;
+
+        lexeme = malloc((first_half + end + 1) * sizeof(char));
+        memcpy(lexeme, &lex->buffer[start], first_half);
+        if (end > 0)
+            memcpy(lexeme + first_half, &lex->buffer[0], end);
+        lexeme[first_half + end] = '\0';
+        tok->length = first_half + end;
+    }
+
+    tok->lexeme = lexeme;
 
     return tok;
 }
@@ -66,19 +143,25 @@ token_new(enum tok_type type, const char* lexeme, int length, int lineno)
 static void
 buffer_chars(struct lex_state* lex)
 {
+    printf("Buffered chars\n");
     size_t bytes_read;
     bytes_read = fread(
-        &lex->buffer[lex->current],
+        &lex->buffer[lex->index],
         sizeof(char),
         HALF_BUFFER_SIZE * sizeof(char),
         lex->source
     );
 
+    lex->chars_left += HALF_BUFFER_SIZE;
+
     // XXX code like this should be abstracted out
     if (bytes_read != HALF_BUFFER_SIZE * sizeof(char))
     {
         if (feof(lex->source))
-            lex->buffer[(lex->current + bytes_read) % BUFFER_SIZE] = '\0';
+        {
+            printf("Reached source end.\n");
+            lex->buffer[(lex->index + bytes_read) % BUFFER_SIZE] = '\0';
+        }
         else if (ferror(lex->source))
         {
             puts("Parser Error:\nCould not buffer chars.\n");
@@ -90,31 +173,40 @@ buffer_chars(struct lex_state* lex)
 static char
 next_char(struct lex_state* lex)
 {
-    char next_char = lex->buffer[lex->current];
-    lex->current = (lex->current + 1) % BUFFER_SIZE;
-    if (lex->current % HALF_BUFFER_SIZE == 0)
-    {
+    char next_char = lex->buffer[lex->index];
+
+    // printf("char '%c'; index '%i';\n", next_char, lex->index);
+    lex->index = (lex->index + 1) % BUFFER_SIZE;
+    --lex->chars_left;
+    if (lex->chars_left == 0)
         buffer_chars(lex);
-        lex->limit = (lex->current + HALF_BUFFER_SIZE) % BUFFER_SIZE;
-    }
     return next_char;
 }
 
-static void
-rollback(struct lex_state* lex)
+static char
+lookahead(struct lex_state* lex)
 {
-    if (lex->current == lex->limit)
+    return lex->buffer[lex->index];
+}
+
+static bool
+next_matches(struct lex_state* lex, const char c)
+{
+    if (is_at_end(lex))
+        return false;
+    else if (lex->buffer[lex->index] == c)
     {
-        printf("Parser Error:\nRequested rollback beyond limit");
-        exit(1);
+        next_char(lex);
+        return true;
     }
-    lex->current = (lex->current - 1) % BUFFER_SIZE;
+    else
+        return false;
 }
 
 static bool
 is_at_end(struct lex_state* lex)
 {
-    return lex->buffer[lex->current] == '\0';
+    return lex->buffer[lex->index] == '\0';
 }
 
 static void
@@ -122,22 +214,74 @@ skip_whitespace(struct lex_state* lex)
 {
     for (;;)
     {
-        char c = next_char(lex);
+        char c = lookahead(lex);
         switch (c)
         {
             case ' ':
             case '\r':
             case '\t':
+                next_char(lex);
                 break;
 
             case '\n':
                 ++lex->lineno;
+                next_char(lex);
                 break;
 
             default:
-                rollback(lex);
                 return;
         }
     }
+}
+
+static void
+skip_line(struct lex_state* lex)
+{
+    for (;;)
+    {
+        char c = lookahead(lex);
+        switch (c)
+        {
+            case '\n':
+                ++lex->lineno;
+                return;
+
+            case '\0':
+                return;
+
+            default:
+                next_char(lex);
+                break;
+        }
+    }
+}
+
+static bool
+is_alpha(char c)
+{
+    return (c >= 'a' && c <= 'z') ||
+           (c >= 'A' && c <= 'Z') ||
+            c == '_';
+}
+
+static bool
+is_numeric(char c)
+{
+    return c >= '0' && c >= '9';
+}
+
+static bool
+is_alpha_num(char c)
+{
+    return is_alpha(c) && is_numeric(c);
+}
+
+static struct token*
+identifier(struct lex_state* lex)
+{
+    while (is_alpha_num(lookahead(lex)))
+        next_char(lex);
+
+    return token_new(lex, TOK_IDENTIFIER);
 }
 
