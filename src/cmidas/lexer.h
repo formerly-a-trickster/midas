@@ -8,40 +8,40 @@
 
 enum tok_type
 {
-    TOK_COMMA,
-    TOK_EQUAL,
-    TOK_GREAT,
-    TOK_LESS,
-    TOK_MINUS,
-    TOK_PAREN_LEFT,
-    TOK_PAREN_RIGHT,
-    TOK_PERCENT,
-    TOK_PLUS,
-    TOK_SEMICOLON,
-    TOK_SLASH,
-    TOK_STAR,
+    TOK_COMMA       =  0,
+    TOK_EQUAL       =  1,
+    TOK_GREAT       =  2,
+    TOK_LESS        =  3,
+    TOK_MINUS       =  4,
+    TOK_PAREN_LEFT  =  5,
+    TOK_PAREN_RIGHT =  6,
+    TOK_PERCENT     =  7,
+    TOK_PLUS        =  8,
+    TOK_SEMICOLON   =  9,
+    TOK_SLASH       = 10,
+    TOK_STAR        = 11,
 
-    TOK_GREAT_EQUAL,
-    TOK_LESS_EQUAL,
-    TOK_BANG_EQUAL,
-    TOK_EQUAL_EQUAL,
-    TOK_PLUS_PLUS,
+    TOK_GREAT_EQUAL = 12,
+    TOK_LESS_EQUAL  = 13,
+    TOK_BANG_EQUAL  = 14,
+    TOK_EQUAL_EQUAL = 15,
+    TOK_PLUS_PLUS   = 16,
 
-    TOK_IDENTIFIER,
-    TOK_NUMBER,
-    TOK_STRING,
+    TOK_IDENTIFIER  = 17,
+    TOK_NUMBER      = 18,
+    TOK_STRING      = 19,
 
-    TOK_EOF
+    TOK_EOF         = 20
 };
 
 struct lex_state
 {
-    FILE* source;             // Source file currently read.
-    char buffer[BUFFER_SIZE]; // Double buffered input from source.
-    int index;                // Location in the buffer; next char to be read.
-    int chars_left;           // How many chars are left to be read.
-    int tok_start;            // Where our current token string starts/
-    int lineno;               // Currnet line of the source file.
+    FILE* source;            /* Source file currently read.                  */
+    char buffer[BUFFER_SIZE];/* Double buffered input from source.           */
+    int index;               /* Location in the buffer; next char to be read.*/
+    int chars_left;          /* How many chars are left to be read.          */
+    int tok_start;           /* Where our current token string starts.       */
+    int lineno;              /* Currnet line of the source file.             */
 };
 
 struct token

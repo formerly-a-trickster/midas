@@ -7,6 +7,8 @@
 
 static struct token* token_new(struct lex_state*, enum tok_type);
 static struct token* identifier(struct lex_state*);
+static struct token* number(struct lex_state*);
+static struct token* string(struct lex_state*);
 
 static void buffer_chars(struct lex_state*);
 static char next_char(struct lex_state*);
@@ -24,7 +26,7 @@ static bool is_alpha_num(char);
 void
 lex_init(struct lex_state* lex)
 {
-    // XXX unchecked malloc
+    /* XXX unchecked malloc */
     lex->source = NULL;
     lex->index = 0;
     lex->chars_left = 0;
@@ -46,7 +48,11 @@ lex_get_token(struct lex_state* lex)
     lex->tok_start = lex->index;
     const char c = next_char(lex);
 
-    if (is_alpha(c)) return identifier(lex);
+    if (is_alpha(c))
+        return identifier(lex);
+
+    if (is_numeric(c))
+        return number(lex);
 
     switch (c)
     {
@@ -64,7 +70,8 @@ lex_get_token(struct lex_state* lex)
                 return token_new(lex, TOK_GREAT);
         case '#':
             skip_line(lex);
-            break;
+            /* XXX Find better solution */
+            return lex_get_token(lex);
         case '<':
             if (next_matches(lex, '='))
                 return token_new(lex, TOK_LESS_EQUAL);
@@ -80,6 +87,8 @@ lex_get_token(struct lex_state* lex)
             return token_new(lex, TOK_PERCENT);
         case '+':
             return token_new(lex, TOK_PLUS);
+        case '"':
+            return string(lex);
         case ';':
             return token_new(lex, TOK_SEMICOLON);
         case '/':
@@ -99,12 +108,12 @@ static struct token*
 token_new(struct lex_state* lex, enum tok_type type)
 {
     struct token* tok = malloc(sizeof(struct token));
-    tok->type = type;
-    tok->lineno = lex->lineno;
-
     const int start = lex->tok_start;
     const int end = lex->index;
     char* lexeme;
+
+    tok->type = type;
+    tok->lineno = lex->lineno;
 
     if (start < end)
     {
@@ -116,12 +125,12 @@ token_new(struct lex_state* lex, enum tok_type type)
         tok->length = size;
     }
     else
-    // While reading identifier characters, the index went beyond BUFFER_SIZE,
-    // wrapping back to position 0 and triggering a buffer refill.
-    //
-    // |z|e|_|=|_|  . . .  |_|s|i|
-    //      ^                 ^
-    //      | ended here      | started here   length of 4
+    /* While reading identifier characters, the index went beyond BUFFER_SIZE,
+       wrapping back to position 0 and triggering a buffer refill.
+
+       |z|e|_|=|_|  . . .  |_|s|i|
+            ^                 ^
+            | ended here      | started here   length of 4                   */
     {
         const size_t first_half = BUFFER_SIZE - start;
 
@@ -141,10 +150,32 @@ token_new(struct lex_state* lex, enum tok_type type)
 static struct token*
 identifier(struct lex_state* lex)
 {
+    /* printf("Scanning for identifier\n"); */
     while (is_alpha_num(lookahead(lex)))
         next_char(lex);
 
     return token_new(lex, TOK_IDENTIFIER);
+}
+
+static struct token*
+number(struct lex_state* lex)
+{
+    while (is_numeric(lookahead(lex)))
+        next_char(lex);
+
+    return token_new(lex, TOK_NUMBER);
+}
+
+static struct token*
+string(struct lex_state* lex)
+{
+    while (lookahead(lex) != '"')
+        next_char(lex);
+
+    struct token* tok = token_new(lex, TOK_STRING);
+    next_char(lex);
+
+    return tok;
 }
 
 static void
@@ -159,7 +190,7 @@ buffer_chars(struct lex_state* lex)
 
     lex->chars_left += HALF_BUFFER_SIZE;
 
-    // XXX code like this should be abstracted out
+    /* XXX code like this should be abstracted out */
     if (bytes_read != HALF_BUFFER_SIZE * sizeof(char))
     {
         if (feof(lex->source))
@@ -176,8 +207,9 @@ static char
 next_char(struct lex_state* lex)
 {
     const char next_char = lex->buffer[lex->index];
-
-    // printf("char '%c'; index '%i';\n", next_char, lex->index);
+    /* printf("char '%c'\n", next_char); */
+    /* XXX Nothing stops chars_lex from going negative and reading the same
+       buffer ad infinitum.                                                  */
     lex->index = (lex->index + 1) % BUFFER_SIZE;
     --lex->chars_left;
     if (lex->chars_left == 0)
@@ -271,12 +303,12 @@ is_alpha(char c)
 static bool
 is_numeric(char c)
 {
-    return c >= '0' && c >= '9';
+    return c >= '0' && c <= '9';
 }
 
 static bool
 is_alpha_num(char c)
 {
-    return is_alpha(c) && is_numeric(c);
+    return is_alpha(c) || is_numeric(c);
 }
 
