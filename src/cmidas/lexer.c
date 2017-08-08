@@ -42,11 +42,9 @@ lex_feed(struct lex_state* lex, FILE* source)
 struct token*
 lex_get_token(struct lex_state* lex)
 {
-    char c;
-
     skip_whitespace(lex);
     lex->tok_start = lex->index;
-    c = next_char(lex);
+    const char c = next_char(lex);
 
     if (is_alpha(c)) return identifier(lex);
 
@@ -89,10 +87,10 @@ lex_get_token(struct lex_state* lex)
         case '*':
             return token_new(lex, TOK_STAR);
         case '\0':
-            printf("Reached EOF\n");
             return token_new(lex, TOK_EOF);
         default:
-            printf("Encountered unknown symbol '%c' while parsing.\n", c);
+            printf("Parser Error:\n"
+                   "Encountered unknown symbol '%c' while parsing.\n", c);
             exit(1);
     }
 }
@@ -110,7 +108,7 @@ token_new(struct lex_state* lex, enum tok_type type)
 
     if (start < end)
     {
-        size_t size = end - start;
+        const size_t size = end - start;
 
         lexeme = malloc((size + 1) * sizeof(char));
         memcpy(lexeme, &lex->buffer[start], size);
@@ -125,7 +123,7 @@ token_new(struct lex_state* lex, enum tok_type type)
     //      ^                 ^
     //      | ended here      | started here   length of 4
     {
-        size_t first_half = BUFFER_SIZE - start;
+        const size_t first_half = BUFFER_SIZE - start;
 
         lexeme = malloc((first_half + end + 1) * sizeof(char));
         memcpy(lexeme, &lex->buffer[start], first_half);
@@ -140,12 +138,19 @@ token_new(struct lex_state* lex, enum tok_type type)
     return tok;
 }
 
+static struct token*
+identifier(struct lex_state* lex)
+{
+    while (is_alpha_num(lookahead(lex)))
+        next_char(lex);
+
+    return token_new(lex, TOK_IDENTIFIER);
+}
+
 static void
 buffer_chars(struct lex_state* lex)
 {
-    printf("Buffered chars\n");
-    size_t bytes_read;
-    bytes_read = fread(
+    const size_t bytes_read = fread(
         &lex->buffer[lex->index],
         sizeof(char),
         HALF_BUFFER_SIZE * sizeof(char),
@@ -158,10 +163,7 @@ buffer_chars(struct lex_state* lex)
     if (bytes_read != HALF_BUFFER_SIZE * sizeof(char))
     {
         if (feof(lex->source))
-        {
-            printf("Reached source end.\n");
             lex->buffer[(lex->index + bytes_read) % BUFFER_SIZE] = '\0';
-        }
         else if (ferror(lex->source))
         {
             puts("Parser Error:\nCould not buffer chars.\n");
@@ -173,7 +175,7 @@ buffer_chars(struct lex_state* lex)
 static char
 next_char(struct lex_state* lex)
 {
-    char next_char = lex->buffer[lex->index];
+    const char next_char = lex->buffer[lex->index];
 
     // printf("char '%c'; index '%i';\n", next_char, lex->index);
     lex->index = (lex->index + 1) % BUFFER_SIZE;
@@ -203,18 +205,13 @@ next_matches(struct lex_state* lex, const char c)
         return false;
 }
 
-static bool
-is_at_end(struct lex_state* lex)
-{
-    return lex->buffer[lex->index] == '\0';
-}
-
 static void
 skip_whitespace(struct lex_state* lex)
 {
+    char c;
     for (;;)
     {
-        char c = lookahead(lex);
+        c = lookahead(lex);
         switch (c)
         {
             case ' ':
@@ -237,9 +234,10 @@ skip_whitespace(struct lex_state* lex)
 static void
 skip_line(struct lex_state* lex)
 {
+    char c;
     for (;;)
     {
-        char c = lookahead(lex);
+        c = lookahead(lex);
         switch (c)
         {
             case '\n':
@@ -254,6 +252,12 @@ skip_line(struct lex_state* lex)
                 break;
         }
     }
+}
+
+static bool
+is_at_end(struct lex_state* lex)
+{
+    return lex->buffer[lex->index] == '\0';
 }
 
 static bool
@@ -274,14 +278,5 @@ static bool
 is_alpha_num(char c)
 {
     return is_alpha(c) && is_numeric(c);
-}
-
-static struct token*
-identifier(struct lex_state* lex)
-{
-    while (is_alpha_num(lookahead(lex)))
-        next_char(lex);
-
-    return token_new(lex, TOK_IDENTIFIER);
 }
 

@@ -6,16 +6,6 @@
 #define HALF_BUFFER_SIZE 20
 #define BUFFER_SIZE (HALF_BUFFER_SIZE * 2)
 
-struct lex_state
-{
-    FILE* source;             // Source file currently read.
-    char buffer[BUFFER_SIZE]; // Double buffered input from source.
-    int index;                // Location in the buffer; next char to be read.
-    int chars_left;           // How many chars are left to be read.
-    int tok_start;            // Where our current token string starts/
-    int lineno;               // Currnet line of the source file.
-};
-
 enum tok_type
 {
     TOK_COMMA,
@@ -42,6 +32,16 @@ enum tok_type
     TOK_STRING,
 
     TOK_EOF
+};
+
+struct lex_state
+{
+    FILE* source;             // Source file currently read.
+    char buffer[BUFFER_SIZE]; // Double buffered input from source.
+    int index;                // Location in the buffer; next char to be read.
+    int chars_left;           // How many chars are left to be read.
+    int tok_start;            // Where our current token string starts/
+    int lineno;               // Currnet line of the source file.
 };
 
 struct token
