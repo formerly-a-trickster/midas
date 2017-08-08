@@ -55,5 +55,6 @@ struct token
 void lex_init(struct lex_state*);
 void lex_feed(struct lex_state*, FILE* source);
 struct token* lex_get_token(struct lex_state*);
+void print_tok(struct token*);
 
 #endif

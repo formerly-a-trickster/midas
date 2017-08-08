@@ -26,7 +26,6 @@ static inline bool is_alpha_num(char);
 void
 lex_init(struct lex_state* lex)
 {
-    /* XXX unchecked malloc */
     lex->source = NULL;
     lex->index = 0;
     lex->chars_left = 0;
@@ -105,6 +104,15 @@ lex_get_token(struct lex_state* lex)
                    "Encountered unknown symbol '%c' while parsing.\n", c);
             exit(1);
     }
+}
+
+void
+print_tok(struct token* tok)
+{
+    if (tok->type == TOK_STRING)
+        printf("(\"%s\") ", tok->lexeme);
+    else
+        printf("(%s) ", tok->lexeme);
 }
 
 static struct token*

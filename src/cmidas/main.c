@@ -1,40 +1,26 @@
 #include "lexer.h"
-#include "utils.h"
+#include "parser.h"
 #include <stdio.h>
 #include <stdbool.h>
 
-void lex_file(const char* file);
+void ast_file(const char* file);
 
 int main(int argc, const char* argv[])
 {
     if (argc == 2)
-        lex_file(argv[1]);
+        ast_file(argv[1]);
     else
-        printf("Usage: cmidas [file]\n");
+        puts("Usage: cmidas file");
 
     return 0;
 }
 
 void
-lex_file(const char* file)
+ast_file(const char* file)
 {
     FILE* source = fopen(file, "r");
-    struct lex_state lex;
-    struct token* t;
-
-    lex_init(&lex);
-    lex_feed(&lex, source);
-
-    do
-    {
-        t = lex_get_token(&lex);
-        if (t->type == TOK_STRING)
-            printf("('%s') ", t->lexeme);
-        else
-            printf("(%s) ", t->lexeme);
-    }
-    while (t->type != TOK_EOF);
-
-    fclose(source);
+    struct par_state par;
+    par_init(&par);
+    par_read(&par, source);
 }
 
