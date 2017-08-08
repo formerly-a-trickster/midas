@@ -18,10 +18,10 @@ static bool next_matches(struct lex_state*, const char);
 static void skip_whitespace(struct lex_state*);
 static void skip_line(struct lex_state*);
 
-static bool is_at_end(struct lex_state*);
-static bool is_alpha(char);
-static bool is_numeric(char);
-static bool is_alpha_num(char);
+static inline bool is_at_end(struct lex_state*);
+static inline bool is_alpha(char);
+static inline bool is_numeric(char);
+static inline bool is_alpha_num(char);
 
 void
 lex_init(struct lex_state* lex)
@@ -286,13 +286,13 @@ skip_line(struct lex_state* lex)
     }
 }
 
-static bool
+static inline bool
 is_at_end(struct lex_state* lex)
 {
     return lex->buffer[lex->index] == '\0';
 }
 
-static bool
+static inline bool
 is_alpha(char c)
 {
     return (c >= 'a' && c <= 'z') ||
@@ -300,13 +300,13 @@ is_alpha(char c)
             c == '_';
 }
 
-static bool
+static inline bool
 is_numeric(char c)
 {
     return c >= '0' && c <= '9';
 }
 
-static bool
+static inline bool
 is_alpha_num(char c)
 {
     return is_alpha(c) || is_numeric(c);
