@@ -6,6 +6,11 @@ html
     font-size: 16px;
 }
 
+body
+{
+    margin-bottom: 5rem;
+}
+
 article
 {
     margin: 0 auto;
@@ -35,8 +40,14 @@ code
     color: #EBDBB2;
     font-family: "Fira Mono";
     white-space: pre;
-    padding: 0.5em;
-    margin: 0.25em;
+    padding: 0.5rem;
+    margin: 0.25rem;
+}
+
+code.inline
+{
+    margin-top: 0.5rem;
+    display: block;
 }
 
 .codebox
@@ -69,4 +80,9 @@ span.name
 span.literal
 {
     color: #D3869B;
+}
+
+span.emphasis
+{
+    font-weight: 800;
 }
