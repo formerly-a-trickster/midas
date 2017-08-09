@@ -44,7 +44,7 @@ struct lex_state
     int lineno;              /* Currnet line of the source file.             */
 };
 
-struct token
+struct tok
 {
     enum tok_type type;
     const char* lexeme;
@@ -54,7 +54,7 @@ struct token
 
 void lex_init(struct lex_state*);
 void lex_feed(struct lex_state*, FILE* source);
-struct token* lex_get_token(struct lex_state*);
-void print_tok(struct token*);
+struct tok* lex_get_tok(struct lex_state*);
+void print_tok(struct tok*);
 
 #endif

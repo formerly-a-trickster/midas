@@ -1,7 +1,1 @@
-fun succ(num) do
-    return num + one;
-end
-
-sub puts(string) do
-    print string;
-end
+3 * 3 + 2 * 2

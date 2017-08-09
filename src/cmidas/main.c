@@ -20,7 +20,11 @@ ast_file(const char* file)
 {
     FILE* source = fopen(file, "r");
     struct par_state par;
+    struct expr* ast;
+
     par_init(&par);
-    par_read(&par, source);
+    ast = par_read(&par, source);
+
+    ast_print(ast);
 }
 

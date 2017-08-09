@@ -17,7 +17,7 @@ struct expr
     {
         struct
         {
-            struct token* op;
+            struct tok* op;
             struct expr* left;
             struct expr* right;
         } binary;
@@ -25,11 +25,11 @@ struct expr
         struct
         {
             struct expr* expr;
-            struct token* lparen;
-            struct token* rparen;
+            struct tok* lparen;
+            struct tok* rparen;
         } group;
 
-        int integer;
+        const char* integer;
     } data;
 };
 
@@ -37,12 +37,12 @@ struct par_state
 {
     struct lex_state lex;
     bool had_error;
-    struct token* prev_token;
-    struct token* this_token;
+    struct tok* prev_tok;
+    struct tok* this_tok;
 };
 
 void par_init(struct par_state*);
-void par_read(struct par_state*, FILE*);
+struct expr* par_read(struct par_state*, FILE*);
 
 void ast_print(struct expr*);
 
