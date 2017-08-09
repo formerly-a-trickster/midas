@@ -1,4 +1,4 @@
-package com.jmidas.midas;
+package jmidas;
 
 enum TokenType {
 	COLON, COMMA, DO, DOT, END, /* HASH, */ LEFT_PAREN,

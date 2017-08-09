@@ -1,4 +1,4 @@
-package com.jmidas.midas;
+package jmidas;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.jmidas.tool;
+package jmidas.tool;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -44,7 +44,7 @@ public class GenerateAST {
 		String path = outputDir + "/" + baseName + ".java";
 		PrintWriter writer = new PrintWriter(path, "UTF-8");
 
-		writer.println("package com.jmidas.midas;");
+		writer.println("package jmidas;");
 		writer.println("");
 		writer.println("import java.util.List;");
 		writer.println("");

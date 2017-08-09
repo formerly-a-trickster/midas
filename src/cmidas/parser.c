@@ -195,6 +195,8 @@ expr_new_integer(struct tok* literal, int value)
 
     e->type = EXPR_INTEGER;
     e->data.integer.literal = literal;
+    /* XXX this could be out of range of an actual int. Consider atol, atoll or
+       implementing a bignum type                                            */
     e->data.integer.value = value;
 
     return e;

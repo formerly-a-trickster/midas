@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css?family=Fira+Mono|Roboto+Slab:300');
+
+html
+{
+    font-family: "Roboto Slab";
+    font-size: 16px;
+}
+
+article
+{
+    margin: 0 auto;
+    width: 800px;
+    font-size: 1.25rem;
+    font-weight: 300;
+}
+
+h1
+{
+    font-weight: 500;
+    font-size: 3rem;
+}
+
+h2
+{
+    font-weight: 500;
+    font-size: 2rem;
+}
+
+code
+{
+    background-color: #282828;
+    font-weight: 400;
+    font-size: 1rem;
+    border-radius: 10px;
+    color: #EBDBB2;
+    font-family: "Fira Mono";
+    white-space: pre;
+    padding: 0.5em;
+    margin: 0.25em;
+}
+
+.codebox
+{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+
+span.comment
+{
+    color: #7C6F64;
+}
+
+span.keyword
+{
+    color: #8EC07C;
+}
+
+span.control
+{
+    color: #FE8019;
+}
+
+span.name
+{
+    color: #FB4934;
+}
+
+span.literal
+{
+    color: #D3869B;
+}

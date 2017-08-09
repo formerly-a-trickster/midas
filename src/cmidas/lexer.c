@@ -69,7 +69,7 @@ lex_get_tok(struct lex_state* lex)
                 return tok_new(lex, TOK_GREAT);
         case '#':
             skip_line(lex);
-            /* XXX Find better solution */
+            /* XXX Eliminate recursion from lexer */
             return lex_get_tok(lex);
         case '<':
             if (char_matches(lex, '='))

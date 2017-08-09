@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-java -cp bin/ com.jmidas.midas.Midas $@
+java -jar ./dist/jmidas.jar $@

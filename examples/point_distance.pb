@@ -4,7 +4,7 @@ fun makePoint(x, y) do
         if (method == "x") return x;
         if (method == "y") return y;
         if (method == "str") return "(" ++ x ++ ", " ++ y ++ ")";
-        print "Unknown method " + method;
+        print "Unknown method " ++ method;
     end
     return closure;
 end

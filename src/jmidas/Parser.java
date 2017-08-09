@@ -1,10 +1,10 @@
-package com.jmidas.midas;
+package jmidas;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.jmidas.midas.TokenType.*;
+import static jmidas.TokenType.*;
 
 class Parser {
 	private static class ParseError extends RuntimeException {}

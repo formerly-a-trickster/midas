@@ -1,4 +1,4 @@
-package com.jmidas.midas;
+package jmidas;
 
 class RuntimeError extends RuntimeException {
 	final Token token;

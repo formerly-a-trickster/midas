@@ -1,4 +1,4 @@
-package com.jmidas.midas;
+package jmidas;
 
 class Token {
 	final TokenType type;

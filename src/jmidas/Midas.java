@@ -1,4 +1,4 @@
-package com.jmidas.midas;
+package jmidas;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -36,7 +36,9 @@ public class Midas {
 	private static void runPrompt() throws IOException {
 		InputStreamReader input = new InputStreamReader(System.in);
 		BufferedReader reader = new BufferedReader(input);
-
+		System.out.println("Welcome to the prototype version of Midas!");
+		System.out.println("You'll find the newest version at midaslang.org");
+		System.out.println("Ctrl-C or Crtl-D to exit");
 		for (;;) {
 			System.out.print("> ");
 			run(reader.readLine());

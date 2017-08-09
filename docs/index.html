@@ -1,11 +1,107 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>Midas</title>
-	</head>
-	<body>
-		<h1>Midas</h1>
-		<p>Midas could be a programming language.</p>
-		<p>Right now its a simple expression parser</p>
-	</body>
+  <head>
+    <link rel="stylesheet" href="./style.css">
+    <title>Midas</title>
+  </head>
+  <body>
+    <article>
+    <h1>Midas</h1>
+    <p>
+      Midas is a small programming language, currently in development, with no
+      formal specification and only experimental implementations.
+    </p>
+    <p>
+      Midas code can be run by a prototype tree walk interpreter written in
+      Java, while the proper interpreter will be implemented in C.
+    </p>
+    <h2>Features</h2>
+    <p>
+      Most notably, Midas has first-class function that close over their
+      declaring scope, allowing it to express constructs that are usually built
+      into the language, like objects and generators.
+    </p>
+<div class="codebox">
+<code><span class="comment"># Using a closure like an object</span>
+<span class="keyword">fun</span> <span class="name">makePoint</span>(x, y) <span class="keyword">do</span>
+    <span class="keyword">fun</span> <span class="name">closure</span>(method) <span class="keyword">do</span>
+        <span class="control">if</span> (method == "x")
+          return x;
+        <span class="control">if</span> (method == "y")
+          return y;
+        <span class="keyword">print</span> "Unknown method" ++ method;
+    <span class="keyword">end</span>
+
+    <span class="keyword">return</span> closure;
+<span class="keyword">end</span>
+
+<span class="keyword">var</span> <span class="name">point_a</span> = makePoint(<span class="literal">2</span>, <span class="literal">3</span>);
+<span class="keyword">print</span> point_a("x");     <span class="comment"># Prints <span class="literal">2</span>.</span>
+<span class="keyword">print</span> point_a("y");     <span class="comment"># Prints <span class="literal">3</span>.</span>
+</code>
+
+<code><span class="comment"># Using closures like a generators</span>
+<span class="keyword">fun</span> <span class="name">makeCounter</span>() <span class="keyword">do</span>
+    <span class="keyword">var</span> <span class="name">i</span> = <span class="literal">0</span>;
+    <span class="keyword">fun</span> <span class="name">counter</span>() <span class="keyword">do</span>
+      i = i + <span class="literal">1</span>;
+      <span class="keyword">return</span> i;
+    <span class="keyword">end</span>
+
+    <span class="keyword">return</span> counter;
+<span class="keyword">end</span>
+
+<span class="keyword">var</span> <span class="name">count</span> = makeCounter();
+<span class="keyword">print</span> count();     <span class="comment"># Prints 1.</span>
+<span class="keyword">print</span> count();     <span class="comment"># Prints 2.</span>
+</code>
+</div>
+
+    <p>
+      Barring closures, Midas implemets staples of scripting languages like:
+    </p>
+
+<div class="codebox">
+<code><span class="comment"># Dynamic variables</span>
+<span class="keyword">var</span> <span class="name">muffins</span> = <span class="literal">5</span>;
+muffins = "English";
+</code>
+
+<code><span class="comment"># Numeric, string and boolean types</span>
+<span class="keyword">var</span> <span class="name">aNumber</span> = <span class="literal">42</span>;
+<span class="keyword">var</span> <span class="name">aString</span> = "the Gordian knot";
+<span class="keyword">var</span> <span class="name">aBool</span> = false;
+<span class="keyword">var</span> <span class="name">noValue</span> = nil;
+</code>
+
+<code><span class="comment"># Arithmetic and logic operators</span>
+<span class="keyword">var</span> <span class="name">result</span> = (<span class="literal">3</span> + <span class="literal">10</span>) * (<span class="literal">8</span> - <span class="literal">5</span>) / <span class="literal">10</span>;
+<span class="keyword">var</span> <span class="name">condition</span> = (a > <span class="literal">10</span>) or (a &lt;= <span class="literal">5</span>);
+
+<span class="comment"># String concatenation</span>
+<span class="keyword">var</span> <span class="name">greet</span> = "Hey " ++ "Buddy!";
+</code>
+
+<code><span class="comment"># Branching constructs</span>
+<span class="control">if</span> (condition) <span class="keyword">do</span>
+    <span class="comment"># then block</span>
+<span class="keyword">end</span>
+<span class="control">else</span> <span class="keyword">do</span>
+    <span class="comment"># else block</span>
+<span class="keyword">end</span>
+</code>
+
+<code><span class="comment"># Looping constructs</span>
+<span class="control">for</span> (<span class="keyword">var</span> <span class="name">i</span> = <span class="literal">0</span>; i &lt; <span class="literal">10</span>; i = i + <span class="literal">1</span>) <span class="keyword">do</span>
+    <span class="comment"># loop block</span>
+<span class="keyword">end</span>
+
+<span class="control">while</span> (condition) <span class="keyword">do</span>
+    <span class="comment"># loop block</span>
+<span class="keyword">end</span>
+</code>
+</div>
+
+    </article>
+  </body>
 </html>

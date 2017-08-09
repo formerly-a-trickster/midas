@@ -1,4 +1,4 @@
-package com.jmidas.midas;
+package jmidas;
 
 class Return extends RuntimeException {
 	final Object value;
