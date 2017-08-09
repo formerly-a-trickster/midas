@@ -66,8 +66,8 @@ comparison(struct par_state* par)
 {
     struct expr* left = addition(par);
 
-    if (tok_matches(par, TOK_GREAT) || tok_matches(par, TOK_GREAT_EQUAL) ||
-        tok_matches(par, TOK_LESS) || tok_matches(par, TOK_LESS_EQUAL))
+    while (tok_matches(par, TOK_GREAT) || tok_matches(par, TOK_GREAT_EQUAL) ||
+           tok_matches(par, TOK_LESS) || tok_matches(par, TOK_LESS_EQUAL))
     {
         struct tok* op = par->prev_tok;
         struct expr* right = addition(par);
@@ -83,7 +83,7 @@ addition(struct par_state* par)
 {
     struct expr* left = multiplication(par);
 
-    if (tok_matches(par, TOK_MINUS) || tok_matches(par, TOK_PLUS))
+    while (tok_matches(par, TOK_MINUS) || tok_matches(par, TOK_PLUS))
     {
         struct tok* op = par->prev_tok;
         struct expr* right = multiplication(par);
@@ -99,7 +99,7 @@ multiplication(struct par_state* par)
 {
     struct expr* left = primary(par);
 
-    if (tok_matches(par, TOK_SLASH) || tok_matches(par, TOK_STAR))
+    while (tok_matches(par, TOK_SLASH) || tok_matches(par, TOK_STAR))
     {
         struct tok* op = par->prev_tok;
         struct expr* right = primary(par);
