@@ -29,7 +29,11 @@ struct expr
             struct tok* rparen;
         } group;
 
-        const char* integer;
+        struct
+        {
+            struct tok* literal;
+            int value;
+        } integer;
     } data;
 };
 

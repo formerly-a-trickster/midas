@@ -16,7 +16,7 @@ static bool tok_matches(struct par_state*, enum tok_type);
 
 static struct expr* expr_new_binary(struct tok*, struct expr*, struct expr*);
 static struct expr* expr_new_group(struct expr*, struct tok*, struct tok*);
-static struct expr* expr_new_integer(const char*);
+static struct expr* expr_new_integer(struct tok*, int);
 
 void
 par_init(struct par_state* par)
@@ -118,7 +118,10 @@ primary(struct par_state* par)
             | "(" expression ")"                                             */
 {
     if (tok_matches(par, TOK_NUMBER))
-        return expr_new_integer(par->prev_tok->lexeme);
+    {
+        int value = atoi(par->prev_tok->lexeme);
+        return expr_new_integer(par->prev_tok, value);
+    }
     else if (tok_matches(par, TOK_PAREN_LEFT))
     {
         struct expr* expr = expression(par);
@@ -186,12 +189,13 @@ expr_new_group(struct expr* expr, struct tok* lparen, struct tok* rparen)
 }
 
 static struct expr*
-expr_new_integer(const char* integer)
+expr_new_integer(struct tok* literal, int value)
 {
     struct expr* e = malloc(sizeof(struct expr));
 
     e->type = EXPR_INTEGER;
-    e->data.integer = integer;
+    e->data.integer.literal = literal;
+    e->data.integer.value = value;
 
     return e;
 }
@@ -215,7 +219,7 @@ ast_print(struct expr* expr)
             break;
 
         case EXPR_INTEGER:
-            printf("%s ", expr->data.integer);
+            printf("%i ", expr->data.integer.value);
             break;
     }
 }
