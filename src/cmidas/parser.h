@@ -29,11 +29,7 @@ struct expr
             struct tok* rparen;
         } group;
 
-        struct
-        {
-            struct tok* literal;
-            int value;
-        } integer;
+        struct tok* integer;
     } data;
 };
 

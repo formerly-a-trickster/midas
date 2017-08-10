@@ -1,5 +1,6 @@
 #include "lexer.h"
 #include "parser.h"
+#include "interpreter.h"
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -24,7 +25,9 @@ ast_file(const char* file)
 
     par_init(&par);
     ast = par_read(&par, source);
-
     ast_print(ast);
+
+    struct value val = evaluate(ast);
+    printf("\nResult: %li\n", val.data.as_long);
 }
 
