@@ -12,7 +12,7 @@ val_new(struct tok* tok)
 
     switch (tok->type)
     {
-        case TOK_NUMBER:
+        case TOK_INTEGER:
             val.type = VAL_INTEGER;
             // XXX this will silently fail for large enough numbers
             val.data.as_long = atol(tok->lexeme);
@@ -41,8 +41,8 @@ evaluate(struct exp* exp)
         case EXP_GROUP:
             return evaluate(exp->data.group.exp);
 
-        case EXP_INTEGER:
-            return val_new(exp->data.integer);
+        case EXP_LITERAL:
+            return val_new(exp->data.literal);
 
         default:
             printf("Interpreter error:\n"

@@ -29,5 +29,7 @@ ast_file(const char* file)
 
     struct val result = evaluate(ast);
     printf("\nResult: %li\n", result.data.as_long);
+
+    fclose(source);
 }
 

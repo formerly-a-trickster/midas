@@ -174,7 +174,7 @@ number(struct lex_state* lex)
     while (is_numeric(lookahead(lex)))
         char_next(lex);
 
-    return tok_new(lex, TOK_NUMBER);
+    return tok_new(lex, TOK_INTEGER);
 }
 
 static struct tok*

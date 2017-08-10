@@ -28,7 +28,7 @@ enum tok_type
     TOK_PLUS_PLUS   = 16,
 
     TOK_IDENTIFIER  = 17,
-    TOK_NUMBER      = 18,
+    TOK_INTEGER     = 18,
     TOK_STRING      = 19,
 
     TOK_EOF         = 20

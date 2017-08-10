@@ -10,7 +10,7 @@ struct exp
     {
         EXP_BINARY,
         EXP_GROUP,
-        EXP_INTEGER
+        EXP_LITERAL
     } type;
 
     union
@@ -29,7 +29,7 @@ struct exp
             struct tok* rparen;
         } group;
 
-        struct tok* integer;
+        struct tok* literal;
     } data;
 };
 

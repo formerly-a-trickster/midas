@@ -16,7 +16,7 @@ static bool tok_matches(struct par_state*, enum tok_type);
 
 static struct exp* exp_new_binary(struct tok*, struct exp*, struct exp*);
 static struct exp* exp_new_group(struct exp*, struct tok*, struct tok*);
-static struct exp* exp_new_integer(struct tok*);
+static struct exp* exp_new_literal(struct tok*);
 
 void
 par_init(struct par_state* par)
@@ -117,9 +117,9 @@ primary(struct par_state* par)
 /* primary -> NUMBER                              | STRING | "false" | "true" |
             | "(" expression ")"                                             */
 {
-    if (tok_matches(par, TOK_NUMBER))
+    if (tok_matches(par, TOK_INTEGER))
     {
-        return exp_new_integer(par->prev_tok);
+        return exp_new_literal(par->prev_tok);
     }
     else if (tok_matches(par, TOK_PAREN_LEFT))
     {
@@ -164,38 +164,49 @@ tok_matches(struct par_state* par, enum tok_type type)
 static struct exp*
 exp_new_binary(struct tok* op, struct exp* left, struct exp* right)
 {
-    struct exp* e = malloc(sizeof(struct exp));
+    struct exp* exp = malloc(sizeof(struct exp));
 
-    e->type = EXP_BINARY;
-    e->data.binary.op = op;
-    e->data.binary.left = left;
-    e->data.binary.right = right;
+    exp->type = EXP_BINARY;
+    exp->data.binary.op = op;
+    exp->data.binary.left = left;
+    exp->data.binary.right = right;
 
-    return e;
+    return exp;
 }
 
 static struct exp*
-exp_new_group(struct exp* exp, struct tok* lparen, struct tok* rparen)
+exp_new_group(struct exp* group, struct tok* lparen, struct tok* rparen)
+// XXX group codepaths are neither used nor tested
 {
-    struct exp* e = malloc(sizeof(struct exp));
+    struct exp* exp = malloc(sizeof(struct exp));
 
-    e->type = EXP_GROUP;
-    e->data.group.exp = exp;
-    e->data.group.lparen = lparen;
-    e->data.group.rparen = rparen;
+    exp->type = EXP_GROUP;
+    exp->data.group.exp = group;
+    exp->data.group.lparen = lparen;
+    exp->data.group.rparen = rparen;
 
-    return e;
+    return exp;
 }
 
 static struct exp*
-exp_new_integer(struct tok* tok)
+exp_new_literal(struct tok* tok)
 {
-    struct exp* e = malloc(sizeof(struct exp));
+    struct exp* exp = malloc(sizeof(struct exp));
 
-    e->type = EXP_INTEGER;
-    e->data.integer = tok;
+    switch (tok->type)
+    {
+        case TOK_INTEGER:
+            exp->type = EXP_LITERAL;
+            exp->data.literal = tok;
+            break;
 
-    return e;
+        default:
+            printf("Parser error:\n"
+                   "Literal expression received unexped token type\n");
+            exit(0);
+    }
+
+    return exp;
 }
 
 void
@@ -216,8 +227,8 @@ ast_print(struct exp* exp)
             printf("] ");
             break;
 
-        case EXP_INTEGER:
-            printf("%s ", exp->data.integer->lexeme);
+        case EXP_LITERAL:
+            printf("%s ", exp->data.literal->lexeme);
             break;
     }
 }
