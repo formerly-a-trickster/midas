@@ -3,20 +3,20 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-static struct expr* expression(struct par_state*);
-static struct expr* equality(struct par_state*);
-static struct expr* comparison(struct par_state*);
-static struct expr* addition(struct par_state*);
-static struct expr* multiplication(struct par_state*);
-/* static struct expr* unary(struct par_state*); */
-static struct expr* primary(struct par_state*);
+static struct exp* expression(struct par_state*);
+static struct exp* equality(struct par_state*);
+static struct exp* comparison(struct par_state*);
+static struct exp* addition(struct par_state*);
+static struct exp* multiplication(struct par_state*);
+/* static struct exp* unary(struct par_state*); */
+static struct exp* primary(struct par_state*);
 
 static struct tok* tok_next(struct par_state*);
 static bool tok_matches(struct par_state*, enum tok_type);
 
-static struct expr* expr_new_binary(struct tok*, struct expr*, struct expr*);
-static struct expr* expr_new_group(struct expr*, struct tok*, struct tok*);
-static struct expr* expr_new_integer(struct tok*);
+static struct exp* exp_new_binary(struct tok*, struct exp*, struct exp*);
+static struct exp* exp_new_group(struct exp*, struct tok*, struct tok*);
+static struct exp* exp_new_integer(struct tok*);
 
 void
 par_init(struct par_state* par)
@@ -27,7 +27,7 @@ par_init(struct par_state* par)
     par->this_tok = NULL;
 }
 
-struct expr*
+struct exp*
 par_read(struct par_state* par, FILE* source)
 {
     lex_feed(&par->lex, source);
@@ -36,74 +36,74 @@ par_read(struct par_state* par, FILE* source)
     return expression(par);
 }
 
-static struct expr*
+static struct exp*
 expression(struct par_state* par)
 /*  expression -> equality                                                   */
 {
     return equality(par);
 }
 
-static struct expr*
+static struct exp*
 equality(struct par_state* par)
 /*  equality -> comparison ( ( "!=" | "==" ) comparison )*                   */
 {
-    struct expr* left = comparison(par);
+    struct exp* left = comparison(par);
 
     while (tok_matches(par, TOK_BANG_EQUAL) ||
            tok_matches(par, TOK_EQUAL_EQUAL))
     {
         struct tok* op = par->prev_tok;
-        struct expr* right = comparison(par);
-        left = expr_new_binary(op, left, right);
+        struct exp* right = comparison(par);
+        left = exp_new_binary(op, left, right);
     }
 
     return left;
 }
 
-static struct expr*
+static struct exp*
 comparison(struct par_state* par)
 /*  comparison -> addition ( ( ">" | ">=" | "<" | "<=" ) addition)*          */
 {
-    struct expr* left = addition(par);
+    struct exp* left = addition(par);
 
     while (tok_matches(par, TOK_GREAT) || tok_matches(par, TOK_GREAT_EQUAL) ||
            tok_matches(par, TOK_LESS) || tok_matches(par, TOK_LESS_EQUAL))
     {
         struct tok* op = par->prev_tok;
-        struct expr* right = addition(par);
-        left = expr_new_binary(op, left, right);
+        struct exp* right = addition(par);
+        left = exp_new_binary(op, left, right);
     }
 
     return left;
 }
 
-static struct expr*
+static struct exp*
 addition(struct par_state* par)
 /*  addition -> multiplication ( ( "-" | "+" ) multiplication)*              */
 {
-    struct expr* left = multiplication(par);
+    struct exp* left = multiplication(par);
 
     while (tok_matches(par, TOK_MINUS) || tok_matches(par, TOK_PLUS))
     {
         struct tok* op = par->prev_tok;
-        struct expr* right = multiplication(par);
-        left = expr_new_binary(op, left, right);
+        struct exp* right = multiplication(par);
+        left = exp_new_binary(op, left, right);
     }
 
     return left;
 }
 
-static struct expr*
+static struct exp*
 multiplication(struct par_state* par)
 /*  multiplication -> primary ( ( "/" | "*" ) primary )*                     */
 {
-    struct expr* left = primary(par);
+    struct exp* left = primary(par);
 
     while (tok_matches(par, TOK_SLASH) || tok_matches(par, TOK_STAR))
     {
         struct tok* op = par->prev_tok;
-        struct expr* right = primary(par);
-        left = expr_new_binary(op, left, right);
+        struct exp* right = primary(par);
+        left = exp_new_binary(op, left, right);
     }
 
     return left;
@@ -112,18 +112,18 @@ multiplication(struct par_state* par)
 /*  unary -> ( ("!" | "-") unary )*
            | primary                                                         */
 
-static struct expr*
+static struct exp*
 primary(struct par_state* par)
 /* primary -> NUMBER                              | STRING | "false" | "true" |
             | "(" expression ")"                                             */
 {
     if (tok_matches(par, TOK_NUMBER))
     {
-        return expr_new_integer(par->prev_tok);
+        return exp_new_integer(par->prev_tok);
     }
     else if (tok_matches(par, TOK_PAREN_LEFT))
     {
-        struct expr* expr = expression(par);
+        struct exp* exp = expression(par);
         if (!tok_matches(par, TOK_PAREN_RIGHT))
         {
             printf("Error:\n"
@@ -131,7 +131,7 @@ primary(struct par_state* par)
             exit(0);
         }
         else
-            return expr;
+            return exp;
     }
     else
     {
@@ -161,12 +161,12 @@ tok_matches(struct par_state* par, enum tok_type type)
         return false;
 }
 
-static struct expr*
-expr_new_binary(struct tok* op, struct expr* left, struct expr* right)
+static struct exp*
+exp_new_binary(struct tok* op, struct exp* left, struct exp* right)
 {
-    struct expr* e = malloc(sizeof(struct expr));
+    struct exp* e = malloc(sizeof(struct exp));
 
-    e->type = EXPR_BINARY;
+    e->type = EXP_BINARY;
     e->data.binary.op = op;
     e->data.binary.left = left;
     e->data.binary.right = right;
@@ -174,50 +174,50 @@ expr_new_binary(struct tok* op, struct expr* left, struct expr* right)
     return e;
 }
 
-static struct expr*
-expr_new_group(struct expr* expr, struct tok* lparen, struct tok* rparen)
+static struct exp*
+exp_new_group(struct exp* exp, struct tok* lparen, struct tok* rparen)
 {
-    struct expr* e = malloc(sizeof(struct expr));
+    struct exp* e = malloc(sizeof(struct exp));
 
-    e->type = EXPR_GROUP;
-    e->data.group.expr = expr;
+    e->type = EXP_GROUP;
+    e->data.group.exp = exp;
     e->data.group.lparen = lparen;
     e->data.group.rparen = rparen;
 
     return e;
 }
 
-static struct expr*
-expr_new_integer(struct tok* tok)
+static struct exp*
+exp_new_integer(struct tok* tok)
 {
-    struct expr* e = malloc(sizeof(struct expr));
+    struct exp* e = malloc(sizeof(struct exp));
 
-    e->type = EXPR_INTEGER;
+    e->type = EXP_INTEGER;
     e->data.integer = tok;
 
     return e;
 }
 
 void
-ast_print(struct expr* expr)
+ast_print(struct exp* exp)
 {
-    switch (expr->type)
+    switch (exp->type)
     {
-        case EXPR_BINARY:
-            printf("( %s ", expr->data.binary.op->lexeme);
-            ast_print(expr->data.binary.left);
-            ast_print(expr->data.binary.right);
+        case EXP_BINARY:
+            printf("( %s ", exp->data.binary.op->lexeme);
+            ast_print(exp->data.binary.left);
+            ast_print(exp->data.binary.right);
             printf(") ");
             break;
 
-        case EXPR_GROUP:
+        case EXP_GROUP:
             printf("[ ");
-            ast_print(expr->data.group.expr);
+            ast_print(exp->data.group.exp);
             printf("] ");
             break;
 
-        case EXPR_INTEGER:
-            printf("%s ", expr->data.integer->lexeme);
+        case EXP_INTEGER:
+            printf("%s ", exp->data.integer->lexeme);
             break;
     }
 }

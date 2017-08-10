@@ -4,13 +4,13 @@
 #include "lexer.h"
 #include <stdio.h>
 
-struct expr
+struct exp
 {
     enum
     {
-        EXPR_BINARY,
-        EXPR_GROUP,
-        EXPR_INTEGER
+        EXP_BINARY,
+        EXP_GROUP,
+        EXP_INTEGER
     } type;
 
     union
@@ -18,13 +18,13 @@ struct expr
         struct
         {
             struct tok* op;
-            struct expr* left;
-            struct expr* right;
+            struct exp* left;
+            struct exp* right;
         } binary;
 
         struct
         {
-            struct expr* expr;
+            struct exp* exp;
             struct tok* lparen;
             struct tok* rparen;
         } group;
@@ -42,9 +42,9 @@ struct par_state
 };
 
 void par_init(struct par_state*);
-struct expr* par_read(struct par_state*, FILE*);
+struct exp* par_read(struct par_state*, FILE*);
 
-void ast_print(struct expr*);
+void ast_print(struct exp*);
 
 #endif
 

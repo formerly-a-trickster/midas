@@ -4,7 +4,7 @@
 #include "lexer.h"
 #include "parser.h"
 
-struct value
+struct val
 {
     enum
     {
@@ -22,8 +22,8 @@ struct value
 };
 
 
-struct value val_new(struct tok*);
-struct value evaluate(struct expr* expr);
-struct value bin_op(struct tok*, struct value, struct value);
+struct val val_new(struct tok*);
+struct val evaluate(struct exp* exp);
+struct val bin_op(struct tok*, struct val, struct val);
 
 #endif

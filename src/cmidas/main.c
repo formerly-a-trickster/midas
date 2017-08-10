@@ -21,13 +21,13 @@ ast_file(const char* file)
 {
     FILE* source = fopen(file, "r");
     struct par_state par;
-    struct expr* ast;
+    struct exp* ast;
 
     par_init(&par);
     ast = par_read(&par, source);
     ast_print(ast);
 
-    struct value val = evaluate(ast);
-    printf("\nResult: %li\n", val.data.as_long);
+    struct val result = evaluate(ast);
+    printf("\nResult: %li\n", result.data.as_long);
 }
 

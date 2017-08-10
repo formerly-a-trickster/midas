@@ -5,10 +5,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-struct value
+struct val
 val_new(struct tok* tok)
 {
-    struct value val;
+    struct val val;
 
     switch (tok->type)
     {
@@ -20,29 +20,29 @@ val_new(struct tok* tok)
 
         default:
             printf("Interpreter error:\n"
-                   "Tried to envalue un unrecognized token type\n");
+                   "Tried to enval un unrecognized token type\n");
             exit(0);
     }
 
     return val;
 }
 
-struct value
-evaluate(struct expr* expr)
+struct val
+evaluate(struct exp* exp)
 {
-    switch (expr->type)
+    switch (exp->type)
     {
-        case EXPR_BINARY:
+        case EXP_BINARY:
             ;
-            struct value left = evaluate(expr->data.binary.left);
-            struct value right = evaluate(expr->data.binary.right);
-            return bin_op(expr->data.binary.op, left, right);
+            struct val left = evaluate(exp->data.binary.left);
+            struct val right = evaluate(exp->data.binary.right);
+            return bin_op(exp->data.binary.op, left, right);
 
-        case EXPR_GROUP:
-            return evaluate(expr->data.group.expr);
+        case EXP_GROUP:
+            return evaluate(exp->data.group.exp);
 
-        case EXPR_INTEGER:
-            return val_new(expr->data.integer);
+        case EXP_INTEGER:
+            return val_new(exp->data.integer);
 
         default:
             printf("Interpreter error:\n"
@@ -51,8 +51,8 @@ evaluate(struct expr* expr)
     }
 }
 
-struct value
-bin_op(struct tok* tok, struct value left, struct value right)
+struct val
+bin_op(struct tok* tok, struct val left, struct val right)
 {
     switch (tok->type)
     {
