@@ -42,7 +42,7 @@ struct par_state
 };
 
 void par_init(struct par_state*);
-struct exp* par_read(struct par_state*, FILE*);
+struct exp* par_read(struct par_state*, const char*);
 
 void ast_print(struct exp*);
 

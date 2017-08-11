@@ -1,3 +1,4 @@
+#include "error.h"
 #include "lexer.h"
 
 #include <stdio.h>
@@ -30,12 +31,17 @@ lex_init(struct lex_state* lex)
     lex->index = 0;
     lex->chars_left = 0;
     lex->tok_start = 0;
-    lex->lineno = 0;
+    lex->lineno = 1;
+    lex->colno = 1;
 }
 
 void
-lex_feed(struct lex_state* lex, FILE* source)
+lex_feed(struct lex_state* lex, const char* path)
+/* XXX ideally, the lexer would not have to keep track of actual files and
+  would just be fed characters from an overarching structure.                */
 {
+    FILE* source = fopen(path, "r");
+    lex->path = path;
     lex->source = source;
     buffer_chars(lex);
 }
@@ -100,9 +106,7 @@ lex_get_tok(struct lex_state* lex)
         case '\0':
             return tok_new(lex, TOK_EOF);
         default:
-            printf("Parser Error:\n"
-                   "Encountered unknown symbol '%c' while parsing.\n", c);
-            exit(1);
+            return tok_new(lex, ERR_UNKNOWN);
     }
 }
 
@@ -154,7 +158,19 @@ tok_new(struct lex_state* lex, enum tok_type type)
     }
 
     tok->lexeme = lexeme;
+    tok->colno = lex->colno - tok->length;
 
+    switch (tok->type)
+    {
+        case ERR_UNKNOWN:
+            err_at_tok(lex->path, tok,
+                "\n    Encountered unknown glyph `%s` while lexing.\n\n",
+                tok->lexeme);
+            break;
+
+        default:
+            break;
+    }
     return tok;
 }
 
@@ -209,6 +225,7 @@ buffer_chars(struct lex_state* lex)
             lex->buffer[(lex->index + bytes_read) % BUFFER_SIZE] = '\0';
         else if (ferror(lex->source))
         {
+            // XXX this should be an IO error
             puts("Parser Error:\nCould not buffer chars.\n");
             exit(1);
         }
@@ -224,6 +241,7 @@ char_next(struct lex_state* lex)
        buffer ad infinitum.                                                  */
     lex->index = (lex->index + 1) % BUFFER_SIZE;
     --lex->chars_left;
+    ++lex->colno;
     if (lex->chars_left == 0)
         buffer_chars(lex);
     return char_next;
@@ -266,6 +284,7 @@ skip_whitespace(struct lex_state* lex)
 
             case '\n':
                 ++lex->lineno;
+                lex->colno = 0;
                 char_next(lex);
                 break;
 
@@ -286,6 +305,8 @@ skip_line(struct lex_state* lex)
         {
             case '\n':
                 ++lex->lineno;
+                lex->colno = 0;
+                char_next(lex);
                 return;
 
             case '\0':

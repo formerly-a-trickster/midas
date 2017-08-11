@@ -1,3 +1,4 @@
+#include "error.h"
 #include "lexer.h"
 #include "parser.h"
 #include "interpreter.h"
@@ -17,19 +18,12 @@ int main(int argc, const char* argv[])
 }
 
 void
-ast_file(const char* file)
+ast_file(const char* path)
 {
-    FILE* source = fopen(file, "r");
     struct par_state par;
-    struct exp* ast;
+    struct exp* program_ast;
 
     par_init(&par);
-    ast = par_read(&par, source);
-    ast_print(ast);
-
-    struct val result = evaluate(ast);
-    printf("\nResult: %li\n", result.data.as_long);
-
-    fclose(source);
+    program_ast = par_read(&par, path);
 }
 

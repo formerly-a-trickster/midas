@@ -1,5 +1,7 @@
+#include "error.h"
 #include "lexer.h"
 #include "parser.h"
+
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -28,9 +30,9 @@ par_init(struct par_state* par)
 }
 
 struct exp*
-par_read(struct par_state* par, FILE* source)
+par_read(struct par_state* par, const char* path)
 {
-    lex_feed(&par->lex, source);
+    lex_feed(&par->lex, path);
     tok_next(par);
 
     return expression(par);
@@ -126,17 +128,18 @@ primary(struct par_state* par)
         struct exp* exp = expression(par);
         if (!tok_matches(par, TOK_PAREN_RIGHT))
         {
-            printf("Error:\n"
-                   "Expected closing paren.");
-            exit(0);
+            err_at_tok(par->lex.path, par->this_tok,
+                "\n    Expected a closing paren, instead got `%s`.\n\n",
+                par->this_tok->lexeme);
         }
         else
             return exp;
     }
     else
     {
-        printf("Expected number or paren, got %s\n", par->this_tok->lexeme);
-        exit(0);
+        err_at_tok(par->lex.path, par->this_tok,
+            "\n    Expected number or paren, instead got `%s`.\n\n",
+            par->this_tok->lexeme);
     }
 }
 
