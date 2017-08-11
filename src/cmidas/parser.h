@@ -39,6 +39,30 @@ struct exp
     } data;
 };
 
+struct stm
+{
+    enum
+    {
+        STM_EXPR_STMT,
+        STM_PRINT
+    } type;
+
+    union
+    {
+        struct
+        {
+            struct exp* exp;
+            struct tok* semi;
+        } expr;
+
+        struct
+        {
+            struct exp* exp;
+            struct tok* semi;
+        } print;
+    } data;
+};
+
 struct par_state
 {
     struct lex_state lex;
@@ -48,9 +72,10 @@ struct par_state
 };
 
 void par_init(struct par_state*);
-struct exp* par_read(struct par_state*, const char*);
+struct stm* par_read(struct par_state*, const char*);
 
-void ast_print(struct exp*);
+void print_stm(struct stm*);
+void print_exp(struct exp*);
 
 #endif
 

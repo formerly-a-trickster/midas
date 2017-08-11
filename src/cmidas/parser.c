@@ -5,6 +5,10 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+static struct stm* statement(struct par_state*);
+static struct stm* expr_stmt(struct par_state*);
+static struct stm* print(struct par_state*);
+
 static struct exp* expression(struct par_state*);
 static struct exp* equality(struct par_state*);
 static struct exp* comparison(struct par_state*);
@@ -15,6 +19,9 @@ static struct exp* primary(struct par_state*);
 
 static struct tok* tok_next(struct par_state*);
 static bool tok_matches(struct par_state*, enum tok_type);
+
+static struct stm* stm_new_print(struct exp*, struct tok*);
+static struct stm* stm_new_expr_stmt(struct exp*, struct tok*);
 
 static struct exp* exp_new_binary(struct tok*, struct exp*, struct exp*);
 static struct exp* exp_new_unary(struct tok*, struct exp*);
@@ -30,13 +37,50 @@ par_init(struct par_state* par)
     par->this_tok = NULL;
 }
 
-struct exp*
+struct stm*
 par_read(struct par_state* par, const char* path)
 {
     lex_feed(&par->lex, path);
     tok_next(par);
 
-    return expression(par);
+    return statement(par);
+}
+
+static struct stm*
+statement(struct par_state* par)
+/*  statement -> print_expr
+               | expr_stmt                                                   */
+{
+    if (tok_matches(par, TOK_PRINT))
+        return print(par);
+    else
+        return expr_stmt(par);
+}
+
+static struct stm*
+print(struct par_state* par)
+/*  print_expr -> ^print^ expression ";"                                     */
+{
+    struct exp* exp = expression(par);
+
+    if (!tok_matches(par, TOK_SEMICOLON))
+        err_at_tok(par->lex.path, par->prev_tok,
+                   "\n    Missing semicolon after print statement.\n\n");
+
+    return stm_new_print(exp, par->prev_tok);
+}
+
+static struct stm*
+expr_stmt(struct par_state* par)
+/*  expr_stmt -> expression ";"                                              */
+{
+    struct exp* exp = expression(par);
+
+    if (!tok_matches(par, TOK_SEMICOLON))
+        err_at_tok(par->lex.path, par->prev_tok,
+                   "\n    Missing semicolon after expression statement.\n\n");
+
+    return stm_new_expr_stmt(exp, par->prev_tok);
 }
 
 static struct exp*
@@ -129,8 +173,9 @@ unary(struct par_state* par)
 
 static struct exp*
 primary(struct par_state* par)
-/* primary -> NUMBER                              | STRING | "false" | "true" |
-            | "(" expression ")"                                             */
+/* primary -> NUMBER                          XXX | STRING | "false" | "true" |
+            | "(" expression ")"
+            | XXX error porductions                                          */
 {
     if (tok_matches(par, TOK_INTEGER))
     {
@@ -175,6 +220,30 @@ tok_matches(struct par_state* par, enum tok_type type)
     }
     else
         return false;
+}
+
+static struct stm*
+stm_new_expr_stmt(struct exp* exp, struct tok* semi)
+{
+    struct stm* stm = malloc(sizeof(struct stm));
+
+    stm->type = STM_EXPR_STMT;
+    stm->data.expr.exp = exp;
+    stm->data.expr.semi = semi;
+
+    return stm;
+}
+
+static struct stm*
+stm_new_print(struct exp* exp, struct tok* semi)
+{
+    struct stm* stm = malloc(sizeof(struct stm));
+
+    stm->type = STM_PRINT;
+    stm->data.print.exp = exp;
+    stm->data.print.semi = semi;
+
+    return stm;
 }
 
 static struct exp*
@@ -238,27 +307,45 @@ exp_new_literal(struct tok* tok)
 }
 
 void
-ast_print(struct exp* exp)
+print_stm(struct stm* stm)
+{
+    switch (stm->type)
+    {
+        case STM_EXPR_STMT:
+            printf("[ ");
+            print_exp(stm->data.expr.exp);
+            printf("] ");
+            break;
+
+        case STM_PRINT:
+            printf("[ print ");
+            print_exp(stm->data.expr.exp);
+            printf("] ");
+    }
+}
+
+void
+print_exp(struct exp* exp)
 {
     switch (exp->type)
     {
         case EXP_BINARY:
             printf("( %s ", exp->data.binary.op->lexeme);
-            ast_print(exp->data.binary.left);
-            ast_print(exp->data.binary.right);
+            print_exp(exp->data.binary.left);
+            print_exp(exp->data.binary.right);
             printf(") ");
             break;
 
         case EXP_UNARY:
             printf("( %s ", exp->data.unary.op->lexeme);
-            ast_print(exp->data.unary.exp);
+            print_exp(exp->data.unary.exp);
             printf(")");
             break;
 
         case EXP_GROUP:
-            printf("[ ");
-            ast_print(exp->data.group.exp);
-            printf("] ");
+            printf("( ");
+            print_exp(exp->data.group.exp);
+            printf(") ");
             break;
 
         case EXP_LITERAL:

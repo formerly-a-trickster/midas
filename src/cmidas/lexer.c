@@ -6,6 +6,12 @@
 #include <string.h>
 #include <stdbool.h>
 
+struct keyword keywords[] =
+{
+    {"print", 6, TOK_PRINT},
+    {NULL, 0, ERR_UNKNOWN}
+};
+
 static struct tok* tok_new(struct lex_state*, enum tok_type);
 static struct tok* identifier(struct lex_state*);
 static struct tok* number(struct lex_state*);
@@ -115,15 +121,6 @@ lex_get_tok(struct lex_state* lex)
     }
 }
 
-void
-print_tok(struct tok* tok)
-{
-    if (tok->type == TOK_STRING)
-        printf("(\"%s\") ", tok->lexeme);
-    else
-        printf("(%s) ", tok->lexeme);
-}
-
 static struct tok*
 tok_new(struct lex_state* lex, enum tok_type type)
 {
@@ -137,11 +134,11 @@ tok_new(struct lex_state* lex, enum tok_type type)
 
     if (start < end)
     {
-        const size_t size = end - start;
+        const size_t size = end - start + 1;
 
-        lexeme = malloc((size + 1) * sizeof(char));
-        memcpy(lexeme, &lex->buffer[start], size);
-        lexeme[size] = '\0';
+        lexeme = malloc((size) * sizeof(char));
+        strncpy(lexeme, &lex->buffer[start], size);
+        lexeme[size - 1] = '\0';
         tok->length = size;
     }
     else
@@ -158,7 +155,7 @@ tok_new(struct lex_state* lex, enum tok_type type)
         memcpy(lexeme, &lex->buffer[start], first_half);
         if (end > 0)
             memcpy(lexeme + first_half, &lex->buffer[0], end);
-        lexeme[first_half + end] = '\0';
+        lexeme[first_half + end - 1] = '\0';
         tok->length = first_half + end;
     }
 
@@ -182,11 +179,21 @@ tok_new(struct lex_state* lex, enum tok_type type)
 static struct tok*
 identifier(struct lex_state* lex)
 {
-    /* printf("Scanning for identifier\n"); */
     while (is_alpha_num(lookahead(lex)))
         char_next(lex);
 
-    return tok_new(lex, TOK_IDENTIFIER);
+    struct tok* tok = tok_new(lex, TOK_IDENTIFIER);
+    for (struct keyword* key = keywords; key->name != NULL; ++key)
+    {
+        if (tok->length == key->length &&
+            strcmp(tok->lexeme, key->name) == 0)
+        {
+            tok->type = key->type;
+            break;
+        }
+    }
+
+    return tok;
 }
 
 static struct tok*
@@ -241,7 +248,6 @@ static char
 char_next(struct lex_state* lex)
 {
     const char char_next = lex->buffer[lex->index];
-    /* printf("char '%c'\n", char_next); */
     /* XXX Nothing stops chars_lex from going negative and reading the same
        buffer ad infinitum.                                                  */
     lex->index = (lex->index + 1) % BUFFER_SIZE;

@@ -20,14 +20,11 @@ void
 ast_file(const char* path)
 {
     struct par_state par;
-    struct exp* program_ast;
+    struct stm* program_ast;
 
     par_init(&par);
     program_ast = par_read(&par, path);
 
-    ast_print(program_ast);
-    struct val result = evaluate(program_ast);
-
-    printf("\nResult: %li\n", result.data.as_long);
+    print_stm(program_ast);
 }
 

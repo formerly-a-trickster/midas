@@ -33,9 +33,18 @@ enum tok_type
     TOK_INTEGER,
     TOK_STRING,
 
+    TOK_PRINT,
+
     TOK_EOF,
 
     ERR_UNKNOWN
+};
+
+struct keyword
+{
+    const char* name;
+    int length;
+    enum tok_type type;
 };
 
 struct lex_state
