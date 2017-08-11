@@ -8,6 +8,7 @@ struct exp
     enum
     {
         EXP_BINARY,
+        EXP_UNARY,
         EXP_GROUP,
         EXP_LITERAL
     } type;
@@ -20,6 +21,12 @@ struct exp
             struct exp* left;
             struct exp* right;
         } binary;
+
+        struct
+        {
+            struct tok* op;
+            struct exp* exp;
+        } unary;
 
         struct
         {

@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static struct val bin_op(struct tok*, struct val, struct val);
+static struct val un_op(struct tok*, struct val);
+
 struct val
 val_new(struct tok* tok)
 {
@@ -38,6 +41,11 @@ evaluate(struct exp* exp)
             struct val right = evaluate(exp->data.binary.right);
             return bin_op(exp->data.binary.op, left, right);
 
+        case EXP_UNARY:
+            ;
+            struct val operand = evaluate(exp->data.unary.exp);
+            return un_op(exp->data.unary.op, operand);
+
         case EXP_GROUP:
             return evaluate(exp->data.group.exp);
 
@@ -51,7 +59,7 @@ evaluate(struct exp* exp)
     }
 }
 
-struct val
+static struct val
 bin_op(struct tok* tok, struct val left, struct val right)
 {
     switch (tok->type)
@@ -79,6 +87,21 @@ bin_op(struct tok* tok, struct val left, struct val right)
     }
 }
 
-#include <stdio.h>
-#include <stdlib.h>
+static struct val
+un_op(struct tok* tok, struct val operand)
+{
+    switch (tok->type)
+    {
+        case TOK_MINUS:
+            operand.data.as_long = - operand.data.as_long;
+            return operand;
+
+        /* XXX case TOK_BANG */
+
+        default:
+            printf("Interpreter error:\n"
+                   "Tried to apply an unexpected unary operation.\n");
+            exit(0);
+    }
+}
 

@@ -10,13 +10,14 @@ static struct exp* equality(struct par_state*);
 static struct exp* comparison(struct par_state*);
 static struct exp* addition(struct par_state*);
 static struct exp* multiplication(struct par_state*);
-/* static struct exp* unary(struct par_state*); */
+static struct exp* unary(struct par_state*);
 static struct exp* primary(struct par_state*);
 
 static struct tok* tok_next(struct par_state*);
 static bool tok_matches(struct par_state*, enum tok_type);
 
 static struct exp* exp_new_binary(struct tok*, struct exp*, struct exp*);
+static struct exp* exp_new_unary(struct tok*, struct exp*);
 static struct exp* exp_new_group(struct exp*, struct tok*, struct tok*);
 static struct exp* exp_new_literal(struct tok*);
 
@@ -97,22 +98,34 @@ addition(struct par_state* par)
 
 static struct exp*
 multiplication(struct par_state* par)
-/*  multiplication -> primary ( ( "/" | "*" ) primary )*                     */
+/*  multiplication -> unary ( ( "/" | "*" ) unary )*                     */
 {
-    struct exp* left = primary(par);
+    struct exp* left = unary(par);
 
     while (tok_matches(par, TOK_SLASH) || tok_matches(par, TOK_STAR))
     {
         struct tok* op = par->prev_tok;
-        struct exp* right = primary(par);
+        struct exp* right = unary(par);
         left = exp_new_binary(op, left, right);
     }
 
     return left;
 }
 
-/*  unary -> ( ("!" | "-") unary )*
+static struct exp*
+unary(struct par_state* par)
+/*  unary -> ( ("!" | "-") unary )
            | primary                                                         */
+{
+    if (tok_matches(par, TOK_BANG) || tok_matches(par, TOK_MINUS))
+    {
+        struct tok* op = par->prev_tok;
+        struct exp* exp = unary(par);
+        return exp_new_unary(op, exp);
+    }
+    else
+        return primary(par);
+}
 
 static struct exp*
 primary(struct par_state* par)
@@ -178,6 +191,18 @@ exp_new_binary(struct tok* op, struct exp* left, struct exp* right)
 }
 
 static struct exp*
+exp_new_unary(struct tok* op, struct exp* operand)
+{
+    struct exp* exp = malloc(sizeof(struct exp));
+
+    exp->type = EXP_UNARY;
+    exp->data.unary.op = op;
+    exp->data.unary.exp = operand;
+
+    return exp;
+}
+
+static struct exp*
 exp_new_group(struct exp* group, struct tok* lparen, struct tok* rparen)
 // XXX group codepaths are neither used nor tested
 {
@@ -222,6 +247,12 @@ ast_print(struct exp* exp)
             ast_print(exp->data.binary.left);
             ast_print(exp->data.binary.right);
             printf(") ");
+            break;
+
+        case EXP_UNARY:
+            printf("( %s ", exp->data.unary.op->lexeme);
+            ast_print(exp->data.unary.exp);
+            printf(")");
             break;
 
         case EXP_GROUP:

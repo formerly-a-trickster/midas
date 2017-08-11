@@ -26,5 +26,8 @@ ast_file(const char* path)
     program_ast = par_read(&par, path);
 
     ast_print(program_ast);
+    struct val result = evaluate(program_ast);
+
+    printf("\nResult: %li\n", result.data.as_long);
 }
 

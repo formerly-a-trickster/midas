@@ -61,6 +61,11 @@ lex_get_tok(struct lex_state* lex)
 
     switch (c)
     {
+        case '!':
+            if (char_matches(lex, '='))
+                return tok_new(lex, TOK_BANG_EQUAL);
+            else
+                return tok_new(lex, TOK_BANG);
         case ',':
             return tok_new(lex, TOK_COMMA);
         case '=':

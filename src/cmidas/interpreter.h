@@ -24,6 +24,5 @@ struct val
 
 struct val val_new(struct tok*);
 struct val evaluate(struct exp* exp);
-struct val bin_op(struct tok*, struct val, struct val);
 
 #endif

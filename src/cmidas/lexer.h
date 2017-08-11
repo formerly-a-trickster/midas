@@ -9,6 +9,7 @@
 
 enum tok_type
 {
+    TOK_BANG,
     TOK_COMMA,
     TOK_EQUAL,
     TOK_GREAT,
