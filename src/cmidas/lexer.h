@@ -1,5 +1,6 @@
 #ifndef MD_lexer_h
 #define MD_lexer_h
+
 #include <stdio.h>
 #include <stdbool.h>
 

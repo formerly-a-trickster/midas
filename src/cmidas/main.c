@@ -1,7 +1,6 @@
-#include "error.h"
-#include "lexer.h"
 #include "parser.h"
 #include "interpreter.h"
+
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -25,5 +24,7 @@ ast_file(const char* path)
 
     par_init(&par);
     program_ast = par_read(&par, path);
+
+    ast_print(program_ast);
 }
 

@@ -2,7 +2,6 @@
 #define MD_parser_h
 
 #include "lexer.h"
-#include <stdio.h>
 
 struct exp
 {
