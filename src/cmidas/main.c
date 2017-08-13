@@ -25,6 +25,9 @@ ast_file(const char* path)
     par_init(&par);
     program_ast = par_read(&par, path);
 
+    printf("AST\n===\n");
     print_stm(program_ast);
+    printf("\nOutput\n======\n");
+    execute(program_ast);
 }
 

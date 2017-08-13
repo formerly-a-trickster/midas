@@ -1,3 +1,4 @@
+#include "utils.h"
 #include "lexer.h"
 #include "parser.h"
 #include "interpreter.h"
@@ -7,6 +8,8 @@
 
 static struct val bin_op(struct tok*, struct val, struct val);
 static struct val un_op(struct tok*, struct val);
+
+static void print_val(struct val);
 
 struct val
 val_new(struct tok* tok)
@@ -30,8 +33,54 @@ val_new(struct tok* tok)
     return val;
 }
 
+void
+execute(struct stm* stm)
+/* Take a statement and produce a side effect.                               */
+{
+    switch (stm->type)
+    {
+        case STM_BLOCK:
+            ;
+            struct stmlist* list = stm->data.block;
+            struct stmnode* node = list->nil;
+            for (int i = 0; i < list->length; ++i)
+            {
+                node = node->next;
+                execute(node->data);
+            }
+            break;
+
+        case STM_EXPR_STMT:
+            /* Evaluate and discard */
+            evaluate(stm->data.expr.exp);
+            break;
+
+        case STM_PRINT:
+            ;
+            struct val val = evaluate(stm->data.print.exp);
+            print_val(val);
+            break;
+    }
+}
+
+static void
+print_val(struct val val)
+{
+    switch (val.type)
+    {
+        case VAL_INTEGER:
+            printf("%li\n", val.data.as_long);
+            break;
+
+        /* XXX case VAL_DOUBLE */
+
+        /* XXX case VAL_STRING */
+    }
+}
+
 struct val
 evaluate(struct exp* exp)
+/* Take an expression and output a value                                     */
 {
     switch (exp->type)
     {

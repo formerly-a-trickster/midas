@@ -1,5 +1,5 @@
-#ifndef MD_parser_h
-#define MD_parser_h
+#ifndef MD_parser_h_
+#define MD_parser_h_
 
 #include "utils.h"
 #include "lexer.h"

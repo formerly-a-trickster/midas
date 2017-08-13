@@ -1,5 +1,5 @@
-#ifndef MD_lexer_h
-#define MD_lexer_h
+#ifndef MD_lexer_h_
+#define MD_lexer_h_
 
 #include <stdio.h>
 #include <stdbool.h>

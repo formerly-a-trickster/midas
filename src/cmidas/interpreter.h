@@ -1,5 +1,5 @@
-#ifndef MD_interpreter_h
-#define MD_interpreter_h
+#ifndef MD_interpreter_h_
+#define MD_interpreter_h_
 
 #include "lexer.h"
 #include "parser.h"
@@ -15,14 +15,14 @@ struct val
 
     union
     {
-        long int as_long;
+        long as_long;
         double as_double;
         const char* as_string;
     } data;
 };
 
-
 struct val val_new(struct tok*);
-struct val evaluate(struct exp* exp);
+void execute(struct stm*);
+struct val evaluate(struct exp*);
 
 #endif

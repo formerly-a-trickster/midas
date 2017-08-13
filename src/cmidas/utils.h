@@ -1,22 +1,9 @@
-#ifndef MD_utils_h
-#define MD_utils_h
+#ifndef MD_utils_h_
+#define MD_utils_h_
 
 #include "parser.h"
 
 struct stmlist
-/* A doublylinked circular list, containing a sentinel node that marks both the
-   start and the end of the list. It is circular for the sole reason that this
-   way we only need one sentinel instead of one.
-
-   It explicitly contains only statements. It is used to describe both a
-   program and a code block, as both are a list of statements.
-
-                       #stmnode                 #stmnode
-              +---+    +----+-----+---+         +----+-----+---+
-   stmlist--->|nil|<-->|prev|data|next|<- ... ->|prev|data|next|<-+
-              +---+    +----+----+----+         +----+----+----+  |
-                ^                                                 |
-                +-------------------------------------------------+          */
 {
     struct stmnode* nil;
     int length;

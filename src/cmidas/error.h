@@ -1,5 +1,5 @@
-#ifndef MD_error_h
-#define MD_error_h
+#ifndef MD_error_h_
+#define MD_error_h_
 
 #include "lexer.h"
 
