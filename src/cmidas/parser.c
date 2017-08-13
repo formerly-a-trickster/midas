@@ -1,10 +1,12 @@
 #include "error.h"
+#include "utils.h"
 #include "lexer.h"
 #include "parser.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
 
+static struct stm* program(struct par_state*);
 static struct stm* statement(struct par_state*);
 static struct stm* expr_stmt(struct par_state*);
 static struct stm* print(struct par_state*);
@@ -20,6 +22,7 @@ static struct exp* primary(struct par_state*);
 static struct tok* tok_next(struct par_state*);
 static bool tok_matches(struct par_state*, enum tok_type);
 
+static struct stm* stm_new_block(struct stmlist*);
 static struct stm* stm_new_print(struct exp*, struct tok*);
 static struct stm* stm_new_expr_stmt(struct exp*, struct tok*);
 
@@ -43,7 +46,21 @@ par_read(struct par_state* par, const char* path)
     lex_feed(&par->lex, path);
     tok_next(par);
 
-    return statement(par);
+    return program(par);
+}
+
+static struct stm*
+program(struct par_state* par)
+/*  program -> ( statement )* "EOF"                                          */
+{
+    struct stmlist* program = stmlist_new();
+    while(!tok_matches(par, TOK_EOF))
+    {
+        struct stm* stm = statement(par);
+        stmlist_append(program, stm);
+    }
+
+    return stm_new_block(program);
 }
 
 static struct stm*
@@ -175,7 +192,7 @@ static struct exp*
 primary(struct par_state* par)
 /* primary -> NUMBER                          XXX | STRING | "false" | "true" |
             | "(" expression ")"
-            | XXX error porductions                                          */
+            | XXX error productions                                          */
 {
     if (tok_matches(par, TOK_INTEGER))
     {
@@ -189,6 +206,7 @@ primary(struct par_state* par)
             err_at_tok(par->lex.path, par->this_tok,
                 "\n    Expected a closing paren, instead got `%s`.\n\n",
                 par->this_tok->lexeme);
+            return NULL; /* Unreachable. */
         }
         else
             return exp;
@@ -198,6 +216,7 @@ primary(struct par_state* par)
         err_at_tok(par->lex.path, par->this_tok,
             "\n    Expected number or paren, instead got `%s`.\n\n",
             par->this_tok->lexeme);
+        return NULL; /* Unreachable. */
     }
 }
 
@@ -220,6 +239,17 @@ tok_matches(struct par_state* par, enum tok_type type)
     }
     else
         return false;
+}
+
+static struct stm*
+stm_new_block(struct stmlist* block)
+{
+    struct stm* stm = malloc(sizeof(struct stm));
+
+    stm->type = STM_BLOCK;
+    stm->data.block = block;
+
+    return stm;
 }
 
 static struct stm*
@@ -311,16 +341,28 @@ print_stm(struct stm* stm)
 {
     switch (stm->type)
     {
+        case STM_BLOCK:
+            ;
+            struct stmlist* list = stm->data.block;
+            struct stmnode* node = list->nil;
+            for (int i = 0; i < list->length; ++i)
+            {
+                node = node->next;
+                print_stm(node->data);
+            }
+            break;
+
         case STM_EXPR_STMT:
-            printf("[ ");
+            printf("[ expstm ");
             print_exp(stm->data.expr.exp);
-            printf("] ");
+            printf("]\n");
             break;
 
         case STM_PRINT:
             printf("[ print ");
             print_exp(stm->data.expr.exp);
-            printf("] ");
+            printf("]\n");
+            break;
     }
 }
 

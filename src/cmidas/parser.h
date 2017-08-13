@@ -1,6 +1,7 @@
 #ifndef MD_parser_h
 #define MD_parser_h
 
+#include "utils.h"
 #include "lexer.h"
 
 struct exp
@@ -43,12 +44,15 @@ struct stm
 {
     enum
     {
+        STM_BLOCK,
         STM_EXPR_STMT,
         STM_PRINT
     } type;
 
     union
     {
+        struct stmlist* block;
+
         struct
         {
             struct exp* exp;
