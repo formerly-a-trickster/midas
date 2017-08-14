@@ -188,11 +188,12 @@ unary(struct par_state* par)
 
 static struct exp*
 primary(struct par_state* par)
-/* primary -> NUMBER | STRING | "false" | "true" |
+/* primary -> INTEGER | DOUBLE | STRING | "false" | "true" |
             | "(" expression ")"
             | XXX error productions                                          */
 {
-    if (tok_matches(par, TOK_INTEGER) || tok_matches(par, TOK_STRING) ||
+    if (tok_matches(par, TOK_INTEGER) || tok_matches(par, TOK_DOUBLE) ||
+        tok_matches(par, TOK_STRING) ||
         tok_matches(par, TOK_FALSE) || tok_matches(par, TOK_TRUE))
     {
         return exp_new_literal(par->prev_tok);
@@ -370,7 +371,7 @@ print_exp(struct exp* exp)
         case EXP_UNARY:
             printf("( %s ", exp->data.unary.op->lexeme);
             print_exp(exp->data.unary.exp);
-            printf(")");
+            printf(") ");
             break;
 
         case EXP_GROUP:

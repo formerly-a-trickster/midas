@@ -85,9 +85,11 @@ val_print(struct val val)
 
         case VAL_DOUBLE:
             printf("%f", val.data.as_double);
+            break;
 
         case VAL_STRING:
             printf("%s", val.data.as_string);
+            break;
     }
     putchar('\n');
 }
@@ -329,7 +331,7 @@ val_add(struct intpr* intpr, struct tok* tok,
                 case VAL_DOUBLE:
                     val.type = VAL_DOUBLE;
                     val.data.as_double =
-                        (double)left.data.as_long + right.data.as_long;
+                        (double)left.data.as_long + right.data.as_double;
                     return val;
 
                 default:
@@ -385,7 +387,7 @@ val_sub(struct intpr* intpr, struct tok* tok,
                 case VAL_DOUBLE:
                     val.type = VAL_DOUBLE;
                     val.data.as_double =
-                        (double)left.data.as_long - right.data.as_long;
+                        (double)left.data.as_long - right.data.as_double;
                     return val;
 
                 default:
@@ -441,7 +443,7 @@ val_mul(struct intpr* intpr, struct tok* tok,
                 case VAL_DOUBLE:
                     val.type = VAL_DOUBLE;
                     val.data.as_double =
-                        (double)left.data.as_long * right.data.as_long;
+                        (double)left.data.as_long * right.data.as_double;
                     return val;
 
                 default:
@@ -497,7 +499,7 @@ val_div(struct intpr* intpr, struct tok* tok,
                 case VAL_DOUBLE:
                     val.type = VAL_DOUBLE;
                     val.data.as_double =
-                        (double)left.data.as_long / right.data.as_long;
+                        (double)left.data.as_long / right.data.as_double;
                     return val;
 
                 default:
@@ -613,7 +615,6 @@ val_new(struct intpr* intpr, struct tok* tok)
             val.data.as_long = atol(tok->lexeme);
             break;
 
-        /* XXX TOK_DOUBLE isn't parser yet */
         case TOK_DOUBLE:
             val.type = VAL_DOUBLE;
             val.data.as_double = atof(tok->lexeme);

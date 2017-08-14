@@ -196,19 +196,16 @@ tok_new(struct lex_state* lex, enum tok_type type)
             break;
     }
 
-    printf("( %s %i )\n", tok->lexeme, tok->length);
+    /* XXX it would be helpful to add a debug switch that can show internal
+       lexing state */
     return tok;
 }
 
 static struct tok*
 identifier(struct lex_state* lex)
 {
-    printf("Identifier\n");
     while (is_alpha_num(lookahead(lex)))
-    {
-        putchar(lex->buffer[lex->index]);
         char_next(lex);
-    }
 
     struct tok* tok = tok_new(lex, TOK_IDENTIFIER);
     for (struct keyword* key = keywords; key->name != NULL; ++key)
@@ -227,10 +224,30 @@ identifier(struct lex_state* lex)
 static struct tok*
 number(struct lex_state* lex)
 {
-    while (is_numeric(lookahead(lex)))
-        char_next(lex);
+    bool is_double = false;
 
-    return tok_new(lex, TOK_INTEGER);
+    for (;;)
+    {
+        if (is_numeric(lookahead(lex)))
+            char_next(lex);
+        else if (lookahead(lex) == '.')
+        {
+            if (is_double == false)
+            {
+                is_double = true;
+                char_next(lex);
+            }
+            else
+                break;
+        }
+        else
+            break;
+    }
+
+    if (is_double)
+        return tok_new(lex, TOK_DOUBLE);
+    else
+        return tok_new(lex, TOK_INTEGER);
 }
 
 static struct tok*
@@ -269,14 +286,6 @@ buffer_chars(struct lex_state* lex)
             exit(1);
         }
     }
-
-    printf(">>>");
-    for (int i = 0; i < 50; ++i)
-        putchar(lex->buffer[i]);
-    printf("<<<>>>");
-    for (int i = 50; i < 100; ++i)
-        putchar(lex->buffer[i]);
-    printf("<<<\n\n");
 }
 
 static char
