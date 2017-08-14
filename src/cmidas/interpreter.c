@@ -30,10 +30,6 @@ interpret(struct intpr* intpr, const char* path)
     intpr->path = path;
     struct stm* ast = parse(&intpr->par, path);
 
-    printf("AST\n===\n");
-    print_stm(ast);
-    printf("\nOutput\n======\n");
-
     execute(intpr, ast);
 }
 
