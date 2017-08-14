@@ -8,8 +8,10 @@
 
 struct keyword keywords[] =
 {
-    {"print", 6, TOK_PRINT},
-    {NULL, 0, ERR_UNKNOWN}
+    { "false", 6, TOK_FALSE   },
+    { "true" , 5, TOK_TRUE    },
+    { "print", 6, TOK_PRINT   },
+    { NULL   , 0, ERR_UNKNOWN }
 };
 
 static struct tok* tok_new(struct lex_state*, enum tok_type);
@@ -72,50 +74,66 @@ lex_get_tok(struct lex_state* lex)
                 return tok_new(lex, TOK_BANG_EQUAL);
             else
                 return tok_new(lex, TOK_BANG);
+
         case ',':
             return tok_new(lex, TOK_COMMA);
+
         case '=':
             if (char_matches(lex, '='))
                 return tok_new(lex, TOK_EQUAL_EQUAL);
             else
                 return tok_new(lex, TOK_EQUAL);
+
         case '>':
             if (char_matches(lex, '='))
                 return tok_new(lex, TOK_GREAT_EQUAL);
             else
                 return tok_new(lex, TOK_GREAT);
+
         case '#':
             skip_line(lex);
             /* XXX Eliminate recursion from lexer */
             return lex_get_tok(lex);
+
         case '<':
             if (char_matches(lex, '='))
                 return tok_new(lex, TOK_LESS_EQUAL);
             else
                 return tok_new(lex, TOK_LESS);
+
         case '-':
             return tok_new(lex, TOK_MINUS);
+
         case '(':
             return tok_new(lex, TOK_PAREN_LEFT);
+
         case ')':
             return tok_new(lex, TOK_PAREN_RIGHT);
+
         case '%':
             return tok_new(lex, TOK_PERCENT);
+
         case '+':
             if (char_matches(lex, '+'))
                 return tok_new(lex, TOK_PLUS_PLUS);
             else
                 return tok_new(lex, TOK_PLUS);
+
         case '"':
             return string(lex);
+
         case ';':
             return tok_new(lex, TOK_SEMICOLON);
+
         case '/':
             return tok_new(lex, TOK_SLASH);
+
         case '*':
             return tok_new(lex, TOK_STAR);
+
         case '\0':
             return tok_new(lex, TOK_EOF);
+
         default:
             return tok_new(lex, ERR_UNKNOWN);
     }
@@ -133,6 +151,10 @@ tok_new(struct lex_state* lex, enum tok_type type)
     tok->lineno = lex->lineno;
 
     if (start < end)
+    /*   0 1 2 3 4 5 6 7 8 9     This token has a length of 4. We allocate 5
+        |v|a|r| |s|i|z|e| |=|... char-widths for it. Besides the char, it needs
+                 ^       ^       to be null terminated. This null character
+           start |       | end   resides at index 4.                         */
     {
         const size_t size = end - start + 1;
 
@@ -155,8 +177,8 @@ tok_new(struct lex_state* lex, enum tok_type type)
         memcpy(lexeme, &lex->buffer[start], first_half);
         if (end > 0)
             memcpy(lexeme + first_half, &lex->buffer[0], end);
-        lexeme[first_half + end - 1] = '\0';
-        tok->length = first_half + end;
+        lexeme[first_half + end] = '\0';
+        tok->length = first_half + end + 1;
     }
 
     tok->lexeme = lexeme;
@@ -173,14 +195,20 @@ tok_new(struct lex_state* lex, enum tok_type type)
         default:
             break;
     }
+
+    printf("( %s %i )\n", tok->lexeme, tok->length);
     return tok;
 }
 
 static struct tok*
 identifier(struct lex_state* lex)
 {
+    printf("Identifier\n");
     while (is_alpha_num(lookahead(lex)))
+    {
+        putchar(lex->buffer[lex->index]);
         char_next(lex);
+    }
 
     struct tok* tok = tok_new(lex, TOK_IDENTIFIER);
     for (struct keyword* key = keywords; key->name != NULL; ++key)
@@ -225,8 +253,7 @@ buffer_chars(struct lex_state* lex)
         &lex->buffer[lex->index],
         sizeof(char),
         HALF_BUFFER_SIZE * sizeof(char),
-        lex->source
-    );
+        lex->source);
 
     lex->chars_left += HALF_BUFFER_SIZE;
 
@@ -242,6 +269,14 @@ buffer_chars(struct lex_state* lex)
             exit(1);
         }
     }
+
+    printf(">>>");
+    for (int i = 0; i < 50; ++i)
+        putchar(lex->buffer[i]);
+    printf("<<<>>>");
+    for (int i = 50; i < 100; ++i)
+        putchar(lex->buffer[i]);
+    printf("<<<\n\n");
 }
 
 static char

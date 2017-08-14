@@ -70,14 +70,12 @@ struct stm
 struct par_state
 {
     struct lex_state lex;
-    bool had_error;
+    const char* path;
     struct tok* prev_tok;
     struct tok* this_tok;
 };
 
-void par_init(struct par_state*);
-struct stm* par_read(struct par_state*, const char*);
-
+struct stm* parse(struct par_state*, const char*);
 void print_stm(struct stm*);
 void print_exp(struct exp*);
 

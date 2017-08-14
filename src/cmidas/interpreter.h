@@ -4,25 +4,35 @@
 #include "lexer.h"
 #include "parser.h"
 
+#include <stdbool.h>
+
+enum val_type
+{
+    VAL_BOOLEAN,
+    VAL_INTEGER,
+    VAL_DOUBLE,
+    VAL_STRING
+};
+
 struct val
 {
-    enum
-    {
-        VAL_INTEGER,
-        VAL_DOUBLE,
-        VAL_STRING,
-    } type;
+    enum val_type type;
 
     union
     {
+        bool as_bool;
         long as_long;
         double as_double;
         const char* as_string;
     } data;
 };
 
-struct val val_new(struct tok*);
-void execute(struct stm*);
-struct val evaluate(struct exp*);
+struct intpr
+{
+    struct par_state par;
+    const char* path;
+};
+
+void interpret(struct intpr*, const char*);
 
 #endif

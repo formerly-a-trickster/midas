@@ -31,8 +31,11 @@ enum tok_type
 
     TOK_IDENTIFIER,
     TOK_INTEGER,
+    TOK_DOUBLE,
     TOK_STRING,
 
+    TOK_TRUE,
+    TOK_FALSE,
     TOK_PRINT,
 
     TOK_EOF,

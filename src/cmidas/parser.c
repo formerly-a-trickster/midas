@@ -13,7 +13,7 @@ static struct stm* print(struct par_state*);
 
 static struct exp* expression(struct par_state*);
 static struct exp* equality(struct par_state*);
-static struct exp* comparison(struct par_state*);
+static struct exp* ordering(struct par_state*);
 static struct exp* addition(struct par_state*);
 static struct exp* multiplication(struct par_state*);
 static struct exp* unary(struct par_state*);
@@ -31,18 +31,14 @@ static struct exp* exp_new_unary(struct tok*, struct exp*);
 static struct exp* exp_new_group(struct exp*, struct tok*, struct tok*);
 static struct exp* exp_new_literal(struct tok*);
 
-void
-par_init(struct par_state* par)
+struct stm*
+parse(struct par_state* par, const char* path)
 {
     lex_init(&par->lex);
-    par->had_error = false;
+    par->path = path;
     par->prev_tok = NULL;
     par->this_tok = NULL;
-}
 
-struct stm*
-par_read(struct par_state* par, const char* path)
-{
     lex_feed(&par->lex, path);
     tok_next(par);
 
@@ -51,10 +47,12 @@ par_read(struct par_state* par, const char* path)
 
 static struct stm*
 program(struct par_state* par)
-/*  program -> ( statement )* "EOF"                                          */
+/*  program -> statement* "EOF"                                              */
 {
     struct stmlist* program = stmlist_new();
-    while(!tok_matches(par, TOK_EOF))
+    /* XXX if we would have used !tok_matches(par, TOK_EOF), we would force the
+       lexer to read beyond the EOF upon finally matching it */
+    while(par->this_tok->type != TOK_EOF)
     {
         struct stm* stm = statement(par);
         stmlist_append(program, stm);
@@ -81,7 +79,7 @@ print(struct par_state* par)
     struct exp* exp = expression(par);
 
     if (!tok_matches(par, TOK_SEMICOLON))
-        err_at_tok(par->lex.path, par->prev_tok,
+        err_at_tok(par->path, par->prev_tok,
                    "\n    Missing semicolon after print statement.\n\n");
 
     return stm_new_print(exp, par->prev_tok);
@@ -94,7 +92,7 @@ expr_stmt(struct par_state* par)
     struct exp* exp = expression(par);
 
     if (!tok_matches(par, TOK_SEMICOLON))
-        err_at_tok(par->lex.path, par->prev_tok,
+        err_at_tok(par->path, par->prev_tok,
                    "\n    Missing semicolon after expression statement.\n\n");
 
     return stm_new_expr_stmt(exp, par->prev_tok);
@@ -109,15 +107,15 @@ expression(struct par_state* par)
 
 static struct exp*
 equality(struct par_state* par)
-/*  equality -> comparison ( ( "!=" | "==" ) comparison )*                   */
+/*  equality -> ordering ( ( "!=" | "==" ) ordering )*                   */
 {
-    struct exp* left = comparison(par);
+    struct exp* left = ordering(par);
 
     while (tok_matches(par, TOK_BANG_EQUAL) ||
            tok_matches(par, TOK_EQUAL_EQUAL))
     {
         struct tok* op = par->prev_tok;
-        struct exp* right = comparison(par);
+        struct exp* right = ordering(par);
         left = exp_new_binary(op, left, right);
     }
 
@@ -125,8 +123,8 @@ equality(struct par_state* par)
 }
 
 static struct exp*
-comparison(struct par_state* par)
-/*  comparison -> addition ( ( ">" | ">=" | "<" | "<=" ) addition)*          */
+ordering(struct par_state* par)
+/*  ordering -> addition ( ( ">" | ">=" | "<" | "<=" ) addition)*          */
 {
     struct exp* left = addition(par);
 
@@ -190,11 +188,12 @@ unary(struct par_state* par)
 
 static struct exp*
 primary(struct par_state* par)
-/* primary -> NUMBER                          XXX | STRING | "false" | "true" |
+/* primary -> NUMBER | STRING | "false" | "true" |
             | "(" expression ")"
             | XXX error productions                                          */
 {
-    if (tok_matches(par, TOK_INTEGER))
+    if (tok_matches(par, TOK_INTEGER) || tok_matches(par, TOK_STRING) ||
+        tok_matches(par, TOK_FALSE) || tok_matches(par, TOK_TRUE))
     {
         return exp_new_literal(par->prev_tok);
     }
@@ -203,7 +202,7 @@ primary(struct par_state* par)
         struct exp* exp = expression(par);
         if (!tok_matches(par, TOK_PAREN_RIGHT))
         {
-            err_at_tok(par->lex.path, par->this_tok,
+            err_at_tok(par->path, par->this_tok,
                 "\n    Expected a closing paren, instead got `%s`.\n\n",
                 par->this_tok->lexeme);
             return NULL; /* Unreachable. */
@@ -213,8 +212,8 @@ primary(struct par_state* par)
     }
     else
     {
-        err_at_tok(par->lex.path, par->this_tok,
-            "\n    Expected number or paren, instead got `%s`.\n\n",
+        err_at_tok(par->path, par->this_tok,
+            "\n    Expected number, paren or keyword. Instead got `%s`.\n\n",
             par->this_tok->lexeme);
         return NULL; /* Unreachable. */
     }
@@ -320,18 +319,8 @@ exp_new_literal(struct tok* tok)
 {
     struct exp* exp = malloc(sizeof(struct exp));
 
-    switch (tok->type)
-    {
-        case TOK_INTEGER:
-            exp->type = EXP_LITERAL;
-            exp->data.literal = tok;
-            break;
-
-        default:
-            printf("Parser error:\n"
-                   "Literal expression received unexped token type\n");
-            exit(0);
-    }
+    exp->type = EXP_LITERAL;
+    exp->data.literal = tok;
 
     return exp;
 }
@@ -391,7 +380,12 @@ print_exp(struct exp* exp)
             break;
 
         case EXP_LITERAL:
-            printf("%s ", exp->data.literal->lexeme);
+            ;
+            struct tok* tok = exp->data.literal;
+            if (tok->type == TOK_STRING)
+                printf("\"%s\" ", exp->data.literal->lexeme);
+            else
+                printf("%s ", exp->data.literal->lexeme);
             break;
     }
 }
