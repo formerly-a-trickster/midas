@@ -8,6 +8,7 @@
 
 struct keyword keywords[] =
 {
+    { "var"  , 4, TOK_VAR     },
     { "false", 6, TOK_FALSE   },
     { "true" , 5, TOK_TRUE    },
     { "print", 6, TOK_PRINT   },
@@ -47,6 +48,7 @@ void
 lex_feed(struct lex_state* lex, const char* path)
 /* XXX ideally, the lexer would not have to keep track of actual files and
   would just be fed characters from an overarching structure.                */
+/* XXX this just segfaults on attempting to open a file that's not there     */
 {
     FILE* source = fopen(path, "r");
     lex->path = path;
@@ -208,12 +210,12 @@ identifier(struct lex_state* lex)
         char_next(lex);
 
     struct tok* tok = tok_new(lex, TOK_IDENTIFIER);
-    for (struct keyword* key = keywords; key->name != NULL; ++key)
+    for (struct keyword* keyw = keywords; keyw->name != NULL; ++keyw)
     {
-        if (tok->length == key->length &&
-            strcmp(tok->lexeme, key->name) == 0)
+        if (tok->length == keyw->length &&
+            strcmp(tok->lexeme, keyw->name) == 0)
         {
-            tok->type = key->type;
+            tok->type = keyw->type;
             break;
         }
     }

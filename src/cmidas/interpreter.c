@@ -1,3 +1,4 @@
+#include "hash.h"
 #include "utils.h"
 #include "error.h"
 #include "lexer.h"
@@ -11,7 +12,6 @@
 static void execute(struct intpr*, struct stm*);
 static struct val evaluate(struct intpr*, struct exp*);
 
-static void val_print(struct val);
 static struct val binary_op(struct intpr*, struct tok*, struct val, struct val);
 static struct val unary_op(struct intpr*, struct tok*, struct val);
 static bool val_equal(struct val, struct val);
@@ -23,6 +23,13 @@ static struct val val_div(struct intpr*, struct tok*, struct val, struct val);
 
 static struct val val_new(struct intpr*, struct tok*);
 static const char* val_type_str(enum val_type);
+
+struct intpr*
+intpr_new(void)
+{
+    struct intpr* intpr = malloc(sizeof(struct intpr));
+    intpr->globals = hash_new();
+}
 
 void
 interpret(struct intpr* intpr, const char* path)
@@ -50,6 +57,15 @@ execute(struct intpr* intpr, struct stm* stm)
             }
             break;
 
+        case STM_VAR_DECL:
+            ;
+            struct val* varval = malloc(sizeof(struct val));
+            *varval = evaluate(intpr, stm->data.var_decl.value);
+            hash_insert(intpr->globals,
+                        stm->data.var_decl.name->lexeme,
+                        varval);
+            break;
+
         case STM_EXPR_STMT:
             /* Evaluate and discard */
             evaluate(intpr, stm->data.expr.exp);
@@ -63,7 +79,7 @@ execute(struct intpr* intpr, struct stm* stm)
     }
 }
 
-static void
+void
 val_print(struct val val)
 {
     switch (val.type)

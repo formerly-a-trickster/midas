@@ -45,6 +45,7 @@ struct stm
     enum
     {
         STM_BLOCK,
+        STM_VAR_DECL,
         STM_EXPR_STMT,
         STM_PRINT
     } type;
@@ -52,6 +53,12 @@ struct stm
     union
     {
         struct stmlist* block;
+
+        struct
+        {
+            struct tok* name;
+            struct exp* value;
+        } var_decl;
 
         struct
         {

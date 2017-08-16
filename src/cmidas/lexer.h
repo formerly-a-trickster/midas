@@ -34,6 +34,7 @@ enum tok_type
     TOK_DOUBLE,
     TOK_STRING,
 
+    TOK_VAR,
     TOK_TRUE,
     TOK_FALSE,
     TOK_PRINT,

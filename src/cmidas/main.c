@@ -4,14 +4,12 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-void ast_file(const char* file);
-
 int main(int argc, const char* argv[])
 {
     if (argc == 2)
     {
-        struct intpr intpr;
-        interpret(&intpr, argv[1]);
+        struct intpr* intpr = intpr_new();
+        interpret(intpr, argv[1]);
     }
     else
         puts("Usage: cmidas file");

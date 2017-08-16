@@ -1,6 +1,7 @@
 #ifndef MD_interpreter_h_
 #define MD_interpreter_h_
 
+#include "hash.h"
 #include "lexer.h"
 #include "parser.h"
 
@@ -29,10 +30,13 @@ struct val
 
 struct intpr
 {
-    struct par_state par;
     const char* path;
+    struct hash* globals;
+    struct par_state par;
 };
 
+struct intpr* intpr_new(void);
 void interpret(struct intpr*, const char*);
+void val_print(struct val);
 
 #endif
