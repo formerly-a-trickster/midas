@@ -124,28 +124,47 @@ struct val
 evaluate(struct intpr* intpr, struct exp* exp)
 /* Take an expression and output a value                                     */
 {
+    struct val val;
+
     switch (exp->type)
     {
         case EXP_BINARY:
             ;
             struct val left = evaluate(intpr, exp->data.binary.left);
             struct val right = evaluate(intpr, exp->data.binary.right);
-            return binary_op(intpr, exp->data.binary.op, left, right);
+            val = binary_op(intpr, exp->data.binary.op, left, right);
+            break;
 
         case EXP_UNARY:
             ;
             struct val operand = evaluate(intpr, exp->data.unary.exp);
-            return unary_op(intpr, exp->data.unary.op, operand);
+            val = unary_op(intpr, exp->data.unary.op, operand);
+            break;
 
         case EXP_GROUP:
-            return evaluate(intpr, exp->data.group.exp);
+            val = evaluate(intpr, exp->data.group.exp);
+            break;
+
+        case EXP_VAR:
+            ;
+            struct tok* name = exp->data.name;
+            struct entry* entry = hash_search(intpr->globals, name->lexeme);
+            if (entry != NULL)
+                val = *(entry->val);
+            else
+                err_at_tok(intpr->path, name,
+                    "\n    `%s` is not declared in this scope."
+                    "\n    A varible needs to be declared prior to its "
+                        "usage.\n\n",
+                    name->lexeme);
+            break;
 
         case EXP_LITERAL:
-            return val_new(intpr, exp->data.literal);
-
-        default:
+            val = val_new(intpr, exp->data.literal);
             break;
     }
+
+    return val;
 }
 
 static struct val
@@ -638,19 +657,6 @@ val_new(struct intpr* intpr, struct tok* tok)
         case TOK_STRING:
             val.type = VAL_STRING;
             val.data.as_string = tok->lexeme;
-            break;
-
-        case TOK_IDENTIFIER:
-            ;
-            struct entry* entry = hash_search(intpr->globals, tok->lexeme);
-            if (entry != NULL)
-                val = *(entry->val);
-            else
-                err_at_tok(intpr->path, tok,
-                    "\n    `%s` is not declared in this scope."
-                    "\n    A varible needs to be declared prior to its "
-                        "usage.\n\n",
-                    tok->lexeme);
             break;
 
         case TOK_TRUE:

@@ -42,21 +42,22 @@ struct exp
 {
     enum
     {
-        EXP_ASSIGN,
+/*      EXP_ASSIGN,  */
         EXP_BINARY,
         EXP_UNARY,
         EXP_GROUP,
+        EXP_VAR,
         EXP_LITERAL
     } type;
 
     union
     {
-        struct
+/*      struct
         {
             struct tok* name;
             struct exp* exp;
         } assign;
-
+*/
         struct
         {
             struct tok* op;
@@ -76,6 +77,8 @@ struct exp
             struct tok* lparen;
             struct tok* rparen;
         } group;
+
+        struct tok* name;
 
         struct tok* literal;
     } data;

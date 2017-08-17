@@ -32,6 +32,7 @@ static struct stm* stm_new_expr_stmt(struct exp*, struct tok*);
 static struct exp* exp_new_binary(struct tok*, struct exp*, struct exp*);
 static struct exp* exp_new_unary(struct tok*, struct exp*);
 static struct exp* exp_new_group(struct exp*, struct tok*, struct tok*);
+static struct exp* exp_new_var(struct tok*);
 static struct exp* exp_new_literal(struct tok*);
 
 struct stm*
@@ -68,7 +69,7 @@ static struct stm*
 statement(struct par_state* par)
 /*  statement -> var_decl   ";"
                | print_stm  ";"
-               | expr_stmt  ";"                                               */
+               | expr_stmt  ";"                                              */
 {
     struct stm* stm;
 
@@ -135,12 +136,24 @@ expression(struct par_state* par)
 /*
 static struct exp*
 assignment(struct par_state* par)
-{}
-*/
+*  assignment -> equality ( "=" assignment )*                               *
+{
+    struct exp* left = equality(par);
+
+    if (tok_matches(TOK_EQUAL))
+    {
+        struct tok* eq = par->prev_tok;
+        struct exp* val = assignment();
+
+        if (left.type == EXP_LITERAL && 
+    }
+
+    return left;
+}*/
 
 static struct exp*
 equality(struct par_state* par)
-/*  equality -> ordering ( ( "!=" | "==" ) ordering )*                   */
+/*  equality -> ordering ( ( "!=" | "==" ) ordering )*                       */
 {
     struct exp* left = ordering(par);
 
@@ -190,7 +203,7 @@ addition(struct par_state* par)
 
 static struct exp*
 multiplication(struct par_state* par)
-/*  multiplication -> unary ( ( "/" | "*" ) unary )*                     */
+/*  multiplication -> unary ( ( "/" | "*" ) unary )*                         */
 {
     struct exp* left = unary(par);
 
@@ -221,12 +234,15 @@ unary(struct par_state* par)
 
 static struct exp*
 primary(struct par_state* par)
-/* primary -> INTEGER | DOUBLE | STRING | IDENTIFIER | "false" | "true" |
+/* primary -> IDENTIFIER
+            | INTEGER | DOUBLE | STRING | "false" | "true" |
             | "(" expression ")"
             | XXX error productions                                          */
 {
+    if (tok_matches(par, TOK_IDENTIFIER))
+        return exp_new_var(par->prev_tok);
     if (tok_matches(par, TOK_INTEGER) || tok_matches(par, TOK_DOUBLE) ||
-        tok_matches(par, TOK_STRING) || tok_matches(par, TOK_IDENTIFIER) ||
+        tok_matches(par, TOK_STRING) ||
         tok_matches(par, TOK_FALSE) || tok_matches(par, TOK_TRUE))
     {
         return exp_new_literal(par->prev_tok);
@@ -348,7 +364,7 @@ exp_new_unary(struct tok* op, struct exp* operand)
 
 static struct exp*
 exp_new_group(struct exp* group, struct tok* lparen, struct tok* rparen)
-// XXX group codepaths are neither used nor tested
+/* XXX group codepaths are neither used nor tested */
 {
     struct exp* exp = malloc(sizeof(struct exp));
 
@@ -356,6 +372,17 @@ exp_new_group(struct exp* group, struct tok* lparen, struct tok* rparen)
     exp->data.group.exp = group;
     exp->data.group.lparen = lparen;
     exp->data.group.rparen = rparen;
+
+    return exp;
+}
+
+static struct exp*
+exp_new_var(struct tok* tok)
+{
+    struct exp* exp = malloc(sizeof(struct exp));
+
+    exp->type = EXP_VAR;
+    exp->data.name = tok;
 
     return exp;
 }
