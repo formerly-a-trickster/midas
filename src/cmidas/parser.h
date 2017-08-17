@@ -42,7 +42,7 @@ struct exp
 {
     enum
     {
-/*      EXP_ASSIGN,  */
+        EXP_ASSIGN,
         EXP_BINARY,
         EXP_UNARY,
         EXP_GROUP,
@@ -52,12 +52,12 @@ struct exp
 
     union
     {
-/*      struct
+        struct
         {
             struct tok* name;
             struct exp* exp;
         } assign;
-*/
+
         struct
         {
             struct tok* op;

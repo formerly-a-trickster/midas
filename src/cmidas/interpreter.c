@@ -128,25 +128,40 @@ evaluate(struct intpr* intpr, struct exp* exp)
 
     switch (exp->type)
     {
+        case EXP_ASSIGN:
+        {
+            struct tok* name = exp->data.assign.name;
+            struct entry* entry = hash_search(intpr->globals, name->lexeme);
+            if (entry != NULL)
+            {
+                val = evaluate(intpr, exp->data.assign.exp);
+                *(entry->val) = val;
+            }
+            else
+                err_at_tok(intpr->path, name,
+                    "\n    Cannot assign to undeclared variable `%s`.\n\n",
+                    name->lexeme);
+        } break;
+
         case EXP_BINARY:
-            ;
+        {
             struct val left = evaluate(intpr, exp->data.binary.left);
             struct val right = evaluate(intpr, exp->data.binary.right);
             val = binary_op(intpr, exp->data.binary.op, left, right);
-            break;
+        } break;
 
         case EXP_UNARY:
-            ;
+        {
             struct val operand = evaluate(intpr, exp->data.unary.exp);
             val = unary_op(intpr, exp->data.unary.op, operand);
-            break;
+        } break;
 
         case EXP_GROUP:
             val = evaluate(intpr, exp->data.group.exp);
-            break;
+        break;
 
         case EXP_VAR:
-            ;
+        {
             struct tok* name = exp->data.name;
             struct entry* entry = hash_search(intpr->globals, name->lexeme);
             if (entry != NULL)
@@ -157,11 +172,11 @@ evaluate(struct intpr* intpr, struct exp* exp)
                     "\n    A varible needs to be declared prior to its "
                         "usage.\n\n",
                     name->lexeme);
-            break;
+        } break;
 
         case EXP_LITERAL:
             val = val_new(intpr, exp->data.literal);
-            break;
+        break;
     }
 
     return val;

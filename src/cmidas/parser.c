@@ -29,6 +29,7 @@ static struct stm* stm_new_var_decl(struct tok*, struct exp*);
 static struct stm* stm_new_print(struct exp*, struct tok*);
 static struct stm* stm_new_expr_stmt(struct exp*, struct tok*);
 
+static struct exp* exp_new_assign(struct tok*, struct exp*);
 static struct exp* exp_new_binary(struct tok*, struct exp*, struct exp*);
 static struct exp* exp_new_unary(struct tok*, struct exp*);
 static struct exp* exp_new_group(struct exp*, struct tok*, struct tok*);
@@ -130,26 +131,37 @@ static struct exp*
 expression(struct par_state* par)
 /*  expression -> assignment                                                 */
 {
-    return equality(par);
+    return assignment(par);
 }
 
-/*
 static struct exp*
 assignment(struct par_state* par)
-*  assignment -> equality ( "=" assignment )*                               *
+/* XXX having assignment be an expression simplifies the grammar, but puts us
+   in the situation of having an expression with a side effect. It would be
+   suited better to being a statement                                        */
+/*  assignment -> equality ( "=" assignment )*                               */
 {
     struct exp* left = equality(par);
 
-    if (tok_matches(TOK_EQUAL))
+    if (tok_matches(par, TOK_EQUAL))
     {
         struct tok* eq = par->prev_tok;
-        struct exp* val = assignment();
+        struct exp* exp = assignment(par);
 
-        if (left.type == EXP_LITERAL && 
+        if (left->type == EXP_VAR)
+        {
+            struct tok* varname = left->data.name;
+            free(left);
+            return exp_new_assign(varname, exp);
+        }
+        else
+            err_at_tok(par->path, eq,
+                "\n    Invalid assignment target. "
+                "Expected a variable name.\n\n");
     }
 
     return left;
-}*/
+}
 
 static struct exp*
 equality(struct par_state* par)
@@ -338,6 +350,18 @@ stm_new_print(struct exp* exp, struct tok* last)
 }
 
 static struct exp*
+exp_new_assign(struct tok* name, struct exp* value)
+{
+    struct exp* exp = malloc(sizeof(struct stm));
+
+    exp->type = EXP_ASSIGN;
+    exp->data.assign.name = name;
+    exp->data.assign.exp = value;
+
+    return exp;
+}
+
+static struct exp*
 exp_new_binary(struct tok* op, struct exp* left, struct exp* right)
 {
     struct exp* exp = malloc(sizeof(struct exp));
@@ -439,6 +463,12 @@ print_exp(struct exp* exp)
 {
     switch (exp->type)
     {
+        case EXP_ASSIGN:
+            printf("( assign %s ", exp->data.assign.name->lexeme);
+            print_exp(exp->data.assign.exp);
+            printf(") ");
+            break;
+
         case EXP_BINARY:
             printf("( %s ", exp->data.binary.op->lexeme);
             print_exp(exp->data.binary.left);
@@ -456,6 +486,10 @@ print_exp(struct exp* exp)
             printf("( ");
             print_exp(exp->data.group.exp);
             printf(") ");
+            break;
+
+        case EXP_VAR:
+            printf("%s ", exp->data.name->lexeme);
             break;
 
         case EXP_LITERAL:
