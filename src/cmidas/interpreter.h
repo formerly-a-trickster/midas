@@ -37,6 +37,5 @@ struct intpr
 
 struct intpr* intpr_new(void);
 void interpret(struct intpr*, const char*);
-void val_print(struct val);
 
 #endif

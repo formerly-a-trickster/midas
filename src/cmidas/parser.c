@@ -13,6 +13,7 @@ static struct stm* expr_stmt(struct par_state*);
 static struct stm* print(struct par_state*);
 
 static struct exp* expression(struct par_state*);
+static struct exp* assignment(struct par_state*);
 static struct exp* equality(struct par_state*);
 static struct exp* ordering(struct par_state*);
 static struct exp* addition(struct par_state*);
@@ -65,9 +66,9 @@ program(struct par_state* par)
 
 static struct stm*
 statement(struct par_state* par)
-/*  statement -> var_decl  ";"
-               | print_stm ";"
-               | expr_stmt ";"                                               */
+/*  statement -> var_decl   ";"
+               | print_stm  ";"
+               | expr_stmt  ";"                                               */
 {
     struct stm* stm;
 
@@ -80,7 +81,7 @@ statement(struct par_state* par)
 
     if (!tok_matches(par, TOK_SEMICOLON))
         err_at_tok(par->path, par->prev_tok,
-                   "\n    Missing semicolon after statement.\n\n");
+            "\n    Missing semicolon after statement.\n\n");
     else
         return stm;
 }
@@ -95,18 +96,15 @@ var_decl(struct par_state* par)
         if (tok_matches(par, TOK_EQUAL))
         {
             struct exp* value = expression(par);
-
             return stm_new_var_decl(name, value);
         }
         else
             err_at_tok(par->path, par->prev_tok,
-                       "\n    An equal sign should follow the variable's name."
-                       "\n\n");
+                "\n    An equal sign should follow the variable's name.\n\n");
     }
     else
         err_at_tok(par->path, par->prev_tok,
-                   "\n    A variable name should follow the `var` "
-                   "keyword.\n\n");
+            "\n    A variable name should follow the `var` keyword.\n\n");
 }
 
 static struct stm*
@@ -129,10 +127,16 @@ expr_stmt(struct par_state* par)
 
 static struct exp*
 expression(struct par_state* par)
-/*  expression -> equality                                                   */
+/*  expression -> assignment                                                 */
 {
     return equality(par);
 }
+
+/*
+static struct exp*
+assignment(struct par_state* par)
+{}
+*/
 
 static struct exp*
 equality(struct par_state* par)
@@ -217,12 +221,12 @@ unary(struct par_state* par)
 
 static struct exp*
 primary(struct par_state* par)
-/* primary -> INTEGER | DOUBLE | STRING | "false" | "true" |
+/* primary -> INTEGER | DOUBLE | STRING | IDENTIFIER | "false" | "true" |
             | "(" expression ")"
             | XXX error productions                                          */
 {
     if (tok_matches(par, TOK_INTEGER) || tok_matches(par, TOK_DOUBLE) ||
-        tok_matches(par, TOK_STRING) ||
+        tok_matches(par, TOK_STRING) || tok_matches(par, TOK_IDENTIFIER) ||
         tok_matches(par, TOK_FALSE) || tok_matches(par, TOK_TRUE))
     {
         return exp_new_literal(par->prev_tok);
@@ -282,37 +286,37 @@ stm_new_block(struct stmlist* block)
 }
 
 static struct stm*
-stm_new_var_decl(struct tok* name, struct exp* value)
+stm_new_var_decl(struct tok* name, struct exp* exp)
 {
     struct stm* stm = malloc(sizeof(struct stm));
 
     stm->type = STM_VAR_DECL;
     stm->data.var_decl.name = name;
-    stm->data.var_decl.value = value;
+    stm->data.var_decl.exp = exp;
 
     return stm;
 }
 
 static struct stm*
-stm_new_expr_stmt(struct exp* exp, struct tok* semi)
+stm_new_expr_stmt(struct exp* exp, struct tok* last)
 {
     struct stm* stm = malloc(sizeof(struct stm));
 
     stm->type = STM_EXPR_STMT;
     stm->data.expr.exp = exp;
-    stm->data.expr.semi = semi;
+    stm->data.expr.last = last;
 
     return stm;
 }
 
 static struct stm*
-stm_new_print(struct exp* exp, struct tok* semi)
+stm_new_print(struct exp* exp, struct tok* last)
 {
     struct stm* stm = malloc(sizeof(struct stm));
 
     stm->type = STM_PRINT;
     stm->data.print.exp = exp;
-    stm->data.print.semi = semi;
+    stm->data.print.last = last;
 
     return stm;
 }
@@ -385,7 +389,7 @@ print_stm(struct stm* stm)
 
         case STM_VAR_DECL:
             printf("[ %s = ", stm->data.var_decl.name->lexeme);
-            print_exp(stm->data.var_decl.value);
+            print_exp(stm->data.var_decl.exp);
             printf("]\n");
             break;
 

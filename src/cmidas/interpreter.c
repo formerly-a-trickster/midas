@@ -10,8 +10,10 @@
 #include <string.h>
 
 static void execute(struct intpr*, struct stm*);
-static struct val evaluate(struct intpr*, struct exp*);
+static void var_decl(struct intpr*, struct tok*, struct val*);
+static void val_print(struct val);
 
+static struct val evaluate(struct intpr*, struct exp*);
 static struct val binary_op(struct intpr*, struct tok*, struct val, struct val);
 static struct val unary_op(struct intpr*, struct tok*, struct val);
 static bool val_equal(struct val, struct val);
@@ -60,10 +62,8 @@ execute(struct intpr* intpr, struct stm* stm)
         case STM_VAR_DECL:
             ;
             struct val* varval = malloc(sizeof(struct val));
-            *varval = evaluate(intpr, stm->data.var_decl.value);
-            hash_insert(intpr->globals,
-                        stm->data.var_decl.name->lexeme,
-                        varval);
+            *varval = evaluate(intpr, stm->data.var_decl.exp);
+            var_decl(intpr, stm->data.var_decl.name, varval);
             break;
 
         case STM_EXPR_STMT:
@@ -79,7 +79,21 @@ execute(struct intpr* intpr, struct stm* stm)
     }
 }
 
-void
+static void
+var_decl(struct intpr* intpr, struct tok* name, struct val* val)
+{
+    struct entry* existing = hash_search(intpr->globals, name->lexeme);
+    if (existing == NULL)
+        hash_insert(intpr->globals, name->lexeme, val);
+    else
+        err_at_tok(intpr->path, name,
+            "\n    `%s` is already declared in this scope."
+            "\n    Use assigment if you want to change the variable's value."
+            "\n    Use a different name if you want to declare a new variable."
+            "\n\n", name->lexeme);
+}
+
+static void
 val_print(struct val val)
 {
     switch (val.type)
@@ -318,8 +332,7 @@ val_greater(struct intpr* intpr, struct tok* tok,
     }
 
     err_at_tok(intpr->path, tok,
-        "\n    Tried to compare unorderable types "
-        "`%s` and `%s`.\n\n",
+        "\n    Tried to compare unorderable types `%s` and `%s`.\n\n",
         val_type_str(left.type), val_type_str(right.type));
 }
 
@@ -611,16 +624,6 @@ val_new(struct intpr* intpr, struct tok* tok)
 
     switch (tok->type)
     {
-        case TOK_TRUE:
-            val.type = VAL_BOOLEAN;
-            val.data.as_bool = true;
-            break;
-
-        case TOK_FALSE:
-            val.type = VAL_BOOLEAN;
-            val.data.as_bool = false;
-            break;
-
         case TOK_INTEGER:
             val.type = VAL_INTEGER;
             /* XXX this will silently fail for large enough numbers */
@@ -635,6 +638,29 @@ val_new(struct intpr* intpr, struct tok* tok)
         case TOK_STRING:
             val.type = VAL_STRING;
             val.data.as_string = tok->lexeme;
+            break;
+
+        case TOK_IDENTIFIER:
+            ;
+            struct entry* entry = hash_search(intpr->globals, tok->lexeme);
+            if (entry != NULL)
+                val = *(entry->val);
+            else
+                err_at_tok(intpr->path, tok,
+                    "\n    `%s` is not declared in this scope."
+                    "\n    A varible needs to be declared prior to its "
+                        "usage.\n\n",
+                    tok->lexeme);
+            break;
+
+        case TOK_TRUE:
+            val.type = VAL_BOOLEAN;
+            val.data.as_bool = true;
+            break;
+
+        case TOK_FALSE:
+            val.type = VAL_BOOLEAN;
+            val.data.as_bool = false;
             break;
 
         default:

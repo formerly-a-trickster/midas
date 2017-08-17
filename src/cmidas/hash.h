@@ -31,7 +31,7 @@ struct entry
 
 struct hash* hash_new(void);
 void hash_insert(struct hash*, const char*, struct val*);
-struct val* hash_get(struct hash*, const char*);
+struct entry* hash_search(struct hash*, const char*);
 void hash_print(struct hash*);
 
 #endif

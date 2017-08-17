@@ -4,10 +4,45 @@
 #include "utils.h"
 #include "lexer.h"
 
+struct stm
+{
+    enum
+    {
+        STM_BLOCK,
+        STM_VAR_DECL,
+        STM_EXPR_STMT,
+        STM_PRINT
+    } type;
+
+    union
+    {
+        struct stmlist* block;
+
+        struct
+        {
+            struct tok* name;
+            struct exp* exp;
+        } var_decl;
+
+        struct
+        {
+            struct exp* exp;
+            struct tok* last;
+        } expr;
+
+        struct
+        {
+            struct exp* exp;
+            struct tok* last;
+        } print;
+    } data;
+};
+
 struct exp
 {
     enum
     {
+        EXP_ASSIGN,
         EXP_BINARY,
         EXP_UNARY,
         EXP_GROUP,
@@ -16,6 +51,12 @@ struct exp
 
     union
     {
+        struct
+        {
+            struct tok* name;
+            struct exp* exp;
+        } assign;
+
         struct
         {
             struct tok* op;
@@ -37,40 +78,6 @@ struct exp
         } group;
 
         struct tok* literal;
-    } data;
-};
-
-struct stm
-{
-    enum
-    {
-        STM_BLOCK,
-        STM_VAR_DECL,
-        STM_EXPR_STMT,
-        STM_PRINT
-    } type;
-
-    union
-    {
-        struct stmlist* block;
-
-        struct
-        {
-            struct tok* name;
-            struct exp* value;
-        } var_decl;
-
-        struct
-        {
-            struct exp* exp;
-            struct tok* semi;
-        } expr;
-
-        struct
-        {
-            struct exp* exp;
-            struct tok* semi;
-        } print;
     } data;
 };
 
