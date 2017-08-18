@@ -1,7 +1,6 @@
 #ifndef MD_hash_h_
 #define MD_hash_h_
 
-struct hash
 /* An open adressing hash table. Collisions are solved with Robin Hood hashing.
    Catastrophic linear pileup is averted by setting a threshold on the number
    of linear probes an insertion operation can do before the table needs to be
@@ -14,23 +13,20 @@ struct hash
    rows 32 to 36. Coupled with the fact that the threshold on probing is
    precisely the number of slack rows, this means we can skip bounds checking
    when inserting.                                                           */
-{
-    struct entry **table;
-    int size;
-    int slack;
-};
 
-struct entry
-{
-    const char *key;
-    void *val;
-    int dist;
-};
+#define T Hash_T
 
-struct hash  *hash_new   (void);
-void          hash_insert(struct hash *, const char *, void *);
-struct entry *hash_search(struct hash *, const char *);
-void          hash_print (struct hash *);
+typedef struct T *T;
+
+extern    T  Hash_new(void);
+extern void *Hash_set(T hash, const char *key, void *val);
+extern void *Hash_get(T hash, const char *key);
+/*
+extern void *Hash_del(T hash, const char *key);
+extern void  Hash_map(T hash, const char *key);
+*/
+
+#undef T
 
 #endif
 

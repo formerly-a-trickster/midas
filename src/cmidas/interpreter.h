@@ -31,7 +31,7 @@ struct val
 struct intpr
 {
     const  char *path;
-    struct hash *globals;
+    Hash_T       globals;
     struct par_state par;
 };
 

@@ -1,50 +1,146 @@
-#include "hash.h"
-#include "interpreter.h"
-
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "hash.h"
 
-static unsigned long hash_fun(const char *);
-static struct entry *entry_new(const char *, void *);
-static void hash_insert_entry(struct hash *, struct entry *);
-static void hash_enlarge(struct hash *);
+#define T Hash_T
 
-struct hash *
-hash_new(void)
+struct T
 {
-    struct hash *hash = malloc(sizeof(struct hash));
-    hash->size = 2;
+    struct row
+    {
+        const char *key;
+        void *val;
+        int dist;
+    } **table;
+
+    int size;
+    int slack;
+};
+
+static    struct row *Hash_get_row(T hash, const char *key);
+static          void  Hash_insert (T hash, struct row *row);
+static unsigned long  Hash_fun    (const char *key);
+static          void  Hash_grow   (T hash);
+
+T
+Hash_new(void)
+{
+    T hash = malloc(sizeof(struct Hash_T));
+    hash->size  = 2;
     hash->slack = 1;
-    hash->table = malloc(sizeof(struct entry) * 3);
+    hash->table = malloc(sizeof(struct row) * 3);
 
     return hash;
 }
 
-void
-hash_insert(struct hash *hash, const char *key, void *val)
+void *
+Hash_set(T hash, const char *key, void *val)
 {
-    struct entry *entry = entry_new(key, val);
-    hash_insert_entry(hash, entry);
+    struct row *row;
+    void *prev_val;
+
+    prev_val = NULL;
+    row = Hash_get_row(hash, key);
+
+    if (row == NULL)
+    {
+        row = malloc(sizeof(struct row));
+        row->key  = key;
+        row->val  = val;
+        row->dist = 0;
+        Hash_insert(hash, row);
+    }
+    else
+    {
+        prev_val = row->val;
+        row->val = val;
+    }
+
+    return prev_val;
 }
 
-struct entry *
-hash_search(struct hash *hash, const char *key)
+void *
+Hash_get(T hash, const char *key)
 {
-    unsigned long hkey = hash_fun(key) % hash->size;
-    struct entry *cell = hash->table[hkey];
-    unsigned long len = hash->size + hash->slack;
+    struct row* row;
 
-    for (; hkey < len && cell != NULL; ++hkey, cell = hash->table[hkey])
+    row = Hash_get_row(hash, key);
+
+    if (row != NULL)
+        return row->val;
+    else
+        return NULL;
+}
+
+static struct row *
+Hash_get_row(T hash, const char *key)
+{
+    unsigned long hkey;
+    struct row *row;
+    int probes;
+
+    for
+    (
+        hkey = Hash_fun(key) % hash->size,
+        row = hash->table[hkey],
+        probes = 0;
+
+        probes < hash->slack && row != NULL;
+
+        ++hkey,
+        ++probes,
+        row = hash->table[hkey]
+    )
     {
-        if (strcmp(cell->key, key) == 0)
-            return cell;
+        if (strcmp(row->key, key) == 0)
+            return row;
     }
+
     return NULL;
 }
 
+void
+Hash_insert(T hash, struct row *row)
+{
+    unsigned long hkey;
+    int probes;
+    struct row *temp;
+
+    for
+    (
+        hkey = Hash_fun(row->key) % hash->size,
+        probes = 0,
+        row->dist = 0;
+
+        ;
+
+        ++hkey,
+        ++probes,
+        ++row->dist
+    )
+    {
+        if (probes > hash->slack)
+        {
+            Hash_grow(hash);
+            Hash_insert(hash, row);
+            break;
+        }
+        else if (hash->table[hkey] == NULL)
+        {
+            hash->table[hkey] = row;
+            break;
+        }
+        else if (hash->table[hkey]->dist < probes)
+        {
+            temp = hash->table[hkey];
+            hash->table[hkey] = row;
+            row = temp;
+        }
+    }
+}
+
 static unsigned long
-hash_fun(const char *key)
+Hash_fun(const char *key)
 {
     unsigned long hash = 5381;
     int c;
@@ -55,68 +151,28 @@ hash_fun(const char *key)
     return hash;
 }
 
-static struct entry *
-entry_new(const char *key, void *val)
-{
-    struct entry *entry = malloc(sizeof(struct entry));
-    entry->dist = 0;
-    entry->key = key;
-    entry->val = val;
-
-    return entry;
-}
-
 static void
-hash_insert_entry(struct hash *hash, struct entry *entry)
+Hash_grow(T hash)
 {
-    unsigned long hkey;
-    int probes;
-    for
-    (
-        hkey = hash_fun(entry->key) % hash->size,
-        probes = 0,
-        entry->dist = 0;
-        ;
-        ++hkey,
-        ++probes,
-        ++entry->dist
-    )
-    {
-        if (probes > hash->slack)
-        {
-            hash_enlarge(hash);
-            hash_insert_entry(hash, entry);
-            break;
-        }
-        else if (hash->table[hkey] == NULL)
-        {
-            hash->table[hkey] = entry;
-            break;
-        }
-        else if (hash->table[hkey]->dist < probes)
-        {
-            struct entry *temp = hash->table[hkey];
-            hash->table[hkey] = entry;
-            entry = temp;
-        }
-    }
-}
+    struct row **old_table;
+    int old_size;
+    int old_slack;
+    int i;
 
-static void
-hash_enlarge(struct hash *hash)
-{
-    struct entry **old_table = hash->table;
-    int old_size = hash->size;
-    int old_slack = hash->slack;
-    hash->size *= 2;
+    old_table = hash->table;
+    old_size  = hash->size;
+    old_slack = hash->slack;
+    hash->size  *= 2;
     hash->slack += 1;
-    hash->table = malloc(sizeof(struct entry) * (hash->size + hash->slack));
+    hash->table = malloc(sizeof(struct row) * (hash->size + hash->slack));
 
-    for (int i = 0; i < old_size + old_slack; ++i)
+    for (i = 0; i < old_size + old_slack; ++i)
     {
         if (old_table[i] != NULL)
-            hash_insert_entry(hash, old_table[i]);
+            Hash_insert(hash, old_table[i]);
     }
     free(old_table);
 }
+
+#undef T
 

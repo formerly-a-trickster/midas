@@ -30,7 +30,7 @@ struct intpr *
 intpr_new(void)
 {
     struct intpr *intpr = malloc(sizeof(struct intpr));
-    intpr->globals = hash_new();
+    intpr->globals = Hash_new();
 }
 
 void
@@ -49,7 +49,7 @@ execute(struct intpr *intpr, struct stm *stm)
     switch (stm->type)
     {
         case STM_BLOCK:
-            ;
+        {
             struct list *list = stm->data.block;
             struct node *node = list->nil;
             for (int i = 0; i < list->length; ++i)
@@ -57,35 +57,33 @@ execute(struct intpr *intpr, struct stm *stm)
                 node = node->next;
                 execute(intpr, node->data);
             }
-            break;
+        } break;
 
         case STM_VAR_DECL:
-            ;
+        {
             struct val *varval = malloc(sizeof(struct val));
             *varval = evaluate(intpr, stm->data.var_decl.exp);
             var_decl(intpr, stm->data.var_decl.name, varval);
-            break;
+        } break;
 
         case STM_EXPR_STMT:
             /* Evaluate and discard */
             evaluate(intpr, stm->data.expr.exp);
-            break;
+        break;
 
         case STM_PRINT:
-            ;
+        {
             struct val val = evaluate(intpr, stm->data.print.exp);
             val_print(val);
-            break;
+        } break;
     }
 }
 
 static void
 var_decl(struct intpr *intpr, struct tok *name, struct val *val)
 {
-    struct entry *existing = hash_search(intpr->globals, name->lexeme);
-    if (existing == NULL)
-        hash_insert(intpr->globals, name->lexeme, val);
-    else
+    struct val *prev = Hash_set(intpr->globals, name->lexeme, val);
+    if (prev != NULL)
         err_at_tok(intpr->path, name,
             "\n    `%s` is already declared in this scope."
             "\n    Use assigment if you want to change the variable's value."
@@ -103,19 +101,19 @@ val_print(struct val val)
                 printf("true");
             else
                 printf("false");
-            break;
+        break;
 
         case VAL_INTEGER:
             printf("%li", val.data.as_long);
-            break;
+        break;
 
         case VAL_DOUBLE:
             printf("%f", val.data.as_double);
-            break;
+        break;
 
         case VAL_STRING:
             printf("%s", val.data.as_string);
-            break;
+        break;
     }
     putchar('\n');
 }
@@ -130,14 +128,18 @@ evaluate(struct intpr *intpr, struct exp *exp)
     {
         case EXP_ASSIGN:
         {
-            struct tok *name = exp->data.assign.name;
-            struct entry *entry = hash_search(intpr->globals, name->lexeme);
-            if (entry != NULL)
-            {
-                val = evaluate(intpr, exp->data.assign.exp);
-                *(struct val*)entry->val = val;
-            }
-            else
+            struct tok *name;
+            struct val *valp, *prev;
+
+            name = exp->data.assign.name;
+            val = evaluate(intpr, exp->data.assign.exp);
+
+            valp = malloc(sizeof(struct val));
+            *valp = val;
+
+            /* XXX should deallocate prev value */
+            prev = Hash_set(intpr->globals, name->lexeme, valp);
+            if (prev == NULL)
                 err_at_tok(intpr->path, name,
                     "\n    Cannot assign to undeclared variable `%s`.\n\n",
                     name->lexeme);
@@ -145,14 +147,18 @@ evaluate(struct intpr *intpr, struct exp *exp)
 
         case EXP_BINARY:
         {
-            struct val left = evaluate(intpr, exp->data.binary.left);
-            struct val right = evaluate(intpr, exp->data.binary.right);
+            struct val left, right;
+
+            left = evaluate(intpr, exp->data.binary.left);
+            right = evaluate(intpr, exp->data.binary.right);
             val = binary_op(intpr, exp->data.binary.op, left, right);
         } break;
 
         case EXP_UNARY:
         {
-            struct val operand = evaluate(intpr, exp->data.unary.exp);
+            struct val operand;
+
+            operand = evaluate(intpr, exp->data.unary.exp);
             val = unary_op(intpr, exp->data.unary.op, operand);
         } break;
 
@@ -162,10 +168,13 @@ evaluate(struct intpr *intpr, struct exp *exp)
 
         case EXP_VAR:
         {
-            struct tok *name = exp->data.name;
-            struct entry *entry = hash_search(intpr->globals, name->lexeme);
-            if (entry != NULL)
-                val = *(struct val*)entry->val;
+            struct tok *name;
+            struct val *valp;
+
+            name = exp->data.name;
+            valp = Hash_get(intpr->globals, name->lexeme);
+            if (valp != NULL)
+                val = *valp;
             else
                 err_at_tok(intpr->path, name,
                     "\n    `%s` is not declared in this scope."
