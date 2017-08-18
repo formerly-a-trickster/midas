@@ -6,7 +6,7 @@
 #include <string.h>
 
 static unsigned long hash_fun(const char*);
-static struct entry* entry_new(const char*, struct val*);
+static struct entry* entry_new(const char*, void*);
 static void hash_insert_entry(struct hash*, struct entry*);
 static void hash_enlarge(struct hash*);
 
@@ -22,7 +22,7 @@ hash_new(void)
 }
 
 void
-hash_insert(struct hash* hash, const char* key, struct val* val)
+hash_insert(struct hash* hash, const char* key, void* val)
 {
     struct entry* entry = entry_new(key, val);
     hash_insert_entry(hash, entry);
@@ -56,7 +56,7 @@ hash_fun(const char* key)
 }
 
 static struct entry*
-entry_new(const char* key, struct val* val)
+entry_new(const char* key, void* val)
 {
     struct entry* entry = malloc(sizeof(struct entry));
     entry->dist = 0;

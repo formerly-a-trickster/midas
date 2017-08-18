@@ -1,8 +1,6 @@
 #ifndef MD_hash_h_
 #define MD_hash_h_
 
-#include "interpreter.h"
-
 struct hash
 /* An open adressing hash table. Collisions are solved with Robin Hood hashing.
    Catastrophic linear pileup is averted by setting a threshold on the number
@@ -25,12 +23,12 @@ struct hash
 struct entry
 {
     const char* key;
-    struct val* val;
+    void* val;
     int dist;
 };
 
 struct hash* hash_new(void);
-void hash_insert(struct hash*, const char*, struct val*);
+void hash_insert(struct hash*, const char*, void*);
 struct entry* hash_search(struct hash*, const char*);
 void hash_print(struct hash*);
 

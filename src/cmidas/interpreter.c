@@ -135,7 +135,7 @@ evaluate(struct intpr* intpr, struct exp* exp)
             if (entry != NULL)
             {
                 val = evaluate(intpr, exp->data.assign.exp);
-                *(entry->val) = val;
+                *(struct val*)entry->val = val;
             }
             else
                 err_at_tok(intpr->path, name,
@@ -165,7 +165,7 @@ evaluate(struct intpr* intpr, struct exp* exp)
             struct tok* name = exp->data.name;
             struct entry* entry = hash_search(intpr->globals, name->lexeme);
             if (entry != NULL)
-                val = *(entry->val);
+                val = *(struct val*)entry->val;
             else
                 err_at_tok(intpr->path, name,
                     "\n    `%s` is not declared in this scope."
