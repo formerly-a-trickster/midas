@@ -1,5 +1,5 @@
 #include "hash.h"
-#include "utils.h"
+#include "list.h"
 #include "error.h"
 #include "lexer.h"
 #include "parser.h"
@@ -50,8 +50,8 @@ execute(struct intpr* intpr, struct stm* stm)
     {
         case STM_BLOCK:
             ;
-            struct stmlist* list = stm->data.block;
-            struct stmnode* node = list->nil;
+            struct list* list = stm->data.block;
+            struct node* node = list->nil;
             for (int i = 0; i < list->length; ++i)
             {
                 node = node->next;

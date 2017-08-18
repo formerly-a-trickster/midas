@@ -1,7 +1,7 @@
 #ifndef MD_parser_h_
 #define MD_parser_h_
 
-#include "utils.h"
+#include "list.h"
 #include "lexer.h"
 
 struct stm
@@ -16,7 +16,7 @@ struct stm
 
     union
     {
-        struct stmlist* block;
+        struct list* block;
 
         struct
         {

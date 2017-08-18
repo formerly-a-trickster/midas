@@ -1,5 +1,5 @@
 #include "error.h"
-#include "utils.h"
+#include "list.h"
 #include "lexer.h"
 #include "parser.h"
 
@@ -24,7 +24,7 @@ static struct exp* primary(struct par_state*);
 static struct tok* tok_next(struct par_state*);
 static bool tok_matches(struct par_state*, enum tok_type);
 
-static struct stm* stm_new_block(struct stmlist*);
+static struct stm* stm_new_block(struct list*);
 static struct stm* stm_new_var_decl(struct tok*, struct exp*);
 static struct stm* stm_new_print(struct exp*, struct tok*);
 static struct stm* stm_new_expr_stmt(struct exp*, struct tok*);
@@ -54,13 +54,13 @@ static struct stm*
 program(struct par_state* par)
 /*  program -> statement* "EOF"                                              */
 {
-    struct stmlist* program = stmlist_new();
+    struct list* program = list_new();
     /* XXX if we would have used !tok_matches(par, TOK_EOF), we would force the
        lexer to read beyond the EOF upon finally matching it */
     while(par->this_tok->type != TOK_EOF)
     {
         struct stm* stm = statement(par);
-        stmlist_append(program, stm);
+        list_append(program, stm);
     }
 
     return stm_new_block(program);
@@ -303,7 +303,7 @@ tok_matches(struct par_state* par, enum tok_type type)
 }
 
 static struct stm*
-stm_new_block(struct stmlist* block)
+stm_new_block(struct list* block)
 {
     struct stm* stm = malloc(sizeof(struct stm));
 
@@ -429,8 +429,8 @@ print_stm(struct stm* stm)
     {
         case STM_BLOCK:
             ;
-            struct stmlist* list = stm->data.block;
-            struct stmnode* node = list->nil;
+            struct list* list = stm->data.block;
+            struct node* node = list->nil;
             for (int i = 0; i < list->length; ++i)
             {
                 node = node->next;

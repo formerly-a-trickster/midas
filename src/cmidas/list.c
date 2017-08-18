@@ -1,15 +1,15 @@
-#include "utils.h"
+#include "list.h"
 
 #include <stdlib.h>
 
-struct stmlist*
-stmlist_new(void)
+struct list*
+list_new(void)
 {
-    struct stmnode* nil = malloc(sizeof(struct stmnode));
+    struct node* nil = malloc(sizeof(struct node));
     nil->next = nil;
     nil->prev = nil;
 
-    struct stmlist* list = malloc(sizeof(struct stmlist));
+    struct list* list = malloc(sizeof(struct list));
     list->nil = nil;
     list->length = 0;
 
@@ -17,9 +17,9 @@ stmlist_new(void)
 }
 
 void
-stmlist_prepend(struct stmlist* list, struct stm* data)
+list_prepend(struct list* list, void* data)
 {
-    struct stmnode* node = malloc(sizeof(struct stmnode));
+    struct node* node = malloc(sizeof(struct node));
     node->data = data;
 
     node->next = list->nil->next;
@@ -31,9 +31,9 @@ stmlist_prepend(struct stmlist* list, struct stm* data)
 }
 
 void
-stmlist_append(struct stmlist* list, struct stm* data)
+list_append(struct list* list, void* data)
 {
-    struct stmnode* node = malloc(sizeof(struct stmnode));
+    struct node* node = malloc(sizeof(struct node));
     node->data = data;
 
     node->prev = list->nil->prev;
