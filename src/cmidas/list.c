@@ -2,14 +2,14 @@
 
 #include <stdlib.h>
 
-struct list*
+struct list *
 list_new(void)
 {
-    struct node* nil = malloc(sizeof(struct node));
+    struct node *nil = malloc(sizeof(struct node));
     nil->next = nil;
     nil->prev = nil;
 
-    struct list* list = malloc(sizeof(struct list));
+    struct list *list = malloc(sizeof(struct list));
     list->nil = nil;
     list->length = 0;
 
@@ -17,9 +17,9 @@ list_new(void)
 }
 
 void
-list_prepend(struct list* list, void* data)
+list_prepend(struct list *list, void *data)
 {
-    struct node* node = malloc(sizeof(struct node));
+    struct node *node = malloc(sizeof(struct node));
     node->data = data;
 
     node->next = list->nil->next;
@@ -31,9 +31,9 @@ list_prepend(struct list* list, void* data)
 }
 
 void
-list_append(struct list* list, void* data)
+list_append(struct list *list, void *data)
 {
-    struct node* node = malloc(sizeof(struct node));
+    struct node *node = malloc(sizeof(struct node));
     node->data = data;
 
     node->prev = list->nil->prev;

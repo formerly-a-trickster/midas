@@ -46,15 +46,15 @@ enum tok_type
 
 struct keyword
 {
-    const char* name;
+    const char *name;
     int length;
     enum tok_type type;
 };
 
 struct lex_state
 {
-    const char* path;        /* Path to file being currently parsed.         */
-    FILE* source;            /* Source file currently read.                  */
+    const char *path;        /* Path to file being currently parsed.         */
+    FILE *source;            /* Source file currently read.                  */
     char buffer[BUFFER_SIZE];/* Double buffered input from source.           */
     // XXX all of these could be unsigned short ints
     int index;               /* Location in the buffer; next char to be read.*/
@@ -67,15 +67,15 @@ struct lex_state
 struct tok
 {
     enum tok_type type;
-    const char* lexeme;
+    const char *lexeme;
     int length;
     int lineno;
     int colno;
 };
 
-void lex_init(struct lex_state*);
-void lex_feed(struct lex_state*, const char* source);
-struct tok* lex_get_tok(struct lex_state*);
-void print_tok(struct tok*);
+void        lex_init   (struct lex_state *);
+void        lex_feed   (struct lex_state *, const char *);
+struct tok *lex_get_tok(struct lex_state *);
+void        print_tok  (struct tok *);
 
 #endif

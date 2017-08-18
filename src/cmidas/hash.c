@@ -5,15 +5,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-static unsigned long hash_fun(const char*);
-static struct entry* entry_new(const char*, void*);
-static void hash_insert_entry(struct hash*, struct entry*);
-static void hash_enlarge(struct hash*);
+static unsigned long hash_fun(const char *);
+static struct entry *entry_new(const char *, void *);
+static void hash_insert_entry(struct hash *, struct entry *);
+static void hash_enlarge(struct hash *);
 
-struct hash*
+struct hash *
 hash_new(void)
 {
-    struct hash* hash = malloc(sizeof(struct hash));
+    struct hash *hash = malloc(sizeof(struct hash));
     hash->size = 2;
     hash->slack = 1;
     hash->table = malloc(sizeof(struct entry) * 3);
@@ -22,17 +22,17 @@ hash_new(void)
 }
 
 void
-hash_insert(struct hash* hash, const char* key, void* val)
+hash_insert(struct hash *hash, const char *key, void *val)
 {
-    struct entry* entry = entry_new(key, val);
+    struct entry *entry = entry_new(key, val);
     hash_insert_entry(hash, entry);
 }
 
-struct entry*
-hash_search(struct hash* hash, const char* key)
+struct entry *
+hash_search(struct hash *hash, const char *key)
 {
     unsigned long hkey = hash_fun(key) % hash->size;
-    struct entry* cell = hash->table[hkey];
+    struct entry *cell = hash->table[hkey];
     unsigned long len = hash->size + hash->slack;
 
     for (; hkey < len && cell != NULL; ++hkey, cell = hash->table[hkey])
@@ -44,7 +44,7 @@ hash_search(struct hash* hash, const char* key)
 }
 
 static unsigned long
-hash_fun(const char* key)
+hash_fun(const char *key)
 {
     unsigned long hash = 5381;
     int c;
@@ -55,10 +55,10 @@ hash_fun(const char* key)
     return hash;
 }
 
-static struct entry*
-entry_new(const char* key, void* val)
+static struct entry *
+entry_new(const char *key, void *val)
 {
-    struct entry* entry = malloc(sizeof(struct entry));
+    struct entry *entry = malloc(sizeof(struct entry));
     entry->dist = 0;
     entry->key = key;
     entry->val = val;
@@ -67,7 +67,7 @@ entry_new(const char* key, void* val)
 }
 
 static void
-hash_insert_entry(struct hash* hash, struct entry* entry)
+hash_insert_entry(struct hash *hash, struct entry *entry)
 {
     unsigned long hkey;
     int probes;
@@ -95,7 +95,7 @@ hash_insert_entry(struct hash* hash, struct entry* entry)
         }
         else if (hash->table[hkey]->dist < probes)
         {
-            struct entry* temp = hash->table[hkey];
+            struct entry *temp = hash->table[hkey];
             hash->table[hkey] = entry;
             entry = temp;
         }
@@ -103,9 +103,9 @@ hash_insert_entry(struct hash* hash, struct entry* entry)
 }
 
 static void
-hash_enlarge(struct hash* hash)
+hash_enlarge(struct hash *hash)
 {
-    struct entry** old_table = hash->table;
+    struct entry **old_table = hash->table;
     int old_size = hash->size;
     int old_slack = hash->slack;
     hash->size *= 2;

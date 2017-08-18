@@ -15,22 +15,22 @@ struct hash
    precisely the number of slack rows, this means we can skip bounds checking
    when inserting.                                                           */
 {
-    struct entry** table;
+    struct entry **table;
     int size;
     int slack;
 };
 
 struct entry
 {
-    const char* key;
-    void* val;
+    const char *key;
+    void *val;
     int dist;
 };
 
-struct hash* hash_new(void);
-void hash_insert(struct hash*, const char*, void*);
-struct entry* hash_search(struct hash*, const char*);
-void hash_print(struct hash*);
+struct hash  *hash_new   (void);
+void          hash_insert(struct hash *, const char *, void *);
+struct entry *hash_search(struct hash *, const char *);
+void          hash_print (struct hash *);
 
 #endif
 

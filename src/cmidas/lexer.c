@@ -15,26 +15,26 @@ struct keyword keywords[] =
     { NULL   , 0, ERR_UNKNOWN }
 };
 
-static struct tok* tok_new(struct lex_state*, enum tok_type);
-static struct tok* identifier(struct lex_state*);
-static struct tok* number(struct lex_state*);
-static struct tok* string(struct lex_state*);
+static struct tok *tok_new(struct lex_state *, enum tok_type);
+static struct tok *identifier(struct lex_state *);
+static struct tok *number(struct lex_state *);
+static struct tok *string(struct lex_state *);
 
-static void buffer_chars(struct lex_state*);
-static char char_next(struct lex_state*);
-static char lookahead(struct lex_state*);
-static bool char_matches(struct lex_state*, const char);
+static void buffer_chars(struct lex_state *);
+static char char_next(struct lex_state *);
+static char lookahead(struct lex_state *);
+static bool char_matches(struct lex_state *, const char);
 
-static void skip_whitespace(struct lex_state*);
-static void skip_line(struct lex_state*);
+static void skip_whitespace(struct lex_state *);
+static void skip_line(struct lex_state *);
 
-static inline bool is_at_end(struct lex_state*);
+static inline bool is_at_end(struct lex_state *);
 static inline bool is_alpha(char);
 static inline bool is_numeric(char);
 static inline bool is_alpha_num(char);
 
 void
-lex_init(struct lex_state* lex)
+lex_init(struct lex_state *lex)
 {
     lex->source = NULL;
     lex->index = 0;
@@ -45,19 +45,19 @@ lex_init(struct lex_state* lex)
 }
 
 void
-lex_feed(struct lex_state* lex, const char* path)
+lex_feed(struct lex_state *lex, const char *path)
 /* XXX ideally, the lexer would not have to keep track of actual files and
   would just be fed characters from an overarching structure.                */
 /* XXX this just segfaults on attempting to open a file that's not there     */
 {
-    FILE* source = fopen(path, "r");
+    FILE *source = fopen(path, "r");
     lex->path = path;
     lex->source = source;
     buffer_chars(lex);
 }
 
-struct tok*
-lex_get_tok(struct lex_state* lex)
+struct tok *
+lex_get_tok(struct lex_state *lex)
 {
     skip_whitespace(lex);
     lex->tok_start = lex->index;
@@ -141,13 +141,13 @@ lex_get_tok(struct lex_state* lex)
     }
 }
 
-static struct tok*
-tok_new(struct lex_state* lex, enum tok_type type)
+static struct tok *
+tok_new(struct lex_state *lex, enum tok_type type)
 {
-    struct tok* tok = malloc(sizeof(struct tok));
+    struct tok *tok = malloc(sizeof(struct tok));
     const int start = lex->tok_start;
     const int end = lex->index;
-    char* lexeme;
+    char *lexeme;
 
     tok->type = type;
     tok->lineno = lex->lineno;
@@ -203,14 +203,14 @@ tok_new(struct lex_state* lex, enum tok_type type)
     return tok;
 }
 
-static struct tok*
-identifier(struct lex_state* lex)
+static struct tok *
+identifier(struct lex_state *lex)
 {
     while (is_alpha_num(lookahead(lex)))
         char_next(lex);
 
-    struct tok* tok = tok_new(lex, TOK_IDENTIFIER);
-    for (struct keyword* keyw = keywords; keyw->name != NULL; ++keyw)
+    struct tok *tok = tok_new(lex, TOK_IDENTIFIER);
+    for (struct keyword *keyw = keywords; keyw->name != NULL; ++keyw)
     {
         if (tok->length == keyw->length &&
             strcmp(tok->lexeme, keyw->name) == 0)
@@ -223,8 +223,8 @@ identifier(struct lex_state* lex)
     return tok;
 }
 
-static struct tok*
-number(struct lex_state* lex)
+static struct tok *
+number(struct lex_state *lex)
 {
     bool is_double = false;
 
@@ -252,21 +252,21 @@ number(struct lex_state* lex)
         return tok_new(lex, TOK_INTEGER);
 }
 
-static struct tok*
-string(struct lex_state* lex)
+static struct tok *
+string(struct lex_state *lex)
 {
     lex->tok_start = lex->index;
     while (lookahead(lex) != '"')
         char_next(lex);
 
-    struct tok* tok = tok_new(lex, TOK_STRING);
+    struct tok *tok = tok_new(lex, TOK_STRING);
     char_next(lex);
 
     return tok;
 }
 
 static void
-buffer_chars(struct lex_state* lex)
+buffer_chars(struct lex_state *lex)
 {
     const size_t bytes_read = fread(
         &lex->buffer[lex->index],
@@ -291,7 +291,7 @@ buffer_chars(struct lex_state* lex)
 }
 
 static char
-char_next(struct lex_state* lex)
+char_next(struct lex_state *lex)
 {
     const char char_next = lex->buffer[lex->index];
     /* XXX Nothing stops chars_lex from going negative and reading the same
@@ -305,13 +305,13 @@ char_next(struct lex_state* lex)
 }
 
 static char
-lookahead(struct lex_state* lex)
+lookahead(struct lex_state *lex)
 {
     return lex->buffer[lex->index];
 }
 
 static bool
-char_matches(struct lex_state* lex, const char c)
+char_matches(struct lex_state *lex, const char c)
 {
     if (is_at_end(lex))
         return false;
@@ -325,7 +325,7 @@ char_matches(struct lex_state* lex, const char c)
 }
 
 static void
-skip_whitespace(struct lex_state* lex)
+skip_whitespace(struct lex_state *lex)
 {
     char c;
     for (;;)
@@ -352,7 +352,7 @@ skip_whitespace(struct lex_state* lex)
 }
 
 static void
-skip_line(struct lex_state* lex)
+skip_line(struct lex_state *lex)
 {
     char c;
     for (;;)
@@ -377,7 +377,7 @@ skip_line(struct lex_state* lex)
 }
 
 static inline bool
-is_at_end(struct lex_state* lex)
+is_at_end(struct lex_state *lex)
 {
     return lex->buffer[lex->index] == '\0';
 }

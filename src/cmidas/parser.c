@@ -6,38 +6,38 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-static struct stm* program(struct par_state*);
-static struct stm* statement(struct par_state*);
-static struct stm* var_decl(struct par_state*);
-static struct stm* expr_stmt(struct par_state*);
-static struct stm* print(struct par_state*);
+static struct stm *program  (struct par_state *);
+static struct stm *statement(struct par_state *);
+static struct stm *var_decl (struct par_state *);
+static struct stm *expr_stmt(struct par_state *);
+static struct stm *print    (struct par_state *);
 
-static struct exp* expression(struct par_state*);
-static struct exp* assignment(struct par_state*);
-static struct exp* equality(struct par_state*);
-static struct exp* ordering(struct par_state*);
-static struct exp* addition(struct par_state*);
-static struct exp* multiplication(struct par_state*);
-static struct exp* unary(struct par_state*);
-static struct exp* primary(struct par_state*);
+static struct exp *expression    (struct par_state *);
+static struct exp *assignment    (struct par_state *);
+static struct exp *equality      (struct par_state *);
+static struct exp *ordering      (struct par_state *);
+static struct exp *addition      (struct par_state *);
+static struct exp *multiplication(struct par_state *);
+static struct exp *unary         (struct par_state *);
+static struct exp *primary       (struct par_state *);
 
-static struct tok* tok_next(struct par_state*);
-static bool tok_matches(struct par_state*, enum tok_type);
+static struct tok *tok_next   (struct par_state *);
+static bool        tok_matches(struct par_state *, enum tok_type);
 
-static struct stm* stm_new_block(struct list*);
-static struct stm* stm_new_var_decl(struct tok*, struct exp*);
-static struct stm* stm_new_print(struct exp*, struct tok*);
-static struct stm* stm_new_expr_stmt(struct exp*, struct tok*);
+static struct stm *stm_new_block    (struct list *);
+static struct stm *stm_new_var_decl (struct tok *, struct exp *);
+static struct stm *stm_new_print    (struct exp *, struct tok *);
+static struct stm *stm_new_expr_stmt(struct exp *, struct tok *);
 
-static struct exp* exp_new_assign(struct tok*, struct exp*);
-static struct exp* exp_new_binary(struct tok*, struct exp*, struct exp*);
-static struct exp* exp_new_unary(struct tok*, struct exp*);
-static struct exp* exp_new_group(struct exp*, struct tok*, struct tok*);
-static struct exp* exp_new_var(struct tok*);
-static struct exp* exp_new_literal(struct tok*);
+static struct exp *exp_new_assign (struct tok *, struct exp *);
+static struct exp *exp_new_binary (struct tok *, struct exp *, struct exp *);
+static struct exp *exp_new_unary  (struct tok *, struct exp *);
+static struct exp *exp_new_group  (struct exp *, struct tok *, struct tok *);
+static struct exp *exp_new_var    (struct tok *);
+static struct exp *exp_new_literal(struct tok *);
 
-struct stm*
-parse(struct par_state* par, const char* path)
+struct stm *
+parse(struct par_state *par, const char *path)
 {
     lex_init(&par->lex);
     par->path = path;
@@ -50,29 +50,29 @@ parse(struct par_state* par, const char* path)
     return program(par);
 }
 
-static struct stm*
-program(struct par_state* par)
+static struct stm *
+program(struct par_state *par)
 /*  program -> statement* "EOF"                                              */
 {
-    struct list* program = list_new();
+    struct list *program = list_new();
     /* XXX if we would have used !tok_matches(par, TOK_EOF), we would force the
        lexer to read beyond the EOF upon finally matching it */
     while(par->this_tok->type != TOK_EOF)
     {
-        struct stm* stm = statement(par);
+        struct stm *stm = statement(par);
         list_append(program, stm);
     }
 
     return stm_new_block(program);
 }
 
-static struct stm*
-statement(struct par_state* par)
+static struct stm *
+statement(struct par_state *par)
 /*  statement -> var_decl   ";"
                | print_stm  ";"
                | expr_stmt  ";"                                              */
 {
-    struct stm* stm;
+    struct stm *stm;
 
     if (tok_matches(par, TOK_VAR))
         stm = var_decl(par);
@@ -88,16 +88,16 @@ statement(struct par_state* par)
         return stm;
 }
 
-static struct stm*
-var_decl(struct par_state* par)
+static struct stm *
+var_decl(struct par_state *par)
 /*  var_decl -> ^var^ identifier "=" expression                              */
 {
     if (tok_matches(par, TOK_IDENTIFIER))
     {
-        struct tok* name = par->prev_tok;
+        struct tok *name = par->prev_tok;
         if (tok_matches(par, TOK_EQUAL))
         {
-            struct exp* value = expression(par);
+            struct exp *value = expression(par);
             return stm_new_var_decl(name, value);
         }
         else
@@ -109,48 +109,48 @@ var_decl(struct par_state* par)
             "\n    A variable name should follow the `var` keyword.\n\n");
 }
 
-static struct stm*
-print(struct par_state* par)
+static struct stm *
+print(struct par_state *par)
 /*  print_stm -> ^print^ expression                                          */
 {
-    struct exp* exp = expression(par);
+    struct exp *exp = expression(par);
 
     return stm_new_print(exp, par->prev_tok);
 }
 
-static struct stm*
-expr_stmt(struct par_state* par)
+static struct stm *
+expr_stmt(struct par_state *par)
 /*  expr_stmt -> expression                                                  */
 {
-    struct exp* exp = expression(par);
+    struct exp *exp = expression(par);
 
     return stm_new_expr_stmt(exp, par->prev_tok);
 }
 
-static struct exp*
-expression(struct par_state* par)
+static struct exp *
+expression(struct par_state *par)
 /*  expression -> assignment                                                 */
 {
     return assignment(par);
 }
 
-static struct exp*
-assignment(struct par_state* par)
+static struct exp *
+assignment(struct par_state *par)
 /* XXX having assignment be an expression simplifies the grammar, but puts us
    in the situation of having an expression with a side effect. It would be
    suited better to being a statement                                        */
 /*  assignment -> equality ( "=" assignment )*                               */
 {
-    struct exp* left = equality(par);
+    struct exp *left = equality(par);
 
     if (tok_matches(par, TOK_EQUAL))
     {
-        struct tok* eq = par->prev_tok;
-        struct exp* exp = assignment(par);
+        struct tok *eq = par->prev_tok;
+        struct exp *exp = assignment(par);
 
         if (left->type == EXP_VAR)
         {
-            struct tok* varname = left->data.name;
+            struct tok *varname = left->data.name;
             free(left);
             return exp_new_assign(varname, exp);
         }
@@ -163,89 +163,89 @@ assignment(struct par_state* par)
     return left;
 }
 
-static struct exp*
-equality(struct par_state* par)
+static struct exp *
+equality(struct par_state *par)
 /*  equality -> ordering ( ( "!=" | "==" ) ordering )*                       */
 {
-    struct exp* left = ordering(par);
+    struct exp *left = ordering(par);
 
     while (tok_matches(par, TOK_BANG_EQUAL) ||
            tok_matches(par, TOK_EQUAL_EQUAL))
     {
-        struct tok* op = par->prev_tok;
-        struct exp* right = ordering(par);
+        struct tok *op = par->prev_tok;
+        struct exp *right = ordering(par);
         left = exp_new_binary(op, left, right);
     }
 
     return left;
 }
 
-static struct exp*
-ordering(struct par_state* par)
+static struct exp *
+ordering(struct par_state *par)
 /*  ordering -> addition ( ( ">" | ">=" | "<" | "<=" ) addition)*          */
 {
-    struct exp* left = addition(par);
+    struct exp *left = addition(par);
 
     while (tok_matches(par, TOK_GREAT) || tok_matches(par, TOK_GREAT_EQUAL) ||
            tok_matches(par, TOK_LESS) || tok_matches(par, TOK_LESS_EQUAL))
     {
-        struct tok* op = par->prev_tok;
-        struct exp* right = addition(par);
+        struct tok *op = par->prev_tok;
+        struct exp *right = addition(par);
         left = exp_new_binary(op, left, right);
     }
 
     return left;
 }
 
-static struct exp*
-addition(struct par_state* par)
+static struct exp *
+addition(struct par_state *par)
 /*  addition -> multiplication ( ( "-" | "+" ) multiplication)*              */
 {
-    struct exp* left = multiplication(par);
+    struct exp *left = multiplication(par);
 
     while (tok_matches(par, TOK_MINUS) || tok_matches(par, TOK_PLUS))
     {
-        struct tok* op = par->prev_tok;
-        struct exp* right = multiplication(par);
+        struct tok *op = par->prev_tok;
+        struct exp *right = multiplication(par);
         left = exp_new_binary(op, left, right);
     }
 
     return left;
 }
 
-static struct exp*
-multiplication(struct par_state* par)
+static struct exp *
+multiplication(struct par_state *par)
 /*  multiplication -> unary ( ( "/" | "*" ) unary )*                         */
 {
-    struct exp* left = unary(par);
+    struct exp *left = unary(par);
 
     while (tok_matches(par, TOK_SLASH) || tok_matches(par, TOK_STAR))
     {
-        struct tok* op = par->prev_tok;
-        struct exp* right = unary(par);
+        struct tok *op = par->prev_tok;
+        struct exp *right = unary(par);
         left = exp_new_binary(op, left, right);
     }
 
     return left;
 }
 
-static struct exp*
-unary(struct par_state* par)
+static struct exp *
+unary(struct par_state *par)
 /*  unary -> ( ("!" | "-") unary )
            | primary                                                         */
 {
     if (tok_matches(par, TOK_BANG) || tok_matches(par, TOK_MINUS))
     {
-        struct tok* op = par->prev_tok;
-        struct exp* exp = unary(par);
+        struct tok *op = par->prev_tok;
+        struct exp *exp = unary(par);
         return exp_new_unary(op, exp);
     }
     else
         return primary(par);
 }
 
-static struct exp*
-primary(struct par_state* par)
+static struct exp *
+primary(struct par_state *par)
 /* primary -> IDENTIFIER
             | INTEGER | DOUBLE | STRING | "false" | "true" |
             | "(" expression ")"
@@ -261,7 +261,7 @@ primary(struct par_state* par)
     }
     else if (tok_matches(par, TOK_PAREN_LEFT))
     {
-        struct exp* exp = expression(par);
+        struct exp *exp = expression(par);
         if (!tok_matches(par, TOK_PAREN_RIGHT))
         {
             err_at_tok(par->path, par->this_tok,
@@ -281,8 +281,8 @@ primary(struct par_state* par)
     }
 }
 
-static struct tok*
-tok_next(struct par_state* par)
+static struct tok *
+tok_next(struct par_state *par)
 {
     par->prev_tok = par->this_tok;
     par->this_tok = lex_get_tok(&par->lex);
@@ -291,7 +291,7 @@ tok_next(struct par_state* par)
 }
 
 static bool
-tok_matches(struct par_state* par, enum tok_type type)
+tok_matches(struct par_state *par, enum tok_type type)
 {
     if (par->this_tok->type == type)
     {
@@ -302,10 +302,10 @@ tok_matches(struct par_state* par, enum tok_type type)
         return false;
 }
 
-static struct stm*
-stm_new_block(struct list* block)
+static struct stm *
+stm_new_block(struct list *block)
 {
-    struct stm* stm = malloc(sizeof(struct stm));
+    struct stm *stm = malloc(sizeof(struct stm));
 
     stm->type = STM_BLOCK;
     stm->data.block = block;
@@ -313,10 +313,10 @@ stm_new_block(struct list* block)
     return stm;
 }
 
-static struct stm*
-stm_new_var_decl(struct tok* name, struct exp* exp)
+static struct stm *
+stm_new_var_decl(struct tok *name, struct exp *exp)
 {
-    struct stm* stm = malloc(sizeof(struct stm));
+    struct stm *stm = malloc(sizeof(struct stm));
 
     stm->type = STM_VAR_DECL;
     stm->data.var_decl.name = name;
@@ -325,10 +325,10 @@ stm_new_var_decl(struct tok* name, struct exp* exp)
     return stm;
 }
 
-static struct stm*
-stm_new_expr_stmt(struct exp* exp, struct tok* last)
+static struct stm *
+stm_new_expr_stmt(struct exp *exp, struct tok *last)
 {
-    struct stm* stm = malloc(sizeof(struct stm));
+    struct stm *stm = malloc(sizeof(struct stm));
 
     stm->type = STM_EXPR_STMT;
     stm->data.expr.exp = exp;
@@ -337,10 +337,10 @@ stm_new_expr_stmt(struct exp* exp, struct tok* last)
     return stm;
 }
 
-static struct stm*
-stm_new_print(struct exp* exp, struct tok* last)
+static struct stm *
+stm_new_print(struct exp *exp, struct tok *last)
 {
-    struct stm* stm = malloc(sizeof(struct stm));
+    struct stm *stm = malloc(sizeof(struct stm));
 
     stm->type = STM_PRINT;
     stm->data.print.exp = exp;
@@ -349,10 +349,10 @@ stm_new_print(struct exp* exp, struct tok* last)
     return stm;
 }
 
-static struct exp*
-exp_new_assign(struct tok* name, struct exp* value)
+static struct exp *
+exp_new_assign(struct tok *name, struct exp *value)
 {
-    struct exp* exp = malloc(sizeof(struct stm));
+    struct exp *exp = malloc(sizeof(struct stm));
 
     exp->type = EXP_ASSIGN;
     exp->data.assign.name = name;
@@ -361,10 +361,10 @@ exp_new_assign(struct tok* name, struct exp* value)
     return exp;
 }
 
-static struct exp*
-exp_new_binary(struct tok* op, struct exp* left, struct exp* right)
+static struct exp *
+exp_new_binary(struct tok *op, struct exp *left, struct exp *right)
 {
-    struct exp* exp = malloc(sizeof(struct exp));
+    struct exp *exp = malloc(sizeof(struct exp));
 
     exp->type = EXP_BINARY;
     exp->data.binary.op = op;
@@ -374,10 +374,10 @@ exp_new_binary(struct tok* op, struct exp* left, struct exp* right)
     return exp;
 }
 
-static struct exp*
-exp_new_unary(struct tok* op, struct exp* operand)
+static struct exp *
+exp_new_unary(struct tok *op, struct exp *operand)
 {
-    struct exp* exp = malloc(sizeof(struct exp));
+    struct exp *exp = malloc(sizeof(struct exp));
 
     exp->type = EXP_UNARY;
     exp->data.unary.op = op;
@@ -386,11 +386,11 @@ exp_new_unary(struct tok* op, struct exp* operand)
     return exp;
 }
 
-static struct exp*
-exp_new_group(struct exp* group, struct tok* lparen, struct tok* rparen)
+static struct exp *
+exp_new_group(struct exp *group, struct tok *lparen, struct tok *rparen)
 /* XXX group codepaths are neither used nor tested */
 {
-    struct exp* exp = malloc(sizeof(struct exp));
+    struct exp *exp = malloc(sizeof(struct exp));
 
     exp->type = EXP_GROUP;
     exp->data.group.exp = group;
@@ -400,10 +400,10 @@ exp_new_group(struct exp* group, struct tok* lparen, struct tok* rparen)
     return exp;
 }
 
-static struct exp*
-exp_new_var(struct tok* tok)
+static struct exp *
+exp_new_var(struct tok *tok)
 {
-    struct exp* exp = malloc(sizeof(struct exp));
+    struct exp *exp = malloc(sizeof(struct exp));
 
     exp->type = EXP_VAR;
     exp->data.name = tok;
@@ -411,10 +411,10 @@ exp_new_var(struct tok* tok)
     return exp;
 }
 
-static struct exp*
-exp_new_literal(struct tok* tok)
+static struct exp *
+exp_new_literal(struct tok *tok)
 {
-    struct exp* exp = malloc(sizeof(struct exp));
+    struct exp *exp = malloc(sizeof(struct exp));
 
     exp->type = EXP_LITERAL;
     exp->data.literal = tok;
@@ -423,14 +423,14 @@ exp_new_literal(struct tok* tok)
 }
 
 void
-print_stm(struct stm* stm)
+print_stm(struct stm *stm)
 {
     switch (stm->type)
     {
         case STM_BLOCK:
             ;
-            struct list* list = stm->data.block;
-            struct node* node = list->nil;
+            struct list *list = stm->data.block;
+            struct node *node = list->nil;
             for (int i = 0; i < list->length; ++i)
             {
                 node = node->next;
@@ -459,7 +459,7 @@ print_stm(struct stm* stm)
 }
 
 void
-print_exp(struct exp* exp)
+print_exp(struct exp *exp)
 {
     switch (exp->type)
     {
@@ -494,7 +494,7 @@ print_exp(struct exp* exp)
 
         case EXP_LITERAL:
             ;
-            struct tok* tok = exp->data.literal;
+            struct tok *tok = exp->data.literal;
             if (tok->type == TOK_STRING)
                 printf("\"%s\" ", exp->data.literal->lexeme);
             else

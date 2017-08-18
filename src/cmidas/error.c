@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 void
-err_at_tok(const char* path, struct tok* tok, const char* format, ...)
+err_at_tok(const char *path, struct tok *tok, const char *format, ...)
 {
     show_err_head(path);
 
@@ -22,7 +22,7 @@ err_at_tok(const char* path, struct tok* tok, const char* format, ...)
 }
 
 void
-show_err_head(const char* path)
+show_err_head(const char *path)
 {
     int path_len = strlen(path);
     for (int i = 0; i < 80 - path_len; ++i)
@@ -31,9 +31,9 @@ show_err_head(const char* path)
 }
 
 void
-show_err_code(const char* path, int lineno, int colno, int length)
+show_err_code(const char *path, int lineno, int colno, int length)
 {
-    FILE* file = fopen(path, "r");
+    FILE *file = fopen(path, "r");
     char line[512];
     int i = 1, start = lineno - 3, end = lineno + 3;
 

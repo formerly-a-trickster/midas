@@ -30,12 +30,12 @@ struct val
 
 struct intpr
 {
-    const char* path;
-    struct hash* globals;
+    const  char *path;
+    struct hash *globals;
     struct par_state par;
 };
 
-struct intpr* intpr_new(void);
-void interpret(struct intpr*, const char*);
+struct intpr *intpr_new(void);
+void          interpret(struct intpr *, const char *);
 
 #endif

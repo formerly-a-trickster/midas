@@ -9,49 +9,49 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void execute(struct intpr*, struct stm*);
-static void var_decl(struct intpr*, struct tok*, struct val*);
+static void execute(struct intpr *, struct stm *);
+static void var_decl(struct intpr *, struct tok *, struct val *);
 static void val_print(struct val);
 
-static struct val evaluate(struct intpr*, struct exp*);
-static struct val binary_op(struct intpr*, struct tok*, struct val, struct val);
-static struct val unary_op(struct intpr*, struct tok*, struct val);
+static struct val evaluate(struct intpr *, struct exp *);
+static struct val binary_op(struct intpr *, struct tok *, struct val, struct val);
+static struct val unary_op(struct intpr *, struct tok *, struct val);
 static bool val_equal(struct val, struct val);
-static bool val_greater(struct intpr*, struct tok*, struct val, struct val);
-static struct val val_add(struct intpr*, struct tok*, struct val, struct val);
-static struct val val_sub(struct intpr*, struct tok*, struct val, struct val);
-static struct val val_mul(struct intpr*, struct tok*, struct val, struct val);
-static struct val val_div(struct intpr*, struct tok*, struct val, struct val);
+static bool val_greater(struct intpr *, struct tok *, struct val, struct val);
+static struct val val_add(struct intpr *, struct tok *, struct val, struct val);
+static struct val val_sub(struct intpr *, struct tok *, struct val, struct val);
+static struct val val_mul(struct intpr *, struct tok *, struct val, struct val);
+static struct val val_div(struct intpr *, struct tok *, struct val, struct val);
 
-static struct val val_new(struct intpr*, struct tok*);
-static const char* val_type_str(enum val_type);
+static struct val val_new(struct intpr *, struct tok *);
+static const char *val_type_str(enum val_type);
 
-struct intpr*
+struct intpr *
 intpr_new(void)
 {
-    struct intpr* intpr = malloc(sizeof(struct intpr));
+    struct intpr *intpr = malloc(sizeof(struct intpr));
     intpr->globals = hash_new();
 }
 
 void
-interpret(struct intpr* intpr, const char* path)
+interpret(struct intpr *intpr, const char *path)
 {
     intpr->path = path;
-    struct stm* ast = parse(&intpr->par, path);
+    struct stm *ast = parse(&intpr->par, path);
 
     execute(intpr, ast);
 }
 
 void
-execute(struct intpr* intpr, struct stm* stm)
+execute(struct intpr *intpr, struct stm *stm)
 /* Take a statement and produce a side effect.                               */
 {
     switch (stm->type)
     {
         case STM_BLOCK:
             ;
-            struct list* list = stm->data.block;
-            struct node* node = list->nil;
+            struct list *list = stm->data.block;
+            struct node *node = list->nil;
             for (int i = 0; i < list->length; ++i)
             {
                 node = node->next;
@@ -61,7 +61,7 @@ execute(struct intpr* intpr, struct stm* stm)
 
         case STM_VAR_DECL:
             ;
-            struct val* varval = malloc(sizeof(struct val));
+            struct val *varval = malloc(sizeof(struct val));
             *varval = evaluate(intpr, stm->data.var_decl.exp);
             var_decl(intpr, stm->data.var_decl.name, varval);
             break;
@@ -80,9 +80,9 @@ execute(struct intpr* intpr, struct stm* stm)
 }
 
 static void
-var_decl(struct intpr* intpr, struct tok* name, struct val* val)
+var_decl(struct intpr *intpr, struct tok *name, struct val *val)
 {
-    struct entry* existing = hash_search(intpr->globals, name->lexeme);
+    struct entry *existing = hash_search(intpr->globals, name->lexeme);
     if (existing == NULL)
         hash_insert(intpr->globals, name->lexeme, val);
     else
@@ -121,7 +121,7 @@ val_print(struct val val)
 }
 
 struct val
-evaluate(struct intpr* intpr, struct exp* exp)
+evaluate(struct intpr *intpr, struct exp *exp)
 /* Take an expression and output a value                                     */
 {
     struct val val;
@@ -130,8 +130,8 @@ evaluate(struct intpr* intpr, struct exp* exp)
     {
         case EXP_ASSIGN:
         {
-            struct tok* name = exp->data.assign.name;
-            struct entry* entry = hash_search(intpr->globals, name->lexeme);
+            struct tok *name = exp->data.assign.name;
+            struct entry *entry = hash_search(intpr->globals, name->lexeme);
             if (entry != NULL)
             {
                 val = evaluate(intpr, exp->data.assign.exp);
@@ -162,8 +162,8 @@ evaluate(struct intpr* intpr, struct exp* exp)
 
         case EXP_VAR:
         {
-            struct tok* name = exp->data.name;
-            struct entry* entry = hash_search(intpr->globals, name->lexeme);
+            struct tok *name = exp->data.name;
+            struct entry *entry = hash_search(intpr->globals, name->lexeme);
             if (entry != NULL)
                 val = *(struct val*)entry->val;
             else
@@ -183,7 +183,7 @@ evaluate(struct intpr* intpr, struct exp* exp)
 }
 
 static struct val
-binary_op(struct intpr* intpr, struct tok* tok,
+binary_op(struct intpr *intpr, struct tok *tok,
           struct val left, struct val right)
 {
     struct val val;
@@ -304,7 +304,7 @@ val_equal(struct val left, struct val right)
 }
 
 static bool
-val_greater(struct intpr* intpr, struct tok* tok,
+val_greater(struct intpr *intpr, struct tok *tok,
            struct val left, struct val right)
 /* Ordering table
    +---+---+---+---+---+  B = boolean
@@ -372,7 +372,7 @@ val_greater(struct intpr* intpr, struct tok* tok,
 
 /* XXX the binary operators contain horrendous amounts of repetition */
 static struct val
-val_add(struct intpr* intpr, struct tok* tok,
+val_add(struct intpr *intpr, struct tok *tok,
         struct val left, struct val right)
 {
     struct val val;
@@ -428,7 +428,7 @@ val_add(struct intpr* intpr, struct tok* tok,
 }
 
 static struct val
-val_sub(struct intpr* intpr, struct tok* tok,
+val_sub(struct intpr *intpr, struct tok *tok,
         struct val left, struct val right)
 {
     struct val val;
@@ -484,7 +484,7 @@ val_sub(struct intpr* intpr, struct tok* tok,
 }
 
 static struct val
-val_mul(struct intpr* intpr, struct tok* tok,
+val_mul(struct intpr *intpr, struct tok *tok,
         struct val left, struct val right)
 {
     struct val val;
@@ -540,7 +540,7 @@ val_mul(struct intpr* intpr, struct tok* tok,
 }
 
 static struct val
-val_div(struct intpr* intpr, struct tok* tok,
+val_div(struct intpr *intpr, struct tok *tok,
         struct val left, struct val right)
 {
     struct val val;
@@ -596,7 +596,7 @@ val_div(struct intpr* intpr, struct tok* tok,
 }
 
 static struct val
-unary_op(struct intpr* intpr, struct tok* tok, struct val operand)
+unary_op(struct intpr *intpr, struct tok *tok, struct val operand)
 /*  Unary table
     +---+---+---+---+---+  B = boolean
     |   | B | I | D | S |  I = integer
@@ -652,7 +652,7 @@ unary_op(struct intpr* intpr, struct tok* tok, struct val operand)
 }
 
 struct val
-val_new(struct intpr* intpr, struct tok* tok)
+val_new(struct intpr *intpr, struct tok *tok)
 {
     struct val val;
 
@@ -694,7 +694,7 @@ val_new(struct intpr* intpr, struct tok* tok)
     return val;
 }
 
-static const char*
+static const char *
 val_type_str(enum val_type type)
 {
     switch (type)

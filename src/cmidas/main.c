@@ -4,11 +4,11 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-int main(int argc, const char* argv[])
+int main(int argc, const char *argv[])
 {
     if (argc == 2)
     {
-        struct intpr* intpr = intpr_new();
+        struct intpr *intpr = intpr_new();
         interpret(intpr, argv[1]);
     }
     else
