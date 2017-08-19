@@ -3,7 +3,7 @@ SRC = src/cmidas
 
 CC     = gcc
 CFLAGS = -std=c99 -pedantic -Wextra -Wall -g
-SOURCE = main.c lexer.c parser.c interpreter.c list.c hash.c error.c
+SOURCE = main.c lexer.c parser.c interpreter.c vector.c hash.c error.c
 OBJ    = $(addprefix ./src/cmidas/, $(SOURCE))
 TARGET = $(addprefix $(BIN)/, cmidas.elf)
 

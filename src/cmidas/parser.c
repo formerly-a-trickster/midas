@@ -1,10 +1,10 @@
-#include "error.h"
-#include "list.h"
-#include "lexer.h"
-#include "parser.h"
-
 #include <stdbool.h>
 #include <stdlib.h>
+
+#include "error.h"
+#include "lexer.h"
+#include "parser.h"
+#include "vector.h"
 
 static struct stm *program  (struct par_state *);
 static struct stm *statement(struct par_state *);
@@ -24,7 +24,7 @@ static struct exp *primary       (struct par_state *);
 static struct tok *tok_next   (struct par_state *);
 static bool        tok_matches(struct par_state *, enum tok_type);
 
-static struct stm *stm_new_block    (struct list *);
+static struct stm *stm_new_block    (Vector_T);
 static struct stm *stm_new_var_decl (struct tok *, struct exp *);
 static struct stm *stm_new_print    (struct exp *, struct tok *);
 static struct stm *stm_new_expr_stmt(struct exp *, struct tok *);
@@ -54,13 +54,13 @@ static struct stm *
 program(struct par_state *par)
 /*  program -> statement* "EOF"                                              */
 {
-    struct list *program = list_new();
+    Vector_T program = Vector_new(sizeof(struct stm));
     /* XXX if we would have used !tok_matches(par, TOK_EOF), we would force the
        lexer to read beyond the EOF upon finally matching it */
     while(par->this_tok->type != TOK_EOF)
     {
         struct stm *stm = statement(par);
-        list_append(program, stm);
+        Vector_push(program, stm);
     }
 
     return stm_new_block(program);
@@ -303,7 +303,7 @@ tok_matches(struct par_state *par, enum tok_type type)
 }
 
 static struct stm *
-stm_new_block(struct list *block)
+stm_new_block(Vector_T block)
 {
     struct stm *stm = malloc(sizeof(struct stm));
 
@@ -428,33 +428,36 @@ print_stm(struct stm *stm)
     switch (stm->type)
     {
         case STM_BLOCK:
-            ;
-            struct list *list = stm->data.block;
-            struct node *node = list->nil;
-            for (int i = 0; i < list->length; ++i)
-            {
-                node = node->next;
-                print_stm(node->data);
-            }
-            break;
+        {
+            Vector_T vector;
+            int i, len;
+
+            vector = stm->data.block;
+            len = Vector_length(vector);
+            for (i = 0; i < len; ++i)
+                print_stm(Vector_get(vector, i));
+        } break;
 
         case STM_VAR_DECL:
+        {
             printf("[ %s = ", stm->data.var_decl.name->lexeme);
             print_exp(stm->data.var_decl.exp);
             printf("]\n");
-            break;
+        } break;
 
         case STM_EXPR_STMT:
+        {
             printf("[ expstm ");
             print_exp(stm->data.expr.exp);
             printf("]\n");
-            break;
+        } break;
 
         case STM_PRINT:
+        {
             printf("[ print ");
             print_exp(stm->data.expr.exp);
             printf("]\n");
-            break;
+        } break;
     }
 }
 
@@ -464,42 +467,46 @@ print_exp(struct exp *exp)
     switch (exp->type)
     {
         case EXP_ASSIGN:
+        {
             printf("( assign %s ", exp->data.assign.name->lexeme);
             print_exp(exp->data.assign.exp);
             printf(") ");
-            break;
+        } break;
 
         case EXP_BINARY:
+        {
             printf("( %s ", exp->data.binary.op->lexeme);
             print_exp(exp->data.binary.left);
             print_exp(exp->data.binary.right);
             printf(") ");
-            break;
+        } break;
 
         case EXP_UNARY:
+        {
             printf("( %s ", exp->data.unary.op->lexeme);
             print_exp(exp->data.unary.exp);
             printf(") ");
-            break;
+        } break;
 
         case EXP_GROUP:
+        {
             printf("( ");
             print_exp(exp->data.group.exp);
             printf(") ");
-            break;
+        } break;
 
         case EXP_VAR:
             printf("%s ", exp->data.name->lexeme);
-            break;
+        break;
 
         case EXP_LITERAL:
-            ;
+        {
             struct tok *tok = exp->data.literal;
             if (tok->type == TOK_STRING)
                 printf("\"%s\" ", exp->data.literal->lexeme);
             else
                 printf("%s ", exp->data.literal->lexeme);
-            break;
+        } break;
     }
 }
 

@@ -1,13 +1,13 @@
-#include "hash.h"
-#include "list.h"
-#include "error.h"
-#include "lexer.h"
-#include "parser.h"
-#include "interpreter.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "error.h"
+#include "hash.h"
+#include "interpreter.h"
+#include "lexer.h"
+#include "parser.h"
+#include "vector.h"
 
 static void execute(struct intpr *, struct stm *);
 static void var_decl(struct intpr *, struct tok *, struct val *);
@@ -50,13 +50,13 @@ execute(struct intpr *intpr, struct stm *stm)
     {
         case STM_BLOCK:
         {
-            struct list *list = stm->data.block;
-            struct node *node = list->nil;
-            for (int i = 0; i < list->length; ++i)
-            {
-                node = node->next;
-                execute(intpr, node->data);
-            }
+            Vector_T vector;
+            int i, len;
+
+            vector = stm->data.block;
+            len = Vector_length(vector);
+            for (i = 0; i < len; ++i)
+                execute(intpr, Vector_get(vector, i));
         } break;
 
         case STM_VAR_DECL:
