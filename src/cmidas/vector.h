@@ -1,6 +1,19 @@
 #ifndef ALG_vector_h_
 #define ALG_vector_h_
 
+/* Stores contents of the same size in a contiguous block of memory, like a
+   dynamic array. `Vector_push` takes a pointer to the value that you want to
+   COPY into the array. `Vector_get` and `Vector_pop` return a pointer into the
+   vector. Dereference this to get the stored value.
+
+   This means that if you want to store pointers, you should pass their
+   reference (or pointers to them) to `Vector_push`; recovering it with
+   `*(type **)Vector_get`.
+
+   The pointer returned by `Vector_pop` is valid until a new value is added to
+   the vector. The same is true from poiners returned from `Vector_get` after
+   enough succesive `Vector_pop`s.                                           */
+
 #define T Vector_T
 
 typedef struct T *T;
