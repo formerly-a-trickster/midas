@@ -92,9 +92,9 @@ struct par_state
     struct tok *this_tok;
 };
 
-struct stm *parse    (struct par_state *, const char *);
-void        print_stm(struct stm *);
-void        print_exp(struct exp *);
+Vector_T parse    (struct par_state *, const char *);
+void     print_stm(struct stm *);
+void     print_exp(struct exp *);
 
 #endif
 

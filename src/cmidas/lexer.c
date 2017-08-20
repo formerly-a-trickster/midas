@@ -1,17 +1,19 @@
-#include "error.h"
-#include "lexer.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
+#include "error.h"
+#include "lexer.h"
+
 struct keyword keywords[] =
 {
-    { "var"  , 4, TOK_VAR     },
+    { "do"   , 3, TOK_DO      },
+    { "end"  , 4, TOK_END     },
     { "false", 6, TOK_FALSE   },
-    { "true" , 5, TOK_TRUE    },
     { "print", 6, TOK_PRINT   },
+    { "true" , 5, TOK_TRUE    },
+    { "var"  , 4, TOK_VAR     },
     { NULL   , 0, ERR_UNKNOWN }
 };
 

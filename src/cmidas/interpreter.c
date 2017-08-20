@@ -42,10 +42,15 @@ intpr_new(void)
 void
 interpret(struct intpr *intpr, const char *path)
 {
-    intpr->path = path;
-    struct stm *ast = parse(&intpr->par, path);
+    Vector_T ast;
+    int i, len;
 
-    execute(intpr, ast);
+    intpr->path = path;
+    ast = parse(&intpr->par, path);
+
+    len = Vector_length(ast);
+    for (i = 0; i < len; ++i)
+        execute(intpr, *(struct stm **)Vector_get(ast, i));
 }
 
 static void
@@ -72,6 +77,8 @@ void
 execute(struct intpr *intpr, struct stm *stm)
 /* Take a statement and produce a side effect.                               */
 {
+//    printf("Exec ");
+//    print_stm(stm);
     switch (stm->type)
     {
         case STM_BLOCK:
@@ -79,10 +86,14 @@ execute(struct intpr *intpr, struct stm *stm)
             Vector_T vector;
             int i, len;
 
+            ctx_push(intpr);
+
             vector = stm->data.block;
             len = Vector_length(vector);
             for (i = 0; i < len; ++i)
-                execute(intpr, Vector_get(vector, i));
+                execute(intpr, *(struct stm**)Vector_get(vector, i));
+
+            ctx_pop(intpr);
         } break;
 
         case STM_VAR_DECL:
@@ -150,6 +161,9 @@ evaluate(struct intpr *intpr, struct exp *exp)
 {
     struct val val;
 
+//    printf("Eval ");
+//    print_exp(exp);
+//    putchar('\n');
     switch (exp->type)
     {
         case EXP_ASSIGN:
@@ -198,7 +212,7 @@ evaluate(struct intpr *intpr, struct exp *exp)
             struct val *valp;
 
             name = exp->data.name;
-            valp = Env_var_get(intpr->globals, name->lexeme);
+            valp = Env_var_get(intpr->context, name->lexeme);
             if (valp != NULL)
                 val = *valp;
             else

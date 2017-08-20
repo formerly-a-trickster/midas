@@ -29,15 +29,17 @@ enum tok_type
     TOK_EQUAL_EQUAL,
     TOK_PLUS_PLUS,
 
-    TOK_IDENTIFIER,
-    TOK_INTEGER,
     TOK_DOUBLE,
+    TOK_INTEGER,
     TOK_STRING,
 
-    TOK_VAR,
-    TOK_TRUE,
+    TOK_DO,
+    TOK_END,
     TOK_FALSE,
+    TOK_IDENTIFIER,
     TOK_PRINT,
+    TOK_TRUE,
+    TOK_VAR,
 
     TOK_EOF,
 

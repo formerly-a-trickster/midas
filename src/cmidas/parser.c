@@ -6,11 +6,13 @@
 #include "parser.h"
 #include "vector.h"
 
-static struct stm *program  (struct par_state *);
-static struct stm *statement(struct par_state *);
-static struct stm *var_decl (struct par_state *);
-static struct stm *expr_stmt(struct par_state *);
-static struct stm *print    (struct par_state *);
+         Vector_T  program    (struct par_state *);
+static struct stm *declaration(struct par_state *);
+static struct stm *statement  (struct par_state *);
+static struct stm *block      (struct par_state *);
+static struct stm *var_decl   (struct par_state *);
+static struct stm *expr_stmt  (struct par_state *);
+static struct stm *print      (struct par_state *);
 
 static struct exp *expression    (struct par_state *);
 static struct exp *assignment    (struct par_state *);
@@ -22,7 +24,9 @@ static struct exp *unary         (struct par_state *);
 static struct exp *primary       (struct par_state *);
 
 static struct tok *tok_next   (struct par_state *);
-static bool        tok_matches(struct par_state *, enum tok_type);
+       static bool tok_matches(struct par_state *, enum tok_type);
+inline static bool tok_is     (struct par_state *, enum tok_type);
+inline static bool tok_was    (struct par_state *, enum tok_type);
 
 static struct stm *stm_new_block    (Vector_T);
 static struct stm *stm_new_var_decl (struct tok *, struct exp *);
@@ -36,7 +40,7 @@ static struct exp *exp_new_group  (struct exp *, struct tok *, struct tok *);
 static struct exp *exp_new_var    (struct tok *);
 static struct exp *exp_new_literal(struct tok *);
 
-struct stm *
+Vector_T
 parse(struct par_state *par, const char *path)
 {
     lex_init(&par->lex);
@@ -50,55 +54,52 @@ parse(struct par_state *par, const char *path)
     return program(par);
 }
 
-static struct stm *
+Vector_T
 program(struct par_state *par)
 /*  program -> statement* "EOF"                                              */
 {
-    Vector_T program = Vector_new(sizeof(struct stm));
+    Vector_T program;
+
+    program = Vector_new(sizeof(struct stm *));
     /* XXX if we would have used !tok_matches(par, TOK_EOF), we would force the
        lexer to read beyond the EOF upon finally matching it */
-    while(par->this_tok->type != TOK_EOF)
+    while(!tok_is(par, TOK_EOF))
     {
-        struct stm *stm = statement(par);
-        Vector_push(program, stm);
+        struct stm *stm = declaration(par);
+        Vector_push(program, &stm);
     }
 
-    return stm_new_block(program);
+    return program;
 }
 
 static struct stm *
-statement(struct par_state *par)
-/*  statement -> var_decl   ";"
-               | print_stm  ";"
-               | expr_stmt  ";"                                              */
+declaration(struct par_state *par)
+/*  declaration -> var_decl ";"
+                 | statement                                                 */
 {
     struct stm *stm;
 
     if (tok_matches(par, TOK_VAR))
         stm = var_decl(par);
-    else if (tok_matches(par, TOK_PRINT))
-        stm = print(par);
     else
-        stm = expr_stmt(par);
+        stm = statement(par);
 
-    if (!tok_matches(par, TOK_SEMICOLON))
-        err_at_tok(par->path, par->prev_tok,
-            "\n    Missing semicolon after statement.\n\n");
-    else
-        return stm;
+    return stm;
 }
 
 static struct stm *
 var_decl(struct par_state *par)
-/*  var_decl -> ^var^ identifier "=" expression                              */
+/*  var_decl -> ^var^ identifier "=" expression ";"                          */
 {
+    struct stm *stm;
+
     if (tok_matches(par, TOK_IDENTIFIER))
     {
         struct tok *name = par->prev_tok;
         if (tok_matches(par, TOK_EQUAL))
         {
             struct exp *value = expression(par);
-            return stm_new_var_decl(name, value);
+            stm = stm_new_var_decl(name, value);
         }
         else
             err_at_tok(par->path, par->prev_tok,
@@ -107,22 +108,76 @@ var_decl(struct par_state *par)
     else
         err_at_tok(par->path, par->prev_tok,
             "\n    A variable name should follow the `var` keyword.\n\n");
+
+    if (!tok_matches(par, TOK_SEMICOLON))
+        err_at_tok(par->path, par->prev_tok,
+            "\n    Missing semicolon after variable declaration.\n\n");
+
+    return stm;
+}
+
+static struct stm *
+statement(struct par_state *par)
+/*  statement -> block_stm
+               | print_stm
+               | expr_stmt                                                   */
+{
+    struct stm *stm;
+
+    if (tok_matches(par, TOK_DO))
+        stm = block(par);
+    else if (tok_matches(par, TOK_PRINT))
+        stm = print(par);
+    else
+        stm = expr_stmt(par);
+
+    return stm;
+}
+
+static struct stm *
+block(struct par_state *par)
+/*  block_stm -> ^do^ declaration* "end"                                     */
+{
+    Vector_T statements;
+
+    statements = Vector_new(sizeof(struct stm *));
+    while (!tok_is(par, TOK_END) && !tok_is(par, TOK_EOF))
+    {
+        struct stm *stm = declaration(par);
+        Vector_push(statements, &stm);
+    }
+
+    if (!tok_matches(par, TOK_END))
+        err_at_tok(par->path, par->prev_tok,
+            "\n    Missing `end` keyword after block.\n\n");
+
+    return stm_new_block(statements);
 }
 
 static struct stm *
 print(struct par_state *par)
-/*  print_stm -> ^print^ expression                                          */
+/*  print_stm -> ^print^ expression ";"                                      */
 {
-    struct exp *exp = expression(par);
+    struct exp *exp;
+
+    exp = expression(par);
+    if (!tok_matches(par, TOK_SEMICOLON))
+        err_at_tok(par->path, par->prev_tok,
+            "\n    Missing semicolon after print statement.\n\n");
 
     return stm_new_print(exp, par->prev_tok);
 }
 
 static struct stm *
 expr_stmt(struct par_state *par)
-/*  expr_stmt -> expression                                                  */
+/*  expr_stmt -> expression ";"                                              */
 {
-    struct exp *exp = expression(par);
+    struct exp *exp;
+
+    exp = expression(par);
+    if (!tok_matches(par, TOK_SEMICOLON))
+        err_at_tok(par->path, par->prev_tok,
+            "\n    Missing semicolon after expression statement.\n\n");
 
     return stm_new_expr_stmt(exp, par->prev_tok);
 }
@@ -302,6 +357,18 @@ tok_matches(struct par_state *par, enum tok_type type)
         return false;
 }
 
+inline static bool
+tok_is(struct par_state *par, enum tok_type type)
+{
+    return par->this_tok->type == type;
+}
+
+inline static bool
+tok_was(struct par_state *par, enum tok_type type)
+{
+    return par->prev_tok->type == type;
+}
+
 static struct stm *
 stm_new_block(Vector_T block)
 {
@@ -435,7 +502,7 @@ print_stm(struct stm *stm)
             vector = stm->data.block;
             len = Vector_length(vector);
             for (i = 0; i < len; ++i)
-                print_stm(Vector_get(vector, i));
+                print_stm(*(struct stm **)Vector_get(vector, i));
         } break;
 
         case STM_VAR_DECL:

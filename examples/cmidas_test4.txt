@@ -1,5 +1,26 @@
-var a = "bbb";
-var b = a;
-a = "aaa";
+var a = "global";
+var b = "global";
+var c = "global";
+
+do
+    var b = "outer";
+    var c = "outer";
+
+    do
+        var c = "inner";
+
+        print a;
+        print b;
+        print c;
+    end
+
+    print "=====";
+    print a;
+    print b;
+    print c;
+end
+
+print "=====";
 print a;
 print b;
+print c;

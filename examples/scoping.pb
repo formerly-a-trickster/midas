@@ -8,6 +8,7 @@ do
 
     do
         var a = "inner a";
+
         print a;
         print b;
         print c;
