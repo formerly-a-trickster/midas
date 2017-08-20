@@ -66,6 +66,13 @@ Hash_get(T hash, const char *key)
         return NULL;
 }
 
+void
+Hash_free(T hash)
+{
+    free(hash->table);
+    free(hash);
+}
+
 static struct row *
 Hash_get_row(T hash, const char *key)
 {

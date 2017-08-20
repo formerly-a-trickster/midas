@@ -1,7 +1,7 @@
 #ifndef MD_interpreter_h_
 #define MD_interpreter_h_
 
-#include "hash.h"
+#include "env.h"
 #include "lexer.h"
 #include "parser.h"
 
@@ -30,8 +30,9 @@ struct val
 
 struct intpr
 {
-    const  char *path;
-    Hash_T       globals;
+    const char *path;
+    Env_T globals;
+    Env_T context;
     struct par_state par;
 };
 

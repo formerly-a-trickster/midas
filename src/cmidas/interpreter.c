@@ -2,22 +2,25 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "env.h"
 #include "error.h"
-#include "hash.h"
 #include "interpreter.h"
 #include "lexer.h"
 #include "parser.h"
 #include "vector.h"
 
-static void execute(struct intpr *, struct stm *);
-static void var_decl(struct intpr *, struct tok *, struct val *);
+static void ctx_push(struct intpr *intpr);
+static void ctx_pop (struct intpr *intpr);
+
+static void execute  (struct intpr *, struct stm *);
+static void var_decl (struct intpr *, struct tok *, struct val *);
 static void val_print(struct val);
 
-static struct val evaluate(struct intpr *, struct exp *);
+static struct val evaluate (struct intpr *, struct exp *);
 static struct val binary_op(struct intpr *, struct tok *, struct val, struct val);
-static struct val unary_op(struct intpr *, struct tok *, struct val);
-static bool val_equal(struct val, struct val);
-static bool val_greater(struct intpr *, struct tok *, struct val, struct val);
+static struct val unary_op (struct intpr *, struct tok *, struct val);
+static bool       val_equal(struct val, struct val);
+static bool       val_greater(struct intpr *, struct tok *, struct val, struct val);
 static struct val val_add(struct intpr *, struct tok *, struct val, struct val);
 static struct val val_sub(struct intpr *, struct tok *, struct val, struct val);
 static struct val val_mul(struct intpr *, struct tok *, struct val, struct val);
@@ -30,7 +33,10 @@ struct intpr *
 intpr_new(void)
 {
     struct intpr *intpr = malloc(sizeof(struct intpr));
-    intpr->globals = Hash_new();
+    intpr->globals = Env_new(NULL);
+    intpr->context = intpr->globals;
+
+    return intpr;
 }
 
 void
@@ -40,6 +46,26 @@ interpret(struct intpr *intpr, const char *path)
     struct stm *ast = parse(&intpr->par, path);
 
     execute(intpr, ast);
+}
+
+static void
+ctx_push(struct intpr *intpr)
+{
+    Env_T new_ctx;
+
+    new_ctx = Env_new(intpr->context);
+    intpr->context = new_ctx;
+}
+
+static void
+ctx_pop(struct intpr *intpr)
+{
+    Env_T old_ctx;
+
+    old_ctx = intpr->context;
+    intpr->context = Env_parent(old_ctx);
+
+    Env_free(old_ctx);
 }
 
 void
@@ -82,7 +108,7 @@ execute(struct intpr *intpr, struct stm *stm)
 static void
 var_decl(struct intpr *intpr, struct tok *name, struct val *val)
 {
-    struct val *prev = Hash_set(intpr->globals, name->lexeme, val);
+    struct val *prev = Env_var_new(intpr->context, name->lexeme, val);
     if (prev != NULL)
         err_at_tok(intpr->path, name,
             "\n    `%s` is already declared in this scope."
@@ -138,7 +164,7 @@ evaluate(struct intpr *intpr, struct exp *exp)
             *valp = val;
 
             /* XXX should deallocate prev value */
-            prev = Hash_set(intpr->globals, name->lexeme, valp);
+            prev = Env_var_set(intpr->context, name->lexeme, valp);
             if (prev == NULL)
                 err_at_tok(intpr->path, name,
                     "\n    Cannot assign to undeclared variable `%s`.\n\n",
@@ -172,7 +198,7 @@ evaluate(struct intpr *intpr, struct exp *exp)
             struct val *valp;
 
             name = exp->data.name;
-            valp = Hash_get(intpr->globals, name->lexeme);
+            valp = Env_var_get(intpr->globals, name->lexeme);
             if (valp != NULL)
                 val = *valp;
             else
