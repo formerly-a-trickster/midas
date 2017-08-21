@@ -12,9 +12,10 @@
 static void ctx_push(struct intpr *intpr);
 static void ctx_pop (struct intpr *intpr);
 
-static void execute  (struct intpr *, struct stm *);
-static void var_decl (struct intpr *, struct tok *, struct val *);
-static void val_print(struct val);
+static void execute      (struct intpr *, struct stm *);
+static bool val_is_truthy(struct val);
+static void var_decl     (struct intpr *, struct tok *, struct val *);
+static void val_print    (struct val);
 
 static struct val evaluate (struct intpr *, struct exp *);
 static struct val binary_op(struct intpr *, struct tok *, struct val, struct val);
@@ -77,8 +78,6 @@ void
 execute(struct intpr *intpr, struct stm *stm)
 /* Take a statement and produce a side effect.                               */
 {
-//    printf("Exec ");
-//    print_stm(stm);
     switch (stm->type)
     {
         case STM_BLOCK:
@@ -96,11 +95,24 @@ execute(struct intpr *intpr, struct stm *stm)
             ctx_pop(intpr);
         } break;
 
+        case STM_IF:
+        {
+            struct val cond;
+
+            cond = evaluate(intpr, stm->data.if_cond.cond);
+            if (val_is_truthy(cond))
+                execute(intpr, stm->data.if_cond.then_block);
+            else if (stm->data.if_cond.else_block != NULL)
+                execute(intpr, stm->data.if_cond.else_block);
+        } break;
+
         case STM_VAR_DECL:
         {
-            struct val *varval = malloc(sizeof(struct val));
-            *varval = evaluate(intpr, stm->data.var_decl.exp);
-            var_decl(intpr, stm->data.var_decl.name, varval);
+            struct val *var;
+
+            var = malloc(sizeof(struct val));
+            *var = evaluate(intpr, stm->data.var_decl.exp);
+            var_decl(intpr, stm->data.var_decl.name, var);
         } break;
 
         case STM_EXPR_STMT:
@@ -114,6 +126,12 @@ execute(struct intpr *intpr, struct stm *stm)
             val_print(val);
         } break;
     }
+}
+
+static bool
+val_is_truthy(struct val val)
+{
+    return !(val.type == VAL_BOOLEAN && val.data.as_bool == false);
 }
 
 static void
@@ -161,9 +179,6 @@ evaluate(struct intpr *intpr, struct exp *exp)
 {
     struct val val;
 
-//    printf("Eval ");
-//    print_exp(exp);
-//    putchar('\n');
     switch (exp->type)
     {
         case EXP_ASSIGN:

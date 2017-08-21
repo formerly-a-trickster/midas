@@ -34,9 +34,11 @@ enum tok_type
     TOK_STRING,
 
     TOK_DO,
+    TOK_ELSE,
     TOK_END,
     TOK_FALSE,
     TOK_IDENTIFIER,
+    TOK_IF,
     TOK_PRINT,
     TOK_TRUE,
     TOK_VAR,

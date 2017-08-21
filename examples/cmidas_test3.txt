@@ -1,11 +1,34 @@
-var a = 10;
-var b = 10 / 2;
-var c = 10 + 10 + 10;
-print a;
-print b;
-print c;
+# Computing the square root of `num` by using Heron's method
+var num = 1234.0;
+var guess = 1;
 
-a = b = c = 1;
-print a;
-print b;
-print c;
+guess = (num / guess + guess) / 2;
+print guess;
+
+guess = (num / guess + guess) / 2;
+print guess;
+
+guess = (num / guess + guess) / 2;
+print guess;
+
+guess = (num / guess + guess) / 2;
+print guess;
+
+guess = (num / guess + guess) / 2;
+print guess;
+
+guess = (num / guess + guess) / 2;
+print guess;
+
+guess = (num / guess + guess) / 2;
+print guess;
+
+guess = (num / guess + guess) / 2;
+print guess;
+
+guess = (num / guess + guess) / 2;
+print guess;
+
+guess = (num / guess + guess) / 2;
+print guess;
+

@@ -10,6 +10,7 @@
 static struct stm *declaration(struct par_state *);
 static struct stm *statement  (struct par_state *);
 static struct stm *block      (struct par_state *);
+static struct stm *if_cond    (struct par_state *);
 static struct stm *var_decl   (struct par_state *);
 static struct stm *expr_stmt  (struct par_state *);
 static struct stm *print      (struct par_state *);
@@ -29,6 +30,7 @@ inline static bool tok_is     (struct par_state *, enum tok_type);
 inline static bool tok_was    (struct par_state *, enum tok_type);
 
 static struct stm *stm_new_block    (Vector_T);
+static struct stm *stm_new_if       (struct exp *, struct stm *, struct stm *);
 static struct stm *stm_new_var_decl (struct tok *, struct exp *);
 static struct stm *stm_new_print    (struct exp *, struct tok *);
 static struct stm *stm_new_expr_stmt(struct exp *, struct tok *);
@@ -119,6 +121,7 @@ var_decl(struct par_state *par)
 static struct stm *
 statement(struct par_state *par)
 /*  statement -> block_stm
+               | if_stm
                | print_stm
                | expr_stmt                                                   */
 {
@@ -126,6 +129,8 @@ statement(struct par_state *par)
 
     if (tok_matches(par, TOK_DO))
         stm = block(par);
+    else if (tok_matches(par, TOK_IF))
+        stm = if_cond(par);
     else if (tok_matches(par, TOK_PRINT))
         stm = print(par);
     else
@@ -152,6 +157,43 @@ block(struct par_state *par)
             "\n    Missing `end` keyword after block.\n\n");
 
     return stm_new_block(statements);
+}
+
+static struct stm *
+if_cond(struct par_state *par)
+/*  if_stm -> ^if^ "(" expression ")" statement ( "else" statement )?        */
+{
+    struct stm *stm;
+
+    if (tok_matches(par, TOK_PAREN_LEFT))
+    {
+        struct exp *cond;
+
+        cond = expression(par);
+
+        if (tok_matches(par, TOK_PAREN_RIGHT))
+        {
+            struct stm *then_block;
+            struct stm *else_block;
+
+            then_block = statement(par);
+
+            if (tok_matches(par, TOK_ELSE))
+                else_block = statement(par);
+            else
+                else_block = NULL;
+
+            stm = stm_new_if(cond, then_block, else_block);
+        }
+        else
+            err_at_tok(par->path, par->prev_tok,
+                "\n    Expected a closing paren after the if condition.\n\n");
+    }
+    else
+        err_at_tok(par->path, par->prev_tok,
+            "\n    Expected an opening paren after `if` keyword.\n\n");
+
+    return stm;
 }
 
 static struct stm *
@@ -381,6 +423,19 @@ stm_new_block(Vector_T block)
 }
 
 static struct stm *
+stm_new_if(struct exp *cond, struct stm *then_block, struct stm *else_block)
+{
+    struct stm *stm = malloc(sizeof(struct stm));
+
+    stm->type = STM_IF;
+    stm->data.if_cond.cond = cond;
+    stm->data.if_cond.then_block = then_block;
+    stm->data.if_cond.else_block = else_block;
+
+    return stm;
+}
+
+static struct stm *
 stm_new_var_decl(struct tok *name, struct exp *exp)
 {
     struct stm *stm = malloc(sizeof(struct stm));
@@ -499,31 +554,49 @@ print_stm(struct stm *stm)
             Vector_T vector;
             int i, len;
 
+            puts("[");
             vector = stm->data.block;
             len = Vector_length(vector);
             for (i = 0; i < len; ++i)
                 print_stm(*(struct stm **)Vector_get(vector, i));
+            puts("]");
+        } break;
+
+        case STM_IF:
+        {
+            printf("[ if ");
+            print_exp(stm->data.if_cond.cond);
+            putchar('\n');
+            printf("then ");
+            print_stm(stm->data.if_cond.then_block);
+
+            if (stm->data.if_cond.else_block != NULL)
+            {
+                printf("else ");
+                print_stm(stm->data.if_cond.else_block);
+            }
+            puts("]");
         } break;
 
         case STM_VAR_DECL:
         {
             printf("[ %s = ", stm->data.var_decl.name->lexeme);
             print_exp(stm->data.var_decl.exp);
-            printf("]\n");
+            puts("]");
         } break;
 
         case STM_EXPR_STMT:
         {
             printf("[ expstm ");
             print_exp(stm->data.expr.exp);
-            printf("]\n");
+            puts("]");
         } break;
 
         case STM_PRINT:
         {
             printf("[ print ");
             print_exp(stm->data.expr.exp);
-            printf("]\n");
+            puts("]");
         } break;
     }
 }

@@ -8,9 +8,11 @@
 
 struct keyword keywords[] =
 {
+    { "else" , 5, TOK_ELSE    },
     { "do"   , 3, TOK_DO      },
     { "end"  , 4, TOK_END     },
     { "false", 6, TOK_FALSE   },
+    { "if"   , 3, TOK_IF      },
     { "print", 6, TOK_PRINT   },
     { "true" , 5, TOK_TRUE    },
     { "var"  , 4, TOK_VAR     },

@@ -9,6 +9,7 @@ struct stm
     enum
     {
         STM_BLOCK,
+        STM_IF,
         STM_VAR_DECL,
         STM_EXPR_STMT,
         STM_PRINT
@@ -17,6 +18,13 @@ struct stm
     union
     {
         Vector_T block;
+
+        struct
+        {
+            struct exp *cond;
+            struct stm *then_block;
+            struct stm *else_block;
+        } if_cond;
 
         struct
         {
