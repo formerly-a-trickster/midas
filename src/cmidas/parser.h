@@ -10,6 +10,7 @@ struct stm
     {
         STM_BLOCK,
         STM_IF,
+        STM_WHILE,
         STM_VAR_DECL,
         STM_EXPR_STMT,
         STM_PRINT
@@ -25,6 +26,12 @@ struct stm
             struct stm *then_block;
             struct stm *else_block;
         } if_cond;
+
+        struct
+        {
+            struct exp *cond;
+            struct stm *body;
+        } while_cond;
 
         struct
         {

@@ -42,6 +42,7 @@ enum tok_type
     TOK_PRINT,
     TOK_TRUE,
     TOK_VAR,
+    TOK_WHILE,
 
     TOK_EOF,
 

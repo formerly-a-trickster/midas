@@ -11,6 +11,7 @@ static struct stm *declaration(struct par_state *);
 static struct stm *statement  (struct par_state *);
 static struct stm *block      (struct par_state *);
 static struct stm *if_cond    (struct par_state *);
+static struct stm *while_cond (struct par_state *);
 static struct stm *var_decl   (struct par_state *);
 static struct stm *expr_stmt  (struct par_state *);
 static struct stm *print      (struct par_state *);
@@ -31,6 +32,7 @@ inline static bool tok_was    (struct par_state *, enum tok_type);
 
 static struct stm *stm_new_block    (Vector_T);
 static struct stm *stm_new_if       (struct exp *, struct stm *, struct stm *);
+static struct stm *stm_new_while    (struct exp *, struct stm *);
 static struct stm *stm_new_var_decl (struct tok *, struct exp *);
 static struct stm *stm_new_print    (struct exp *, struct tok *);
 static struct stm *stm_new_expr_stmt(struct exp *, struct tok *);
@@ -122,6 +124,7 @@ static struct stm *
 statement(struct par_state *par)
 /*  statement -> block_stm
                | if_stm
+               | while_stm
                | print_stm
                | expr_stmt                                                   */
 {
@@ -131,6 +134,8 @@ statement(struct par_state *par)
         stm = block(par);
     else if (tok_matches(par, TOK_IF))
         stm = if_cond(par);
+    else if (tok_matches(par, TOK_WHILE))
+        stm = while_cond(par);
     else if (tok_matches(par, TOK_PRINT))
         stm = print(par);
     else
@@ -192,6 +197,37 @@ if_cond(struct par_state *par)
     else
         err_at_tok(par->path, par->prev_tok,
             "\n    Expected an opening paren after `if` keyword.\n\n");
+
+    return stm;
+}
+
+static struct stm *
+while_cond(struct par_state *par)
+/*  while_stm -> ^while^ "(" expression ")" statement                        */
+{
+    struct stm *stm;
+
+    if (tok_matches(par, TOK_PAREN_LEFT))
+    {
+        struct exp *cond;
+
+        cond = expression(par);
+
+        if (tok_matches(par, TOK_PAREN_RIGHT))
+        {
+            struct stm *body;
+
+            body = statement(par);
+            stm = stm_new_while(cond, body);
+        }
+        else
+            err_at_tok(par->path, par->prev_tok,
+                "\n    Expected a closing paren after the while "
+                "condition.\n\n");
+    }
+    else
+        err_at_tok(par->path, par->prev_tok,
+            "\n    Expected an opening paren after `while` keyword.\n\n");
 
     return stm;
 }
@@ -435,6 +471,18 @@ stm_new_if(struct exp *cond, struct stm *then_block, struct stm *else_block)
     return stm;
 }
 
+struct stm*
+stm_new_while(struct exp *cond, struct stm *body)
+{
+    struct stm *stm = malloc(sizeof(struct stm));
+
+    stm->type = STM_WHILE;
+    stm->data.while_cond.cond = cond;
+    stm->data.while_cond.body = body;
+
+    return stm;
+}
+
 static struct stm *
 stm_new_var_decl(struct tok *name, struct exp *exp)
 {
@@ -575,6 +623,15 @@ print_stm(struct stm *stm)
                 printf("else ");
                 print_stm(stm->data.if_cond.else_block);
             }
+            puts("]");
+        } break;
+
+        case STM_WHILE:
+        {
+            printf("[ while ");
+            print_exp(stm->data.while_cond.cond);
+            putchar('\n');
+            print_stm(stm->data.while_cond.body);
             puts("]");
         } break;
 

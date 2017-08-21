@@ -106,6 +106,12 @@ execute(struct intpr *intpr, struct stm *stm)
                 execute(intpr, stm->data.if_cond.else_block);
         } break;
 
+        case STM_WHILE:
+        {
+            while(val_is_truthy(evaluate(intpr, stm->data.while_cond.cond)))
+                execute(intpr, stm->data.while_cond.body);
+        } break;
+
         case STM_VAR_DECL:
         {
             struct val *var;
