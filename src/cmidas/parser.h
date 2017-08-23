@@ -12,7 +12,7 @@ struct stm
         STM_IF,
         STM_WHILE,
         STM_VAR_DECL,
-        STM_EXPR_STMT,
+        STM_EXP_STM,
         STM_PRINT
     } type;
 
@@ -43,7 +43,7 @@ struct stm
         {
             struct exp *exp;
             struct tok *last;
-        } expr;
+        } exp;
 
         struct
         {

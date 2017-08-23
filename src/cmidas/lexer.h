@@ -37,6 +37,7 @@ enum tok_type
     TOK_ELSE,
     TOK_END,
     TOK_FALSE,
+    TOK_FOR,
     TOK_IDENTIFIER,
     TOK_IF,
     TOK_PRINT,

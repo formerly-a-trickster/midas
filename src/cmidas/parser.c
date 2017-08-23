@@ -12,8 +12,9 @@ static struct stm *statement  (struct par_state *);
 static struct stm *block      (struct par_state *);
 static struct stm *if_cond    (struct par_state *);
 static struct stm *while_cond (struct par_state *);
+/*static struct stm *for_cond   (struct par_state *);*/
 static struct stm *var_decl   (struct par_state *);
-static struct stm *expr_stmt  (struct par_state *);
+static struct stm *exp_stm    (struct par_state *);
 static struct stm *print      (struct par_state *);
 
 static struct exp *expression    (struct par_state *);
@@ -26,7 +27,8 @@ static struct exp *unary         (struct par_state *);
 static struct exp *primary       (struct par_state *);
 
 static struct tok *tok_next   (struct par_state *);
-       static bool tok_matches(struct par_state *, enum tok_type);
+static        bool tok_matches(struct par_state *, enum tok_type);
+static        void tok_consume(struct par_state *, enum tok_type, const char *);
 inline static bool tok_is     (struct par_state *, enum tok_type);
 inline static bool tok_was    (struct par_state *, enum tok_type);
 
@@ -35,7 +37,7 @@ static struct stm *stm_new_if       (struct exp *, struct stm *, struct stm *);
 static struct stm *stm_new_while    (struct exp *, struct stm *);
 static struct stm *stm_new_var_decl (struct tok *, struct exp *);
 static struct stm *stm_new_print    (struct exp *, struct tok *);
-static struct stm *stm_new_expr_stmt(struct exp *, struct tok *);
+static struct stm *stm_new_exp_stm  (struct exp *, struct tok *);
 
 static struct exp *exp_new_assign (struct tok *, struct exp *);
 static struct exp *exp_new_binary (struct tok *, struct exp *, struct exp *);
@@ -95,29 +97,23 @@ static struct stm *
 var_decl(struct par_state *par)
 /*  var_decl -> ^var^ identifier "=" expression ";"                          */
 {
-    struct stm *stm;
+    struct tok *name;
+    struct exp *value;
 
-    if (tok_matches(par, TOK_IDENTIFIER))
-    {
-        struct tok *name = par->prev_tok;
-        if (tok_matches(par, TOK_EQUAL))
-        {
-            struct exp *value = expression(par);
-            stm = stm_new_var_decl(name, value);
-        }
-        else
-            err_at_tok(par->path, par->prev_tok,
-                "\n    An equal sign should follow the variable's name.\n\n");
-    }
-    else
-        err_at_tok(par->path, par->prev_tok,
-            "\n    A variable name should follow the `var` keyword.\n\n");
+    tok_consume(par, TOK_IDENTIFIER,
+        "\n    A variable name should follow the `var` keyword.\n\n");
 
-    if (!tok_matches(par, TOK_SEMICOLON))
-        err_at_tok(par->path, par->prev_tok,
-            "\n    Missing semicolon after variable declaration.\n\n");
+    name = par->prev_tok;
 
-    return stm;
+    tok_consume(par, TOK_EQUAL,
+        "\n    An equal sign should follow the variable's name.\n\n");
+
+    value = expression(par);
+
+    tok_consume(par, TOK_SEMICOLON,
+        "\n    Missing semicolon after variable declaration.\n\n");
+
+    return stm_new_var_decl(name, value);
 }
 
 static struct stm *
@@ -126,7 +122,7 @@ statement(struct par_state *par)
                | if_stm
                | while_stm
                | print_stm
-               | expr_stmt                                                   */
+               | exp_stm                                                     */
 {
     struct stm *stm;
 
@@ -136,10 +132,12 @@ statement(struct par_state *par)
         stm = if_cond(par);
     else if (tok_matches(par, TOK_WHILE))
         stm = while_cond(par);
+/*    else if (tok_matches(par, TOK_FOR))
+        stm = for_cond(par); */
     else if (tok_matches(par, TOK_PRINT))
         stm = print(par);
     else
-        stm = expr_stmt(par);
+        stm = exp_stm(par);
 
     return stm;
 }
@@ -153,13 +151,13 @@ block(struct par_state *par)
     statements = Vector_new(sizeof(struct stm *));
     while (!tok_is(par, TOK_END) && !tok_is(par, TOK_EOF))
     {
-        struct stm *stm = declaration(par);
+        struct stm *stm;
+
+        stm = declaration(par);
         Vector_push(statements, &stm);
     }
 
-    if (!tok_matches(par, TOK_END))
-        err_at_tok(par->path, par->prev_tok,
-            "\n    Missing `end` keyword after block.\n\n");
+    tok_consume(par, TOK_END, "\n    Missing `end` keyword after block.\n\n");
 
     return stm_new_block(statements);
 }
@@ -168,70 +166,95 @@ static struct stm *
 if_cond(struct par_state *par)
 /*  if_stm -> ^if^ "(" expression ")" statement ( "else" statement )?        */
 {
-    struct stm *stm;
+    struct stm *then_block, *else_block;
+    struct exp *cond;
 
-    if (tok_matches(par, TOK_PAREN_LEFT))
-    {
-        struct exp *cond;
+    tok_consume(par, TOK_PAREN_LEFT,
+        "\n    Expected an opening paren after `if` keyword.\n\n");
 
-        cond = expression(par);
+    cond = expression(par);
 
-        if (tok_matches(par, TOK_PAREN_RIGHT))
-        {
-            struct stm *then_block;
-            struct stm *else_block;
+    tok_consume(par, TOK_PAREN_RIGHT,
+        "\n    Expected a closing paren after the if condition.\n\n");
 
-            then_block = statement(par);
+    then_block = statement(par);
 
-            if (tok_matches(par, TOK_ELSE))
-                else_block = statement(par);
-            else
-                else_block = NULL;
-
-            stm = stm_new_if(cond, then_block, else_block);
-        }
-        else
-            err_at_tok(par->path, par->prev_tok,
-                "\n    Expected a closing paren after the if condition.\n\n");
-    }
+    if (tok_matches(par, TOK_ELSE))
+        else_block = statement(par);
     else
-        err_at_tok(par->path, par->prev_tok,
-            "\n    Expected an opening paren after `if` keyword.\n\n");
+        else_block = NULL;
 
-    return stm;
+    return stm_new_if(cond, then_block, else_block);
 }
 
 static struct stm *
 while_cond(struct par_state *par)
 /*  while_stm -> ^while^ "(" expression ")" statement                        */
 {
-    struct stm *stm;
+    struct exp *cond;
+    struct stm *body;
 
-    if (tok_matches(par, TOK_PAREN_LEFT))
-    {
-        struct exp *cond;
+    tok_consume(par, TOK_PAREN_LEFT,
+        "\n    Expected an opening paren after `while` keyword.\n\n");
 
-        cond = expression(par);
+    cond = expression(par);
 
-        if (tok_matches(par, TOK_PAREN_RIGHT))
-        {
-            struct stm *body;
+    tok_consume(par, TOK_PAREN_RIGHT,
+        "\n    Expected a closing paren after the while condition.\n\n");
 
-            body = statement(par);
-            stm = stm_new_while(cond, body);
-        }
-        else
-            err_at_tok(par->path, par->prev_tok,
-                "\n    Expected a closing paren after the while "
-                "condition.\n\n");
-    }
+    body = statement(par);
+
+    return stm_new_while(cond, body);
+}
+/*
+static struct stm *
+for_cond(struct par_state *par)
+ *  for_stm -> ^for^ "(" ( var_decl | exp_stm | ";" )
+                           expression  ";"
+                           expression? ")" statement
+Note: var_decl and exp_stm already contain ";"                               *
+{
+    struct stm *init, *body;
+    struct exp *cond, *incr;
+
+    tok_consume(par, TOK_PAREN_LEFT,
+        "\n    Missing left paren after `for` keyword.\n\n");
+
+    if (tok_matches(par, TOK_VAR))
+        init = var_decl(par);
+    else if (tok_matches(par, TOK_SEMICOLON))
+        init = NULL;
     else
-        err_at_tok(par->path, par->prev_tok,
-            "\n    Expected an opening paren after `while` keyword.\n\n");
+        init = exp_stm(par);
+
+    cond = expression(par);
+
+    tok_consume(par, TOK_SEMICOLON,
+        "\n    Missing semicolon after for condition.\n\n");
+
+    if (tok_is(par, TOK_PAREN_RIGHT))
+        incr = NULL;
+    else
+        incr = expression(par);
+
+    tok_consume(par, TOK_PAREN_RIGHT,
+        "\n    Missing right paren after for construct.\n\n");
+
+    body = statement(par);
+
+    if (incr != NULL)
+    {
+        struct stm *incr_stm;
+
+        incr_stm = stm_new
+        if (body->type == STM_BLOCK)
+        {
+            
+    }
 
     return stm;
 }
-
+*/
 static struct stm *
 print(struct par_state *par)
 /*  print_stm -> ^print^ expression ";"                                      */
@@ -239,25 +262,25 @@ print(struct par_state *par)
     struct exp *exp;
 
     exp = expression(par);
-    if (!tok_matches(par, TOK_SEMICOLON))
-        err_at_tok(par->path, par->prev_tok,
-            "\n    Missing semicolon after print statement.\n\n");
+
+    tok_consume(par, TOK_SEMICOLON,
+        "\n    Missing semicolon after print statement.\n\n");
 
     return stm_new_print(exp, par->prev_tok);
 }
 
 static struct stm *
-expr_stmt(struct par_state *par)
-/*  expr_stmt -> expression ";"                                              */
+exp_stm(struct par_state *par)
+/*  exp_stm -> expression ";"                                              */
 {
     struct exp *exp;
 
     exp = expression(par);
-    if (!tok_matches(par, TOK_SEMICOLON))
-        err_at_tok(par->path, par->prev_tok,
-            "\n    Missing semicolon after expression statement.\n\n");
 
-    return stm_new_expr_stmt(exp, par->prev_tok);
+    tok_consume(par, TOK_SEMICOLON,
+        "\n    Missing semicolon after expression statement.\n\n");
+
+    return stm_new_exp_stm(exp, par->prev_tok);
 }
 
 static struct exp *
@@ -274,18 +297,22 @@ assignment(struct par_state *par)
    suited better to being a statement                                        */
 /*  assignment -> equality ( "=" assignment )*                               */
 {
-    struct exp *left = equality(par);
+    struct exp *left;
 
+    left = equality(par);
     if (tok_matches(par, TOK_EQUAL))
     {
-        struct tok *eq = par->prev_tok;
-        struct exp *exp = assignment(par);
+        struct tok *eq;
+        struct exp *exp;
 
+        eq = par->prev_tok;
+        exp = assignment(par);
         if (left->type == EXP_VAR)
         {
-            struct tok *varname = left->data.name;
-            free(left);
-            return exp_new_assign(varname, exp);
+            struct tok *varname;
+
+            varname = left->data.name;
+            left = exp_new_assign(varname, exp);
         }
         else
             err_at_tok(par->path, eq,
@@ -300,13 +327,17 @@ static struct exp *
 equality(struct par_state *par)
 /*  equality -> ordering ( ( "!=" | "==" ) ordering )*                       */
 {
-    struct exp *left = ordering(par);
+    struct exp *left;
 
+    left = ordering(par);
     while (tok_matches(par, TOK_BANG_EQUAL) ||
            tok_matches(par, TOK_EQUAL_EQUAL))
     {
-        struct tok *op = par->prev_tok;
-        struct exp *right = ordering(par);
+        struct tok *op;
+        struct exp *right;
+
+        op = par->prev_tok;
+        right = ordering(par);
         left = exp_new_binary(op, left, right);
     }
 
@@ -317,13 +348,17 @@ static struct exp *
 ordering(struct par_state *par)
 /*  ordering -> addition ( ( ">" | ">=" | "<" | "<=" ) addition)*          */
 {
-    struct exp *left = addition(par);
+    struct exp *left;
 
+    left = addition(par);
     while (tok_matches(par, TOK_GREAT) || tok_matches(par, TOK_GREAT_EQUAL) ||
            tok_matches(par, TOK_LESS) || tok_matches(par, TOK_LESS_EQUAL))
     {
-        struct tok *op = par->prev_tok;
-        struct exp *right = addition(par);
+        struct tok *op;
+        struct exp *right;
+
+        op = par->prev_tok;
+        right = addition(par);
         left = exp_new_binary(op, left, right);
     }
 
@@ -334,12 +369,16 @@ static struct exp *
 addition(struct par_state *par)
 /*  addition -> multiplication ( ( "-" | "+" ) multiplication)*              */
 {
-    struct exp *left = multiplication(par);
+    struct exp *left;
 
+    left = multiplication(par);
     while (tok_matches(par, TOK_MINUS) || tok_matches(par, TOK_PLUS))
     {
-        struct tok *op = par->prev_tok;
-        struct exp *right = multiplication(par);
+        struct tok *op;
+        struct exp *right;
+
+        op = par->prev_tok;
+        right = multiplication(par);
         left = exp_new_binary(op, left, right);
     }
 
@@ -350,12 +389,16 @@ static struct exp *
 multiplication(struct par_state *par)
 /*  multiplication -> unary ( ( "/" | "*" ) unary )*                         */
 {
-    struct exp *left = unary(par);
+    struct exp *left;
 
+    left = unary(par);
     while (tok_matches(par, TOK_SLASH) || tok_matches(par, TOK_STAR))
     {
-        struct tok *op = par->prev_tok;
-        struct exp *right = unary(par);
+        struct tok *op;
+        struct exp *right;
+
+        op = par->prev_tok;
+        right = unary(par);
         left = exp_new_binary(op, left, right);
     }
 
@@ -369,8 +412,11 @@ unary(struct par_state *par)
 {
     if (tok_matches(par, TOK_BANG) || tok_matches(par, TOK_MINUS))
     {
-        struct tok *op = par->prev_tok;
-        struct exp *exp = unary(par);
+        struct tok *op;
+        struct exp *exp;
+
+        op = par->prev_tok;
+        exp = unary(par);
         return exp_new_unary(op, exp);
     }
     else
@@ -384,34 +430,32 @@ primary(struct par_state *par)
             | "(" expression ")"
             | XXX error productions                                          */
 {
+    struct exp *exp;
+
     if (tok_matches(par, TOK_IDENTIFIER))
-        return exp_new_var(par->prev_tok);
-    if (tok_matches(par, TOK_INTEGER) || tok_matches(par, TOK_DOUBLE) ||
+        exp = exp_new_var(par->prev_tok);
+    else if
+    (
+        tok_matches(par, TOK_INTEGER) ||
+        tok_matches(par, TOK_DOUBLE) ||
         tok_matches(par, TOK_STRING) ||
-        tok_matches(par, TOK_FALSE) || tok_matches(par, TOK_TRUE))
-    {
-        return exp_new_literal(par->prev_tok);
-    }
+        tok_matches(par, TOK_FALSE) ||
+        tok_matches(par, TOK_TRUE)
+    )
+        exp = exp_new_literal(par->prev_tok);
     else if (tok_matches(par, TOK_PAREN_LEFT))
     {
-        struct exp *exp = expression(par);
-        if (!tok_matches(par, TOK_PAREN_RIGHT))
-        {
-            err_at_tok(par->path, par->this_tok,
-                "\n    Expected a closing paren, instead got `%s`.\n\n",
-                par->this_tok->lexeme);
-            return NULL; /* Unreachable. */
-        }
-        else
-            return exp;
+        exp = expression(par);
+
+        tok_consume(par, TOK_PAREN_RIGHT,
+            "\n    Expected a closing paren.\n\n");
     }
     else
-    {
         err_at_tok(par->path, par->this_tok,
             "\n    Expected number, paren or keyword. Instead got `%s`.\n\n",
             par->this_tok->lexeme);
-        return NULL; /* Unreachable. */
-    }
+
+    return exp;
 }
 
 static struct tok *
@@ -433,6 +477,15 @@ tok_matches(struct par_state *par, enum tok_type type)
     }
     else
         return false;
+}
+
+static void
+tok_consume(struct par_state *par, enum tok_type type, const char *message)
+{
+    if (par->this_tok->type == type)
+        tok_next(par);
+    else
+        err_at_tok(par->path, par->prev_tok, message);
 }
 
 inline static bool
@@ -496,13 +549,13 @@ stm_new_var_decl(struct tok *name, struct exp *exp)
 }
 
 static struct stm *
-stm_new_expr_stmt(struct exp *exp, struct tok *last)
+stm_new_exp_stm(struct exp *exp, struct tok *last)
 {
     struct stm *stm = malloc(sizeof(struct stm));
 
-    stm->type = STM_EXPR_STMT;
-    stm->data.expr.exp = exp;
-    stm->data.expr.last = last;
+    stm->type = STM_EXP_STM;
+    stm->data.exp.exp = exp;
+    stm->data.exp.last = last;
 
     return stm;
 }
@@ -642,17 +695,17 @@ print_stm(struct stm *stm)
             puts("]");
         } break;
 
-        case STM_EXPR_STMT:
+        case STM_EXP_STM:
         {
             printf("[ expstm ");
-            print_exp(stm->data.expr.exp);
+            print_exp(stm->data.exp.exp);
             puts("]");
         } break;
 
         case STM_PRINT:
         {
             printf("[ print ");
-            print_exp(stm->data.expr.exp);
+            print_exp(stm->data.exp.exp);
             puts("]");
         } break;
     }

@@ -121,9 +121,9 @@ execute(struct intpr *intpr, struct stm *stm)
             var_decl(intpr, stm->data.var_decl.name, var);
         } break;
 
-        case STM_EXPR_STMT:
+        case STM_EXP_STM:
             /* Evaluate and discard */
-            evaluate(intpr, stm->data.expr.exp);
+            evaluate(intpr, stm->data.exp.exp);
         break;
 
         case STM_PRINT:
