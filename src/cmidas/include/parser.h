@@ -4,7 +4,7 @@
 #include "vector.h"
 #include "lexer.h"
 
-#define T Par_T
+#define T Parser_T
 
 typedef struct T *T;
 

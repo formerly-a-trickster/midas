@@ -6,13 +6,13 @@
 #include "parser.h"
 #include "vector.h"
 
-#define T Par_T
+#define T Parser_T
 
 static const char *read_file(T par, const char *path);
 
 struct T
 {
-         Lex_T  lex;
+         Lexer_T  lex;
     const char *path;
     struct tok *prev_tok;
     struct tok *this_tok;
@@ -65,7 +65,7 @@ Par_new(void)
 {
     T par;
 
-    par = malloc(sizeof(struct par_state));
+    par = malloc(sizeof(struct T));
 
     par->lex = Lex_new();
     par->path = NULL;

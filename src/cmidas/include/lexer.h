@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#define T Lex_T
+#define T Lexer_T
 
 typedef struct T *T;
 

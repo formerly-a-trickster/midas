@@ -6,7 +6,7 @@
 #include "error.h"
 #include "lexer.h"
 
-#define T Lex_T
+#define T Lexer_T
 
 #define is_at_end(lex) ((*(lex)->index) == '\0')
 
