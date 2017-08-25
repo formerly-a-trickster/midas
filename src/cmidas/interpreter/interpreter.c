@@ -34,8 +34,10 @@ struct intpr *
 intpr_new(void)
 {
     struct intpr *intpr = malloc(sizeof(struct intpr));
+    intpr->path = NULL;
     intpr->globals = Env_new(NULL);
     intpr->context = intpr->globals;
+    intpr->par = Par_new();
 
     return intpr;
 }
@@ -47,7 +49,7 @@ interpret(struct intpr *intpr, const char *path)
     int i, len;
 
     intpr->path = path;
-    ast = parse(&intpr->par, path);
+    ast = parse(intpr->par, path);
 
     if (ast == NULL)
         return;

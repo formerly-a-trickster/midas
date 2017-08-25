@@ -30,10 +30,10 @@ struct val
 
 struct intpr
 {
-    const char *path;
-    Env_T globals;
-    Env_T context;
-    struct par_state par;
+          const char *path;
+    struct par_state *par;
+               Env_T  globals;
+               Env_T  context;
 };
 
 struct intpr *intpr_new(void);

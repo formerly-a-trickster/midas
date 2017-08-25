@@ -48,12 +48,28 @@ static struct exp *exp_new_group  (struct exp *, struct tok *, struct tok *);
 static struct exp *exp_new_var    (struct tok *);
 static struct exp *exp_new_literal(struct tok *);
 
+struct par_state *
+Par_new(void)
+{
+    struct par_state *par;
 
+    par = malloc(sizeof(struct par_state));
+
+    par->lex = Lex_new();
+    par->path = NULL;
+    par->prev_tok = NULL;
+    par->this_tok = NULL;
+    par->had_error = false;
+
+    return par;
+}
 
 Vector_T
 parse(struct par_state *par, const char *path)
 {
     const char *buffer;
+
+    par->path = path;
 
     buffer = read_file(par, path);
     if (buffer == NULL)
@@ -61,12 +77,7 @@ parse(struct par_state *par, const char *path)
         printf("%s\n", par->error_msg);
         return NULL;
     }
-
-    par->lex = Lex_new();
     Lex_feed(par->lex, buffer);
-    par->path = path;
-    par->prev_tok = NULL;
-    par->this_tok = NULL;
 
     tok_next(par);
 

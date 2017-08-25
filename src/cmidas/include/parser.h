@@ -109,6 +109,8 @@ struct par_state
           char  error_msg[256];
 };
 
+struct par_state *Par_new(void);
+
 Vector_T parse    (struct par_state *, const char *);
 void     print_stm(struct stm *);
 void     print_exp(struct exp *);
