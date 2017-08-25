@@ -8,9 +8,10 @@
 void
 err_at_tok(const char *path, struct tok *tok, const char *format, ...)
 {
+    va_list args;
+
     show_err_head(path);
 
-    va_list args;
     va_start(args, format);
     vprintf(format, args);
     va_end(args);
@@ -24,8 +25,10 @@ err_at_tok(const char *path, struct tok *tok, const char *format, ...)
 void
 show_err_head(const char *path)
 {
+    int i;
     int path_len = strlen(path);
-    for (int i = 0; i < 80 - path_len; ++i)
+
+    for (i = 0; i < 80 - path_len; ++i)
         putchar('-');
     printf(TXT_BOLD "%s\n" TXT_CLEAR, path);
 }
@@ -42,17 +45,19 @@ show_err_code(const char *path, int lineno, int colno, int length)
     {
         if (i == lineno)
         {
+            int j;
+
             printf(TXT_BOLD "%4i|", i);
-            for (int i = 0; i < colno - 1; ++i)
-                putchar(line[i]);
+            for (j = 0; j < colno - 1; ++j)
+                putchar(line[j]);
 
             printf(TXT_RED);
-            for (int i = colno - 1; i < colno + length - 1; ++i)
-                putchar(line[i]);
+            for (j = colno - 1; j < colno + length - 1; ++j)
+                putchar(line[j]);
 
             printf(TXT_CLEAR TXT_BOLD);
-            for (int i = colno + length - 1; line[i] != '\0'; ++i)
-                putchar(line[i]);
+            for (j = colno + length - 1; line[j] != '\0'; ++j)
+                putchar(line[j]);
 
             printf (TXT_CLEAR);
         }

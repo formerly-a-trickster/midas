@@ -84,10 +84,11 @@ Lex_feed(T lex, const char *buffer)
 struct tok *
 Lex_get_tok(T lex)
 {
+    char c;
+
     skip_space(lex);
     lex->start = lex->index;
-    const char c = char_next(lex);
-
+    c = char_next(lex);
     if (is_alpha(c))
         return identifier(lex);
 
