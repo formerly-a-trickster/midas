@@ -1,7 +1,7 @@
 #ifndef MD_env_h_
 #define MD_env_h_
 
-#define T Env_T
+#define T Environ_T
 
 typedef struct T *T;
 

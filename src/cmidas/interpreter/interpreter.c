@@ -3,13 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "env.h"
+#include "environment.h"
 #include "error.h"
 #include "interpreter.h"
 #include "parser.h"
 #include "vector.h"
 
-#define T Interpreter_T
+#define T Interpr_T
 
 enum val_type
 {
@@ -35,8 +35,8 @@ struct val
 struct T
 {
     const char *path;
-         Env_T  globals;
-         Env_T  context;
+     Environ_T  globals;
+     Environ_T  context;
 };
 
 static void ctx_push(T intpr);
@@ -61,7 +61,7 @@ static struct val val_new(T , struct tok *);
 static const char *val_type_str(enum val_type);
 
 T
-Intpr_new(void)
+Interpr_new(void)
 {
     T intpr = malloc(sizeof(struct T));
     intpr->path = NULL;
@@ -72,7 +72,7 @@ Intpr_new(void)
 }
 
 void
-Intpr_run(T intpr, const char *path, Vector_T ast)
+Interpr_run(T intpr, const char *path, Vector_T ast)
 {
     int i, len;
 
@@ -86,7 +86,7 @@ Intpr_run(T intpr, const char *path, Vector_T ast)
 static void
 ctx_push(T intpr)
 {
-    Env_T new_ctx;
+    Environ_T new_ctx;
 
     new_ctx = Env_new(intpr->context);
     intpr->context = new_ctx;
@@ -95,7 +95,7 @@ ctx_push(T intpr)
 static void
 ctx_pop(T intpr)
 {
-    Env_T old_ctx;
+    Environ_T old_ctx;
 
     old_ctx = intpr->context;
     intpr->context = Env_parent(old_ctx);

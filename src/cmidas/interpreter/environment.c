@@ -1,9 +1,9 @@
 #include <stdlib.h>
 
-#include "env.h"
+#include "environment.h"
 #include "hash.h"
 
-#define T Env_T
+#define T Environ_T
 
 struct T
 {

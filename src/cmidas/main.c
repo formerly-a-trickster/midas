@@ -11,15 +11,15 @@ main(int argc, const char *argv[])
     {
         Parser_T par;
         Vector_T ast;
-        Interpreter_T intpr;
+        Interpr_T intpr;
 
         par = Par_new();
         ast = Par_parse(par, argv[1]);
         if (ast == NULL)
             return 1;
 
-        intpr = Intpr_new();
-        Intpr_run(intpr, argv[1], ast);
+        intpr = Interpr_new();
+        Interpr_run(intpr, argv[1], ast);
     }
     else
         puts("Usage: cmidas file");

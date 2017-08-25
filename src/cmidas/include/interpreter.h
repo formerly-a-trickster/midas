@@ -3,12 +3,12 @@
 
 #include "vector.h"
 
-#define T Interpreter_T
+#define T Interpr_T
 
 typedef struct T *T;
 
-   T Intpr_new(void);
-void Intpr_run(T intpr, const char *path, Vector_T ast);
+   T Interpr_new(void);
+void Interpr_run(T intpr, const char *path, Vector_T ast);
 
 #undef T
 
