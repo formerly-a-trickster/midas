@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -805,6 +806,9 @@ val_type_str(enum val_type type)
             return "fractional";
         case VAL_STRING:
             return "string";
+        /* unreachable */
+        default:
+            return NULL;
     }
 }
 

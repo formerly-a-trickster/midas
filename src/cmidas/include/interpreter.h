@@ -1,10 +1,7 @@
 #ifndef MD_interpreter_h_
 #define MD_interpreter_h_
 
-#include "env.h"
 #include "vector.h"
-
-#include <stdbool.h>
 
 #define T Interpreter_T
 

@@ -2,7 +2,6 @@
 #define MD_parser_h_
 
 #include "vector.h"
-#include "lexer.h"
 
 #define T Parser_T
 
