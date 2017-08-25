@@ -8,6 +8,10 @@
 
 #define T Parser_T
 
+#define tok_is(PAR, TYPE)  ((PAR)->this_tok->type == (TYPE))
+
+#define tok_was(PAR, TYPE) ((PAR)->prev_tok->type == (TYPE))
+
 struct T
 {
          Lexer_T  lex;
@@ -42,8 +46,6 @@ static struct exp *primary       (T par);
 static struct tok *tok_next   (T par);
 static        bool tok_matches(T par, enum tok_type);
 static        void tok_consume(T par, enum tok_type, const char *);
-inline static bool tok_is     (T par, enum tok_type);
-inline static bool tok_was    (T par, enum tok_type);
 
 static struct stm *stm_new_block    (Vector_T);
 static struct stm *stm_new_if       (struct exp *, struct stm *, struct stm *);
@@ -593,18 +595,6 @@ tok_consume(T par, enum tok_type type, const char *message)
         err_at_tok(par->path, par->prev_tok, message);
 }
 
-inline static bool
-tok_is(T par, enum tok_type type)
-{
-    return par->this_tok->type == type;
-}
-
-inline static bool
-tok_was(T par, enum tok_type type)
-{
-    return par->prev_tok->type == type;
-}
-
 static struct stm *
 stm_new_block(Vector_T block)
 {
@@ -866,4 +856,6 @@ print_exp(struct exp *exp)
 }
 
 #undef T
+#undef tok_is
+#undef tok_was
 
