@@ -4,6 +4,10 @@
 #include "vector.h"
 #include "lexer.h"
 
+#define T Par_T
+
+typedef struct T *T;
+
 struct stm
 {
     enum
@@ -99,21 +103,12 @@ struct exp
     } data;
 };
 
-struct par_state
-{
-         Lex_T  lex;
-    const char *path;
-    struct tok *prev_tok;
-    struct tok *this_tok;
-          bool  had_error;
-          char  error_msg[256];
-};
-
-struct par_state *Par_new(void);
-
-Vector_T parse    (struct par_state *, const char *);
+       T Par_new  (void);
+Vector_T parse    (T par, const char *path);
 void     print_stm(struct stm *);
 void     print_exp(struct exp *);
+
+#undef T
 
 #endif
 

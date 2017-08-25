@@ -6,33 +6,45 @@
 #include "parser.h"
 #include "vector.h"
 
-static const char *read_file(struct par_state *par, const char *path);
+#define T Par_T
 
-static   Vector_T  program    (struct par_state *);
-static struct stm *declaration(struct par_state *);
-static struct stm *statement  (struct par_state *);
-static struct stm *block      (struct par_state *);
-static struct stm *if_cond    (struct par_state *);
-static struct stm *while_cond (struct par_state *);
-/*static struct stm *for_cond   (struct par_state *);*/
-static struct stm *var_decl   (struct par_state *);
-static struct stm *exp_stm    (struct par_state *);
-static struct stm *print      (struct par_state *);
+static const char *read_file(T par, const char *path);
 
-static struct exp *expression    (struct par_state *);
-static struct exp *assignment    (struct par_state *);
-static struct exp *equality      (struct par_state *);
-static struct exp *ordering      (struct par_state *);
-static struct exp *addition      (struct par_state *);
-static struct exp *multiplication(struct par_state *);
-static struct exp *unary         (struct par_state *);
-static struct exp *primary       (struct par_state *);
+struct T
+{
+         Lex_T  lex;
+    const char *path;
+    struct tok *prev_tok;
+    struct tok *this_tok;
+          bool  had_error;
+          char  error_msg[256];
+};
 
-static struct tok *tok_next   (struct par_state *);
-static        bool tok_matches(struct par_state *, enum tok_type);
-static        void tok_consume(struct par_state *, enum tok_type, const char *);
-inline static bool tok_is     (struct par_state *, enum tok_type);
-inline static bool tok_was    (struct par_state *, enum tok_type);
+static   Vector_T  program    (T par);
+static struct stm *declaration(T par);
+static struct stm *statement  (T par);
+static struct stm *block      (T par);
+static struct stm *if_cond    (T par);
+static struct stm *while_cond (T par);
+/*static struct stm *for_cond   (T par);*/
+static struct stm *var_decl   (T par);
+static struct stm *exp_stm    (T par);
+static struct stm *print      (T par);
+
+static struct exp *expression    (T par);
+static struct exp *assignment    (T par);
+static struct exp *equality      (T par);
+static struct exp *ordering      (T par);
+static struct exp *addition      (T par);
+static struct exp *multiplication(T par);
+static struct exp *unary         (T par);
+static struct exp *primary       (T par);
+
+static struct tok *tok_next   (T par);
+static        bool tok_matches(T par, enum tok_type);
+static        void tok_consume(T par, enum tok_type, const char *);
+inline static bool tok_is     (T par, enum tok_type);
+inline static bool tok_was    (T par, enum tok_type);
 
 static struct stm *stm_new_block    (Vector_T);
 static struct stm *stm_new_if       (struct exp *, struct stm *, struct stm *);
@@ -48,10 +60,10 @@ static struct exp *exp_new_group  (struct exp *, struct tok *, struct tok *);
 static struct exp *exp_new_var    (struct tok *);
 static struct exp *exp_new_literal(struct tok *);
 
-struct par_state *
+T
 Par_new(void)
 {
-    struct par_state *par;
+    T par;
 
     par = malloc(sizeof(struct par_state));
 
@@ -65,7 +77,7 @@ Par_new(void)
 }
 
 Vector_T
-parse(struct par_state *par, const char *path)
+parse(T par, const char *path)
 {
     const char *buffer;
 
@@ -85,7 +97,7 @@ parse(struct par_state *par, const char *path)
 }
 
 static const char *
-read_file(struct par_state *par, const char *path)
+read_file(T par, const char *path)
 {
     FILE *source;
     int file_size, bytes_read;
@@ -98,7 +110,7 @@ read_file(struct par_state *par, const char *path)
         (
             par->error_msg,
             "File: %s\n"
-            "Failed to read file. It Could not be opened.",
+            "Failed to read file. It could not be opened.",
             path
         );
         par->had_error = true;
@@ -145,7 +157,7 @@ read_file(struct par_state *par, const char *path)
 }
 
 static Vector_T
-program(struct par_state *par)
+program(T par)
 /*  program -> statement* "EOF"                                              */
 {
     Vector_T program;
@@ -163,7 +175,7 @@ program(struct par_state *par)
 }
 
 static struct stm *
-declaration(struct par_state *par)
+declaration(T par)
 /*  declaration -> var_decl ";"
                  | statement                                                 */
 {
@@ -178,7 +190,7 @@ declaration(struct par_state *par)
 }
 
 static struct stm *
-var_decl(struct par_state *par)
+var_decl(T par)
 /*  var_decl -> ^var^ identifier "=" expression ";"                          */
 {
     struct tok *name;
@@ -201,7 +213,7 @@ var_decl(struct par_state *par)
 }
 
 static struct stm *
-statement(struct par_state *par)
+statement(T par)
 /*  statement -> block_stm
                | if_stm
                | while_stm
@@ -227,7 +239,7 @@ statement(struct par_state *par)
 }
 
 static struct stm *
-block(struct par_state *par)
+block(T par)
 /*  block_stm -> ^do^ declaration* "end"                                     */
 {
     Vector_T statements;
@@ -247,7 +259,7 @@ block(struct par_state *par)
 }
 
 static struct stm *
-if_cond(struct par_state *par)
+if_cond(T par)
 /*  if_stm -> ^if^ "(" expression ")" statement ( "else" statement )?        */
 {
     struct stm *then_block, *else_block;
@@ -272,7 +284,7 @@ if_cond(struct par_state *par)
 }
 
 static struct stm *
-while_cond(struct par_state *par)
+while_cond(T par)
 /*  while_stm -> ^while^ "(" expression ")" statement                        */
 {
     struct exp *cond;
@@ -292,7 +304,7 @@ while_cond(struct par_state *par)
 }
 /*
 static struct stm *
-for_cond(struct par_state *par)
+for_cond(T par)
  *  for_stm -> ^for^ "(" ( var_decl | exp_stm | ";" )
                            expression  ";"
                            expression? ")" statement
@@ -340,7 +352,7 @@ Note: var_decl and exp_stm already contain ";"                               *
 }
 */
 static struct stm *
-print(struct par_state *par)
+print(T par)
 /*  print_stm -> ^print^ expression ";"                                      */
 {
     struct exp *exp;
@@ -354,7 +366,7 @@ print(struct par_state *par)
 }
 
 static struct stm *
-exp_stm(struct par_state *par)
+exp_stm(T par)
 /*  exp_stm -> expression ";"                                              */
 {
     struct exp *exp;
@@ -368,14 +380,14 @@ exp_stm(struct par_state *par)
 }
 
 static struct exp *
-expression(struct par_state *par)
+expression(T par)
 /*  expression -> assignment                                                 */
 {
     return assignment(par);
 }
 
 static struct exp *
-assignment(struct par_state *par)
+assignment(T par)
 /* XXX having assignment be an expression simplifies the grammar, but puts us
    in the situation of having an expression with a side effect. It would be
    suited better to being a statement                                        */
@@ -408,7 +420,7 @@ assignment(struct par_state *par)
 }
 
 static struct exp *
-equality(struct par_state *par)
+equality(T par)
 /*  equality -> ordering ( ( "!=" | "==" ) ordering )*                       */
 {
     struct exp *left;
@@ -429,7 +441,7 @@ equality(struct par_state *par)
 }
 
 static struct exp *
-ordering(struct par_state *par)
+ordering(T par)
 /*  ordering -> addition ( ( ">" | ">=" | "<" | "<=" ) addition)*          */
 {
     struct exp *left;
@@ -450,7 +462,7 @@ ordering(struct par_state *par)
 }
 
 static struct exp *
-addition(struct par_state *par)
+addition(T par)
 /*  addition -> multiplication ( ( "-" | "+" ) multiplication)*              */
 {
     struct exp *left;
@@ -470,7 +482,7 @@ addition(struct par_state *par)
 }
 
 static struct exp *
-multiplication(struct par_state *par)
+multiplication(T par)
 /*  multiplication -> unary ( ( "/" | "*" ) unary )*                         */
 {
     struct exp *left;
@@ -490,7 +502,7 @@ multiplication(struct par_state *par)
 }
 
 static struct exp *
-unary(struct par_state *par)
+unary(T par)
 /*  unary -> ( ("!" | "-") unary )
            | primary                                                         */
 {
@@ -508,7 +520,7 @@ unary(struct par_state *par)
 }
 
 static struct exp *
-primary(struct par_state *par)
+primary(T par)
 /* primary -> IDENTIFIER
             | INTEGER | DOUBLE | STRING | "false" | "true" |
             | "(" expression ")"
@@ -543,7 +555,7 @@ primary(struct par_state *par)
 }
 
 static struct tok *
-tok_next(struct par_state *par)
+tok_next(T par)
 {
     struct tok *tok;
 
@@ -562,7 +574,7 @@ tok_next(struct par_state *par)
 }
 
 static bool
-tok_matches(struct par_state *par, enum tok_type type)
+tok_matches(T par, enum tok_type type)
 {
     if (par->this_tok->type == type)
     {
@@ -574,7 +586,7 @@ tok_matches(struct par_state *par, enum tok_type type)
 }
 
 static void
-tok_consume(struct par_state *par, enum tok_type type, const char *message)
+tok_consume(T par, enum tok_type type, const char *message)
 {
     if (par->this_tok->type == type)
         tok_next(par);
@@ -583,13 +595,13 @@ tok_consume(struct par_state *par, enum tok_type type, const char *message)
 }
 
 inline static bool
-tok_is(struct par_state *par, enum tok_type type)
+tok_is(T par, enum tok_type type)
 {
     return par->this_tok->type == type;
 }
 
 inline static bool
-tok_was(struct par_state *par, enum tok_type type)
+tok_was(T par, enum tok_type type)
 {
     return par->prev_tok->type == type;
 }
@@ -853,4 +865,6 @@ print_exp(struct exp *exp)
         } break;
     }
 }
+
+#undef T
 

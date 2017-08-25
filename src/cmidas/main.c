@@ -9,7 +9,7 @@ main(int argc, const char *argv[])
 {
     if (argc == 2)
     {
-        struct par_state *par;
+        Par_T par;
         struct intpr *intpr;
         Vector_T ast;
 
