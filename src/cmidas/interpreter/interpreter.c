@@ -5,7 +5,6 @@
 #include "env.h"
 #include "error.h"
 #include "interpreter.h"
-#include "lexer.h"
 #include "parser.h"
 #include "vector.h"
 
@@ -37,22 +36,16 @@ intpr_new(void)
     intpr->path = NULL;
     intpr->globals = Env_new(NULL);
     intpr->context = intpr->globals;
-    intpr->par = Par_new();
 
     return intpr;
 }
 
 void
-interpret(struct intpr *intpr, const char *path)
+interpret(struct intpr *intpr, const char *path, Vector_T ast)
 {
-    Vector_T ast;
     int i, len;
 
     intpr->path = path;
-    ast = parse(intpr->par, path);
-
-    if (ast == NULL)
-        return;
 
     len = Vector_length(ast);
     for (i = 0; i < len; ++i)

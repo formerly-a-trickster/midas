@@ -2,8 +2,7 @@
 #define MD_interpreter_h_
 
 #include "env.h"
-#include "lexer.h"
-#include "parser.h"
+#include "vector.h"
 
 #include <stdbool.h>
 
@@ -31,12 +30,11 @@ struct val
 struct intpr
 {
           const char *path;
-    struct par_state *par;
                Env_T  globals;
                Env_T  context;
 };
 
 struct intpr *intpr_new(void);
-void          interpret(struct intpr *, const char *);
+void          interpret(struct intpr *, const char *, Vector_T);
 
 #endif

@@ -1,4 +1,3 @@
-#include "lexer.h"
 #include "parser.h"
 #include "interpreter.h"
 
@@ -10,8 +9,17 @@ main(int argc, const char *argv[])
 {
     if (argc == 2)
     {
-        struct intpr *intpr = intpr_new();
-        interpret(intpr, argv[1]);
+        struct par_state *par;
+        struct intpr *intpr;
+        Vector_T ast;
+
+        par = Par_new();
+        ast = parse(par, argv[1]);
+        if (ast == NULL)
+            return 1;
+
+        intpr = intpr_new();
+        interpret(intpr, argv[1], ast);
     }
     else
         puts("Usage: cmidas file");
