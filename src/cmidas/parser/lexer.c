@@ -41,7 +41,7 @@ struct keyword keywords[] =
     { "true" , 5, TOK_TRUE    },
     { "var"  , 4, TOK_VAR     },
     { "while", 6, TOK_WHILE   },
-    { NULL   , 0, ERR_UNKNOWN }
+    { NULL   , 0, TOK_EOF     }
 };
 
 static struct tok *tok_new   (T lex, enum tok_type type);
@@ -157,8 +157,23 @@ Lex_tok(T lex)
             return tok_new(lex, TOK_EOF);
 
         default:
-            return tok_new(lex, ERR_UNKNOWN);
+            sprintf
+            (
+                lex->error_msg,
+                "Line: %i\n"
+                "Col : %i\n"
+                "Encoutered unknown glyph `%c`.",
+                lex->lineno, lex->colno, c
+            );
+            lex->had_error = true;
+            return NULL;
     }
+}
+
+void
+Lex_get_err(T lex)
+{
+    printf("%s\n", lex->error_msg);
 }
 
 void

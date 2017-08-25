@@ -10,9 +10,9 @@ typedef struct T *T;
 
 enum tok_type
 {
-    TOK_BANG,
+    TOK_EOF,
 
-    TOK_EOF, TOK_COMMA, TOK_EQUAL, TOK_GREAT, TOK_LESS, TOK_MINUS,
+    TOK_BANG, TOK_COMMA, TOK_EQUAL, TOK_GREAT, TOK_LESS, TOK_MINUS,
     TOK_PAREN_LEFT, TOK_PAREN_RIGHT, TOK_PERCENT, TOK_PLUS, TOK_SEMICOLON,
     TOK_SLASH, TOK_STAR,
 
@@ -22,9 +22,7 @@ enum tok_type
     TOK_DOUBLE, TOK_INTEGER, TOK_STRING,
 
     TOK_DO, TOK_ELSE, TOK_END, TOK_FALSE, TOK_FOR, TOK_IDENTIFIER, TOK_IF,
-    TOK_PRINT, TOK_TRUE, TOK_VAR, TOK_WHILE,
-
-    ERR_UNKNOWN
+    TOK_PRINT, TOK_TRUE, TOK_VAR, TOK_WHILE
 };
 
 struct keyword
@@ -46,6 +44,8 @@ struct tok
          T  Lex_new (void);
       void  Lex_feed(T lex, const char *buffer);
 struct tok *Lex_tok (T lex);
+
+      void  Lex_get_err(T lex);
 
 void        print_tok(struct tok *);
 

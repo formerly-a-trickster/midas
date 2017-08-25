@@ -83,8 +83,13 @@ read_file(struct par_state *par, const char *path)
     source = fopen(path, "rb");
     if (source == NULL)
     {
-        sprintf(par->error_msg, "Failed to read `%s`. "
-                                "Could not open file.", path);
+        sprintf
+        (
+            par->error_msg,
+            "File: %s\n"
+            "Failed to read file. It Could not be opened.",
+            path
+        );
         par->had_error = true;
         return NULL;
     }
@@ -97,8 +102,13 @@ read_file(struct par_state *par, const char *path)
     buffer = malloc(file_size + 1);
     if (buffer == NULL)
     {
-        sprintf(par->error_msg, "Failed to read `%s`. "
-                                "Not enough memory.", path);
+        sprintf
+        (
+            par->error_msg,
+            "File: %s\n"
+            "Failed to read file. Not enough memory.",
+            path
+        );
         par->had_error = true;
         return NULL;
     }
@@ -106,8 +116,13 @@ read_file(struct par_state *par, const char *path)
     bytes_read = fread(buffer, sizeof(char), file_size, source);
     if (bytes_read < file_size)
     {
-        sprintf(par->error_msg, "Failed to read `%s`. "
-                                "Reading stopped midway.", path);
+        sprintf
+        (
+            par->error_msg,
+            "File: %s\n"
+            "Failed to read file. Reading stopped midway.",
+            path
+        );
         par->had_error = true;
         return NULL;
     }
@@ -519,8 +534,18 @@ primary(struct par_state *par)
 static struct tok *
 tok_next(struct par_state *par)
 {
+    struct tok *tok;
+
+    tok = Lex_tok(par->lex);
+    if (tok == NULL)
+    {
+        printf("File: %s\n", par->path);
+        Lex_get_err(par->lex);
+        exit(1);
+    }
+
     par->prev_tok = par->this_tok;
-    par->this_tok = Lex_tok(par->lex);
+    par->this_tok = tok;
 
     return par->prev_tok;
 }
