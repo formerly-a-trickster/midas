@@ -29,7 +29,12 @@ struct T
           char  error_msg[256];
 };
 
-struct keyword keywords[] =
+struct keyword
+{
+    const char *name;
+    int length;
+    enum tok_type type;
+} keywords[] =
 {
     { "do"   , 3, TOK_DO      },
     { "else" , 5, TOK_ELSE    },

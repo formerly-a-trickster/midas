@@ -25,13 +25,6 @@ enum tok_type
     TOK_PRINT, TOK_TRUE, TOK_VAR, TOK_WHILE
 };
 
-struct keyword
-{
-    const char *name;
-    int length;
-    enum tok_type type;
-};
-
 struct tok
 {
     const char *lexeme;
