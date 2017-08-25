@@ -4,8 +4,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#define HALF_BUFFER_SIZE 50
-#define BUFFER_SIZE (HALF_BUFFER_SIZE * 2)
+#define T Lex_T
+
+typedef struct T *T;
 
 enum tok_type
 {
@@ -33,17 +34,6 @@ struct keyword
     enum tok_type type;
 };
 
-struct lex_state
-{
-    const char *buffer;
-    const char *index;
-    const char *start;
-           int  lineno;
-           int  colno;
-          bool  had_error;
-          char  error_msg[256];
-};
-
 struct tok
 {
     const char *lexeme;
@@ -53,9 +43,13 @@ struct tok
     int colno;
 };
 
-void        lex_init   (struct lex_state *);
-int         lex_feed   (struct lex_state *, const char *);
-struct tok *lex_get_tok(struct lex_state *);
-void        print_tok  (struct tok *);
+         T  Lex_new (void);
+       int  Lex_feed(T lex, const char *path);
+struct tok *Lex_tok (T lex);
+
+void        print_tok(struct tok *);
+
+#undef T
 
 #endif
+

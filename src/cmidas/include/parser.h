@@ -101,7 +101,7 @@ struct exp
 
 struct par_state
 {
-    struct lex_state lex;
+         Lex_T  lex;
     const char *path;
     struct tok *prev_tok;
     struct tok *this_tok;

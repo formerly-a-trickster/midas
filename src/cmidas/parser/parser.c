@@ -49,12 +49,12 @@ static struct exp *exp_new_literal(struct tok *);
 Vector_T
 parse(struct par_state *par, const char *path)
 {
-    lex_init(&par->lex);
+    par->lex = Lex_new();
+    Lex_feed(par->lex, path);
     par->path = path;
     par->prev_tok = NULL;
     par->this_tok = NULL;
 
-    lex_feed(&par->lex, path);
     tok_next(par);
 
     return program(par);
@@ -462,7 +462,7 @@ static struct tok *
 tok_next(struct par_state *par)
 {
     par->prev_tok = par->this_tok;
-    par->this_tok = lex_get_tok(&par->lex);
+    par->this_tok = Lex_tok(par->lex);
 
     return par->prev_tok;
 }

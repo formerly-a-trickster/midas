@@ -6,6 +6,29 @@
 #include "error.h"
 #include "lexer.h"
 
+#define T Lex_T
+
+#define is_at_end(lex) ((*(lex)->index) == '\0')
+
+#define is_alpha(c) (((c) >= 'a' && (c) <= 'z') || \
+                     ((c) >= 'A' && (c) <= 'Z') || \
+                      (c) == '_')
+
+#define is_numeric(c) ((c) >= '0' && (c) <= '9')
+
+#define is_alpha_num(c) (is_alpha(c) || is_numeric(c))
+
+struct T
+{
+    const char *buffer;
+    const char *index;
+    const char *start;
+           int  lineno;
+           int  colno;
+          bool  had_error;
+          char  error_msg[256];
+};
+
 struct keyword keywords[] =
 {
     { "do"   , 3, TOK_DO      },
@@ -21,32 +44,32 @@ struct keyword keywords[] =
     { NULL   , 0, ERR_UNKNOWN }
 };
 
-static struct tok *tok_new   (struct lex_state *, enum tok_type);
-static struct tok *identifier(struct lex_state *);
-static struct tok *number    (struct lex_state *);
-static struct tok *string    (struct lex_state *);
+static struct tok *tok_new   (T lex, enum tok_type type);
+static struct tok *identifier(T lex);
+static struct tok *number    (T lex);
+static struct tok *string    (T lex);
 
-static char char_next   (struct lex_state *);
-static char lookahead   (struct lex_state *);
-static bool char_matches(struct lex_state *, const char);
+static char char_next   (T lex);
+static char lookahead   (T lex);
+static bool char_matches(T lex, const char c);
 
-static void skip_space(struct lex_state *);
-static void skip_line (struct lex_state *);
+static void skip_space(T lex);
+static void skip_line (T lex);
 
-static inline bool is_at_end   (struct lex_state *);
-static inline bool is_alpha    (char);
-static inline bool is_numeric  (char);
-static inline bool is_alpha_num(char);
-
-void
-lex_init(struct lex_state *lex)
+T
+Lex_new(void)
 {
+    T lex;
+
+    lex = malloc(sizeof(struct T));
     lex->lineno = 1;
     lex->colno  = 0;
+
+    return lex;
 }
 
 int
-lex_feed(struct lex_state *lex, const char *path)
+Lex_feed(T lex, const char *path)
 {
     FILE *source;
     int file_size, bytes_read;
@@ -93,7 +116,7 @@ lex_feed(struct lex_state *lex, const char *path)
 }
 
 struct tok *
-lex_get_tok(struct lex_state *lex)
+Lex_tok(T lex)
 {
     skip_space(lex);
     lex->start = lex->index;
@@ -131,7 +154,7 @@ lex_get_tok(struct lex_state *lex)
         case '#':
             skip_line(lex);
             /* XXX Eliminate recursion from lexer */
-            return lex_get_tok(lex);
+            return Lex_tok(lex);
 
         case '<':
             if (char_matches(lex, '='))
@@ -185,7 +208,7 @@ print_tok(struct tok *tok)
 }
 
 static struct tok *
-tok_new(struct lex_state *lex, enum tok_type type)
+tok_new(T lex, enum tok_type type)
 {
     struct tok *tok;
     char *lexeme;
@@ -208,7 +231,7 @@ tok_new(struct lex_state *lex, enum tok_type type)
 }
 
 static struct tok *
-identifier(struct lex_state *lex)
+identifier(T lex)
 {
     struct tok *tok;
     struct keyword *keyw;
@@ -231,7 +254,7 @@ identifier(struct lex_state *lex)
 }
 
 static struct tok *
-number(struct lex_state *lex)
+number(T lex)
 {
     bool is_double = false;
 
@@ -260,7 +283,7 @@ number(struct lex_state *lex)
 }
 
 static struct tok *
-string(struct lex_state *lex)
+string(T lex)
 {
     struct tok *tok;
 
@@ -275,7 +298,7 @@ string(struct lex_state *lex)
 }
 
 static char
-char_next(struct lex_state *lex)
+char_next(T lex)
 {
     char next;
 
@@ -287,13 +310,13 @@ char_next(struct lex_state *lex)
 }
 
 static char
-lookahead(struct lex_state *lex)
+lookahead(T lex)
 {
     return *lex->index;
 }
 
 static bool
-char_matches(struct lex_state *lex, const char c)
+char_matches(T lex, const char c)
 {
     if (is_at_end(lex))
         return false;
@@ -307,7 +330,7 @@ char_matches(struct lex_state *lex, const char c)
 }
 
 static void
-skip_space(struct lex_state *lex)
+skip_space(T lex)
 {
     char c;
     for (;;)
@@ -334,7 +357,7 @@ skip_space(struct lex_state *lex)
 }
 
 static void
-skip_line(struct lex_state *lex)
+skip_line(T lex)
 {
     char c;
     for (;;)
@@ -358,29 +381,10 @@ skip_line(struct lex_state *lex)
     }
 }
 
-static inline bool
-is_at_end(struct lex_state *lex)
-{
-    return *lex->index == '\0';
-}
 
-static inline bool
-is_alpha(char c)
-{
-    return (c >= 'a' && c <= 'z') ||
-           (c >= 'A' && c <= 'Z') ||
-            c == '_';
-}
-
-static inline bool
-is_numeric(char c)
-{
-    return c >= '0' && c <= '9';
-}
-
-static inline bool
-is_alpha_num(char c)
-{
-    return is_alpha(c) || is_numeric(c);
-}
+#undef T
+#undef is_at_end
+#undef is_alpha
+#undef is_numeric
+#undef is_alpha_num
 
