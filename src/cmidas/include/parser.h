@@ -105,6 +105,8 @@ struct par_state
     const char *path;
     struct tok *prev_tok;
     struct tok *this_tok;
+          bool  had_error;
+          char  error_msg[256];
 };
 
 Vector_T parse    (struct par_state *, const char *);

@@ -44,7 +44,7 @@ struct tok
 };
 
          T  Lex_new (void);
-       int  Lex_feed(T lex, const char *path);
+      void  Lex_feed(T lex, const char *buffer);
 struct tok *Lex_tok (T lex);
 
 void        print_tok(struct tok *);

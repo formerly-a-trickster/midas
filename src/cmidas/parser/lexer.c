@@ -68,48 +68,9 @@ Lex_new(void)
     return lex;
 }
 
-int
-Lex_feed(T lex, const char *path)
+void
+Lex_feed(T lex, const char *buffer)
 {
-    FILE *source;
-    int file_size, bytes_read;
-    char* buffer;
-
-    source = fopen(path, "rb");
-    if (source == NULL)
-    {
-        sprintf(lex->error_msg, "Failed to read `%s`. "
-                                "Could not open file.", path);
-        lex->had_error = true;
-        return 1;
-    }
-
-    /* XXX the standard does not guarantee that this will work */
-    fseek(source, 0L, SEEK_END);
-    file_size = ftell(source);
-    rewind(source);
-
-    buffer = malloc(file_size + 1);
-    if (buffer == NULL)
-    {
-        sprintf(lex->error_msg, "Failed to read `%s`. "
-                                "Not enough memory.", path);
-        lex->had_error = true;
-        return 2;
-    }
-
-    bytes_read = fread(buffer, sizeof(char), file_size, source);
-    if (bytes_read < file_size)
-    {
-        sprintf(lex->error_msg, "Failed to read `%s`. "
-                                "Reading stopped midway.", path);
-        lex->had_error = true;
-        return 3;
-    }
-
-    buffer[file_size] = '\0';
-    fclose(source);
-
     lex->buffer = buffer;
     lex->index  = buffer;
     lex->start  = buffer;

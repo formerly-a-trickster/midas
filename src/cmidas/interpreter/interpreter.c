@@ -49,6 +49,9 @@ interpret(struct intpr *intpr, const char *path)
     intpr->path = path;
     ast = parse(&intpr->par, path);
 
+    if (ast == NULL)
+        return;
+
     len = Vector_length(ast);
     for (i = 0; i < len; ++i)
         execute(intpr, *(struct stm **)Vector_get(ast, i));

@@ -6,7 +6,9 @@
 #include "parser.h"
 #include "vector.h"
 
-         Vector_T  program    (struct par_state *);
+static const char *read_file(struct par_state *par, const char *path);
+
+static   Vector_T  program    (struct par_state *);
 static struct stm *declaration(struct par_state *);
 static struct stm *statement  (struct par_state *);
 static struct stm *block      (struct par_state *);
@@ -46,11 +48,22 @@ static struct exp *exp_new_group  (struct exp *, struct tok *, struct tok *);
 static struct exp *exp_new_var    (struct tok *);
 static struct exp *exp_new_literal(struct tok *);
 
+
+
 Vector_T
 parse(struct par_state *par, const char *path)
 {
+    const char *buffer;
+
+    buffer = read_file(par, path);
+    if (buffer == NULL)
+    {
+        printf("%s\n", par->error_msg);
+        return NULL;
+    }
+
     par->lex = Lex_new();
-    Lex_feed(par->lex, path);
+    Lex_feed(par->lex, buffer);
     par->path = path;
     par->prev_tok = NULL;
     par->this_tok = NULL;
@@ -60,7 +73,52 @@ parse(struct par_state *par, const char *path)
     return program(par);
 }
 
-Vector_T
+static const char *
+read_file(struct par_state *par, const char *path)
+{
+    FILE *source;
+    int file_size, bytes_read;
+    char* buffer;
+
+    source = fopen(path, "rb");
+    if (source == NULL)
+    {
+        sprintf(par->error_msg, "Failed to read `%s`. "
+                                "Could not open file.", path);
+        par->had_error = true;
+        return NULL;
+    }
+
+    /* XXX the standard does not guarantee that this will work */
+    fseek(source, 0L, SEEK_END);
+    file_size = ftell(source);
+    rewind(source);
+
+    buffer = malloc(file_size + 1);
+    if (buffer == NULL)
+    {
+        sprintf(par->error_msg, "Failed to read `%s`. "
+                                "Not enough memory.", path);
+        par->had_error = true;
+        return NULL;
+    }
+
+    bytes_read = fread(buffer, sizeof(char), file_size, source);
+    if (bytes_read < file_size)
+    {
+        sprintf(par->error_msg, "Failed to read `%s`. "
+                                "Reading stopped midway.", path);
+        par->had_error = true;
+        return NULL;
+    }
+
+    buffer[file_size] = '\0';
+    fclose(source);
+
+    return buffer;
+}
+
+static Vector_T
 program(struct par_state *par)
 /*  program -> statement* "EOF"                                              */
 {
