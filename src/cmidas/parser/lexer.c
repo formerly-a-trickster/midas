@@ -21,52 +21,82 @@ struct keyword keywords[] =
     { NULL   , 0, ERR_UNKNOWN }
 };
 
-static struct tok *tok_new(struct lex_state *, enum tok_type);
+static struct tok *tok_new   (struct lex_state *, enum tok_type);
 static struct tok *identifier(struct lex_state *);
-static struct tok *number(struct lex_state *);
-static struct tok *string(struct lex_state *);
+static struct tok *number    (struct lex_state *);
+static struct tok *string    (struct lex_state *);
 
-static void buffer_chars(struct lex_state *);
-static char char_next(struct lex_state *);
-static char lookahead(struct lex_state *);
+static char char_next   (struct lex_state *);
+static char lookahead   (struct lex_state *);
 static bool char_matches(struct lex_state *, const char);
 
-static void skip_whitespace(struct lex_state *);
-static void skip_line(struct lex_state *);
+static void skip_space(struct lex_state *);
+static void skip_line (struct lex_state *);
 
-static inline bool is_at_end(struct lex_state *);
-static inline bool is_alpha(char);
-static inline bool is_numeric(char);
+static inline bool is_at_end   (struct lex_state *);
+static inline bool is_alpha    (char);
+static inline bool is_numeric  (char);
 static inline bool is_alpha_num(char);
 
 void
 lex_init(struct lex_state *lex)
 {
-    lex->source = NULL;
-    lex->index = 0;
-    lex->chars_left = 0;
-    lex->tok_start = 0;
     lex->lineno = 1;
-    lex->colno = 1;
+    lex->colno  = 0;
 }
 
-void
+int
 lex_feed(struct lex_state *lex, const char *path)
-/* XXX ideally, the lexer would not have to keep track of actual files and
-  would just be fed characters from an overarching structure.                */
-/* XXX this just segfaults on attempting to open a file that's not there     */
 {
-    FILE *source = fopen(path, "r");
-    lex->path = path;
-    lex->source = source;
-    buffer_chars(lex);
+    FILE *source;
+    int file_size, bytes_read;
+    char* buffer;
+
+    source = fopen(path, "rb");
+    if (source == NULL)
+    {
+        sprintf(lex->error_msg, "Failed to read `%s`. "
+                                "Could not open file.", path);
+        lex->had_error = true;
+        return 1;
+    }
+
+    /* XXX the standard does not guarantee that this will work */
+    fseek(source, 0L, SEEK_END);
+    file_size = ftell(source);
+    rewind(source);
+
+    buffer = malloc(file_size + 1);
+    if (buffer == NULL)
+    {
+        sprintf(lex->error_msg, "Failed to read `%s`. "
+                                "Not enough memory.", path);
+        lex->had_error = true;
+        return 2;
+    }
+
+    bytes_read = fread(buffer, sizeof(char), file_size, source);
+    if (bytes_read < file_size)
+    {
+        sprintf(lex->error_msg, "Failed to read `%s`. "
+                                "Reading stopped midway.", path);
+        lex->had_error = true;
+        return 3;
+    }
+
+    buffer[file_size] = '\0';
+    fclose(source);
+
+    lex->buffer = buffer;
+    lex->index  = buffer;
+    lex->start  = buffer;
 }
 
 struct tok *
 lex_get_tok(struct lex_state *lex)
 {
-    skip_whitespace(lex);
-    lex->tok_start = lex->index;
+    skip_space(lex);
+    lex->start = lex->index;
     const char c = char_next(lex);
 
     if (is_alpha(c))
@@ -147,76 +177,47 @@ lex_get_tok(struct lex_state *lex)
     }
 }
 
+void
+print_tok(struct tok *tok)
+{
+    printf("<\"%s\", type %i, len %i, line %i, col %i>\n",
+        tok->lexeme, tok->type, tok->length, tok->lineno, tok->colno);
+}
+
 static struct tok *
 tok_new(struct lex_state *lex, enum tok_type type)
 {
-    struct tok *tok = malloc(sizeof(struct tok));
-    const int start = lex->tok_start;
-    const int end = lex->index;
+    struct tok *tok;
     char *lexeme;
+    int length;
 
-    tok->type = type;
-    tok->lineno = lex->lineno;
+    length = lex->index - lex->start;
 
-    if (start < end)
-    /*   0 1 2 3 4 5 6 7 8 9     This token has a length of 4. We allocate 5
-        |v|a|r| |s|i|z|e| |=|... char-widths for it. Besides the char, it needs
-                 ^       ^       to be null terminated. This null character
-           start |       | end   resides at index 4.                         */
-    {
-        const size_t size = end - start + 1;
-
-        lexeme = malloc((size) * sizeof(char));
-        strncpy(lexeme, &lex->buffer[start], size);
-        lexeme[size - 1] = '\0';
-        tok->length = size;
-    }
-    else
-    /* While reading identifier characters, the index went beyond BUFFER_SIZE,
-       wrapping back to position 0 and triggering a buffer refill.
-
-       |z|e|_|=|_|  . . .  |_|s|i|
-            ^                 ^
-            | ended here      | started here   length of 4                   */
-    {
-        const size_t first_half = BUFFER_SIZE - start;
-
-        lexeme = malloc((first_half + end + 1) * sizeof(char));
-        memcpy(lexeme, &lex->buffer[start], first_half);
-        if (end > 0)
-            memcpy(lexeme + first_half, &lex->buffer[0], end);
-        lexeme[first_half + end] = '\0';
-        tok->length = first_half + end + 1;
-    }
+    tok = malloc(sizeof(struct tok));
+    lexeme = malloc(length + 1);
+    strncpy(lexeme, lex->start, length);
+    lexeme[length] = '\0';
 
     tok->lexeme = lexeme;
-    tok->colno = lex->colno - tok->length;
+    tok->length = length + 1;
+    tok->type   = type;
+    tok->lineno = lex->lineno;
+    tok->colno  = lex->colno - length;
 
-    switch (tok->type)
-    {
-        case ERR_UNKNOWN:
-            err_at_tok(lex->path, tok,
-                "\n    Encountered unknown glyph `%s` while lexing.\n\n",
-                tok->lexeme);
-            break;
-
-        default:
-            break;
-    }
-
-    /* XXX it would be helpful to add a debug switch that can show internal
-       lexing state */
     return tok;
 }
 
 static struct tok *
 identifier(struct lex_state *lex)
 {
+    struct tok *tok;
+    struct keyword *keyw;
+
     while (is_alpha_num(lookahead(lex)))
         char_next(lex);
 
-    struct tok *tok = tok_new(lex, TOK_IDENTIFIER);
-    for (struct keyword *keyw = keywords; keyw->name != NULL; ++keyw)
+    tok = tok_new(lex, TOK_IDENTIFIER);
+    for (keyw = keywords; keyw->name != NULL; ++keyw)
     {
         if (tok->length == keyw->length &&
             strcmp(tok->lexeme, keyw->name) == 0)
@@ -261,59 +262,34 @@ number(struct lex_state *lex)
 static struct tok *
 string(struct lex_state *lex)
 {
-    lex->tok_start = lex->index;
+    struct tok *tok;
+
+    lex->start = lex->index;
     while (lookahead(lex) != '"')
         char_next(lex);
 
-    struct tok *tok = tok_new(lex, TOK_STRING);
+    tok = tok_new(lex, TOK_STRING);
     char_next(lex);
 
     return tok;
 }
 
-static void
-buffer_chars(struct lex_state *lex)
-{
-    const size_t bytes_read = fread(
-        &lex->buffer[lex->index],
-        sizeof(char),
-        HALF_BUFFER_SIZE * sizeof(char),
-        lex->source);
-
-    lex->chars_left += HALF_BUFFER_SIZE;
-
-    /* XXX code like this should be abstracted out */
-    if (bytes_read != HALF_BUFFER_SIZE * sizeof(char))
-    {
-        if (feof(lex->source))
-            lex->buffer[(lex->index + bytes_read) % BUFFER_SIZE] = '\0';
-        else if (ferror(lex->source))
-        {
-            // XXX this should be an IO error
-            puts("Parser Error:\nCould not buffer chars.\n");
-            exit(1);
-        }
-    }
-}
-
 static char
 char_next(struct lex_state *lex)
 {
-    const char char_next = lex->buffer[lex->index];
-    /* XXX Nothing stops chars_lex from going negative and reading the same
-       buffer ad infinitum.                                                  */
-    lex->index = (lex->index + 1) % BUFFER_SIZE;
-    --lex->chars_left;
+    char next;
+
+    next = *lex->index;
+    ++lex->index;
     ++lex->colno;
-    if (lex->chars_left == 0)
-        buffer_chars(lex);
-    return char_next;
+
+    return next;
 }
 
 static char
 lookahead(struct lex_state *lex)
 {
-    return lex->buffer[lex->index];
+    return *lex->index;
 }
 
 static bool
@@ -321,7 +297,7 @@ char_matches(struct lex_state *lex, const char c)
 {
     if (is_at_end(lex))
         return false;
-    else if (lex->buffer[lex->index] == c)
+    else if (*lex->index == c)
     {
         char_next(lex);
         return true;
@@ -331,7 +307,7 @@ char_matches(struct lex_state *lex, const char c)
 }
 
 static void
-skip_whitespace(struct lex_state *lex)
+skip_space(struct lex_state *lex)
 {
     char c;
     for (;;)
@@ -385,7 +361,7 @@ skip_line(struct lex_state *lex)
 static inline bool
 is_at_end(struct lex_state *lex)
 {
-    return lex->buffer[lex->index] == '\0';
+    return *lex->index == '\0';
 }
 
 static inline bool
