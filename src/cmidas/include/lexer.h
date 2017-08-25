@@ -34,13 +34,12 @@ struct tok
     int colno;
 };
 
-         T  Lex_new (void);
-      void  Lex_feed(T lex, const char *buffer);
-struct tok *Lex_tok (T lex);
-
+         T  Lex_new    (void);
+      void  Lex_feed   (T lex, const char *buffer);
+struct tok *Lex_get_tok(T lex);
       void  Lex_get_err(T lex);
 
-void        print_tok(struct tok *);
+      void  print_tok(struct tok *);
 
 #undef T
 

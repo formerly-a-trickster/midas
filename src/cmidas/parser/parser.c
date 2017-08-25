@@ -8,8 +8,6 @@
 
 #define T Parser_T
 
-static const char *read_file(T par, const char *path);
-
 struct T
 {
          Lexer_T  lex;
@@ -20,6 +18,7 @@ struct T
           char  error_msg[256];
 };
 
+static const char *read_file  (T par, const char *path);
 static   Vector_T  program    (T par);
 static struct stm *declaration(T par);
 static struct stm *statement  (T par);
@@ -77,7 +76,7 @@ Par_new(void)
 }
 
 Vector_T
-parse(T par, const char *path)
+Par_parse(T par, const char *path)
 {
     const char *buffer;
 
@@ -559,7 +558,7 @@ tok_next(T par)
 {
     struct tok *tok;
 
-    tok = Lex_tok(par->lex);
+    tok = Lex_get_tok(par->lex);
     if (tok == NULL)
     {
         printf("File: %s\n", par->path);

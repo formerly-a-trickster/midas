@@ -8,31 +8,61 @@
 #include "parser.h"
 #include "vector.h"
 
-static void ctx_push(struct intpr *intpr);
-static void ctx_pop (struct intpr *intpr);
+#define T Interpreter_T
 
-static void execute      (struct intpr *, struct stm *);
+enum val_type
+{
+    VAL_BOOLEAN,
+    VAL_INTEGER,
+    VAL_DOUBLE,
+    VAL_STRING
+};
+
+struct val
+{
+    enum val_type type;
+
+    union
+    {
+        bool as_bool;
+        long as_long;
+        double as_double;
+        const char* as_string;
+    } data;
+};
+
+struct T
+{
+    const char *path;
+         Env_T  globals;
+         Env_T  context;
+};
+
+static void ctx_push(T intpr);
+static void ctx_pop (T intpr);
+
+static void execute      (T intpr, struct stm *);
 static bool val_is_truthy(struct val);
-static void var_decl     (struct intpr *, struct tok *, struct val *);
+static void var_decl     (T intpr, struct tok *, struct val *);
 static void val_print    (struct val);
 
-static struct val evaluate (struct intpr *, struct exp *);
-static struct val binary_op(struct intpr *, struct tok *, struct val, struct val);
-static struct val unary_op (struct intpr *, struct tok *, struct val);
+static struct val evaluate (T intpr, struct exp *);
+static struct val binary_op(T intpr, struct tok *, struct val, struct val);
+static struct val unary_op (T intpr, struct tok *, struct val);
 static bool       val_equal(struct val, struct val);
-static bool       val_greater(struct intpr *, struct tok *, struct val, struct val);
-static struct val val_add(struct intpr *, struct tok *, struct val, struct val);
-static struct val val_sub(struct intpr *, struct tok *, struct val, struct val);
-static struct val val_mul(struct intpr *, struct tok *, struct val, struct val);
-static struct val val_div(struct intpr *, struct tok *, struct val, struct val);
+static bool       val_greater(T intpr, struct tok *, struct val, struct val);
+static struct val val_add(T intpr, struct tok *, struct val, struct val);
+static struct val val_sub(T intpr, struct tok *, struct val, struct val);
+static struct val val_mul(T intpr, struct tok *, struct val, struct val);
+static struct val val_div(T intpr, struct tok *, struct val, struct val);
 
-static struct val val_new(struct intpr *, struct tok *);
+static struct val val_new(T , struct tok *);
 static const char *val_type_str(enum val_type);
 
-struct intpr *
-intpr_new(void)
+T
+Intpr_new(void)
 {
-    struct intpr *intpr = malloc(sizeof(struct intpr));
+    T intpr = malloc(sizeof(struct T));
     intpr->path = NULL;
     intpr->globals = Env_new(NULL);
     intpr->context = intpr->globals;
@@ -41,7 +71,7 @@ intpr_new(void)
 }
 
 void
-interpret(struct intpr *intpr, const char *path, Vector_T ast)
+Intpr_run(T intpr, const char *path, Vector_T ast)
 {
     int i, len;
 
@@ -53,7 +83,7 @@ interpret(struct intpr *intpr, const char *path, Vector_T ast)
 }
 
 static void
-ctx_push(struct intpr *intpr)
+ctx_push(T intpr)
 {
     Env_T new_ctx;
 
@@ -62,7 +92,7 @@ ctx_push(struct intpr *intpr)
 }
 
 static void
-ctx_pop(struct intpr *intpr)
+ctx_pop(T intpr)
 {
     Env_T old_ctx;
 
@@ -72,8 +102,8 @@ ctx_pop(struct intpr *intpr)
     Env_free(old_ctx);
 }
 
-void
-execute(struct intpr *intpr, struct stm *stm)
+static void
+execute(T intpr, struct stm *stm)
 /* Take a statement and produce a side effect.                               */
 {
     switch (stm->type)
@@ -139,7 +169,7 @@ val_is_truthy(struct val val)
 }
 
 static void
-var_decl(struct intpr *intpr, struct tok *name, struct val *val)
+var_decl(T intpr, struct tok *name, struct val *val)
 {
     struct val *prev = Env_var_new(intpr->context, name->lexeme, val);
     if (prev != NULL)
@@ -178,7 +208,7 @@ val_print(struct val val)
 }
 
 struct val
-evaluate(struct intpr *intpr, struct exp *exp)
+evaluate(T intpr, struct exp *exp)
 /* Take an expression and output a value                                     */
 {
     struct val val;
@@ -251,7 +281,7 @@ evaluate(struct intpr *intpr, struct exp *exp)
 }
 
 static struct val
-binary_op(struct intpr *intpr, struct tok *tok,
+binary_op(T intpr, struct tok *tok,
           struct val left, struct val right)
 {
     struct val val;
@@ -372,7 +402,7 @@ val_equal(struct val left, struct val right)
 }
 
 static bool
-val_greater(struct intpr *intpr, struct tok *tok,
+val_greater(T intpr, struct tok *tok,
            struct val left, struct val right)
 /* Ordering table
    +---+---+---+---+---+  B = boolean
@@ -440,7 +470,7 @@ val_greater(struct intpr *intpr, struct tok *tok,
 
 /* XXX the binary operators contain horrendous amounts of repetition */
 static struct val
-val_add(struct intpr *intpr, struct tok *tok,
+val_add(T intpr, struct tok *tok,
         struct val left, struct val right)
 {
     struct val val;
@@ -496,7 +526,7 @@ val_add(struct intpr *intpr, struct tok *tok,
 }
 
 static struct val
-val_sub(struct intpr *intpr, struct tok *tok,
+val_sub(T intpr, struct tok *tok,
         struct val left, struct val right)
 {
     struct val val;
@@ -552,7 +582,7 @@ val_sub(struct intpr *intpr, struct tok *tok,
 }
 
 static struct val
-val_mul(struct intpr *intpr, struct tok *tok,
+val_mul(T intpr, struct tok *tok,
         struct val left, struct val right)
 {
     struct val val;
@@ -608,7 +638,7 @@ val_mul(struct intpr *intpr, struct tok *tok,
 }
 
 static struct val
-val_div(struct intpr *intpr, struct tok *tok,
+val_div(T intpr, struct tok *tok,
         struct val left, struct val right)
 {
     struct val val;
@@ -664,7 +694,7 @@ val_div(struct intpr *intpr, struct tok *tok,
 }
 
 static struct val
-unary_op(struct intpr *intpr, struct tok *tok, struct val operand)
+unary_op(T intpr, struct tok *tok, struct val operand)
 /*  Unary table
     +---+---+---+---+---+  B = boolean
     |   | B | I | D | S |  I = integer
@@ -720,7 +750,7 @@ unary_op(struct intpr *intpr, struct tok *tok, struct val operand)
 }
 
 struct val
-val_new(struct intpr *intpr, struct tok *tok)
+val_new(T intpr, struct tok *tok)
 {
     struct val val;
 
@@ -777,4 +807,6 @@ val_type_str(enum val_type type)
             return "string";
     }
 }
+
+#undef T
 

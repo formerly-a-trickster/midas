@@ -82,7 +82,7 @@ Lex_feed(T lex, const char *buffer)
 }
 
 struct tok *
-Lex_tok(T lex)
+Lex_get_tok(T lex)
 {
     skip_space(lex);
     lex->start = lex->index;
@@ -120,7 +120,7 @@ Lex_tok(T lex)
         case '#':
             skip_line(lex);
             /* XXX Eliminate recursion from lexer */
-            return Lex_tok(lex);
+            return Lex_get_tok(lex);
 
         case '<':
             if (char_matches(lex, '='))

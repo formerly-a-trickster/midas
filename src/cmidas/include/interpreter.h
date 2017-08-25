@@ -6,35 +6,14 @@
 
 #include <stdbool.h>
 
-enum val_type
-{
-    VAL_BOOLEAN,
-    VAL_INTEGER,
-    VAL_DOUBLE,
-    VAL_STRING
-};
+#define T Interpreter_T
 
-struct val
-{
-    enum val_type type;
+typedef struct T *T;
 
-    union
-    {
-        bool as_bool;
-        long as_long;
-        double as_double;
-        const char* as_string;
-    } data;
-};
+   T Intpr_new(void);
+void Intpr_run(T intpr, const char *path, Vector_T ast);
 
-struct intpr
-{
-          const char *path;
-               Env_T  globals;
-               Env_T  context;
-};
-
-struct intpr *intpr_new(void);
-void          interpret(struct intpr *, const char *, Vector_T);
+#undef T
 
 #endif
+

@@ -104,9 +104,10 @@ struct exp
 };
 
        T Par_new  (void);
-Vector_T parse    (T par, const char *path);
-void     print_stm(struct stm *);
-void     print_exp(struct exp *);
+Vector_T Par_parse(T par, const char *path);
+
+    void print_stm(struct stm *);
+    void print_exp(struct exp *);
 
 #undef T
 
