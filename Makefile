@@ -6,7 +6,7 @@ CFLAGS = -std=c89 -pedantic -Wextra -Wall -g -I$(SRC)/include
 
 MAIN   = $(addprefix $(SRC)/, main.c)
 PARSER = $(addprefix $(SRC)/parser/, parser.c lexer.c)
-INTPR  = $(addprefix $(SRC)/interpreter/, interpreter.c environment.c)
+INTPR  = $(addprefix $(SRC)/interpreter/, interpreter.c environment.c value.c)
 UTIL   = $(addprefix $(SRC)/util/, error.c hash.c vector.c)
 SOURCE = $(MAIN) $(PARSER) $(INTPR) $(UTIL)
 

@@ -8,15 +8,15 @@
 
 #define T Lexer_T
 
-#define is_at_end(lex) ((*(lex)->index) == '\0')
+#define is_at_end(LEX) ((*(LEX)->index) == '\0')
 
-#define is_alpha(c) (((c) >= 'a' && (c) <= 'z') || \
-                     ((c) >= 'A' && (c) <= 'Z') || \
-                      (c) == '_')
+#define is_alpha(C) (((C) >= 'a' && (C) <= 'z') || \
+                     ((C) >= 'A' && (C) <= 'Z') || \
+                      (C) == '_')
 
-#define is_numeric(c) ((c) >= '0' && (c) <= '9')
+#define is_numeric(C) ((C) >= '0' && (C) <= '9')
 
-#define is_alpha_num(c) (is_alpha(c) || is_numeric(c))
+#define is_alpha_num(C) (is_alpha(C) || is_numeric(C))
 
 struct T
 {
