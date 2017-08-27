@@ -389,7 +389,7 @@ exp_stm(T par)
 
 static struct exp *
 expression(T par)
-/*  expression -> assignment                                                 */
+/*  expression -> assignment */
 {
     return assignment(par);
 }
@@ -494,12 +494,17 @@ addition(T par)
 
 static struct exp *
 multiplication(T par)
-/* multiplication -> unary ( ( "/" | "*" ) unary )* */
+/* multiplication -> unary ( ( "/" | "*" | "%" ) unary )* */
 {
     struct exp *left;
 
     left = unary(par);
-    while (tok_matches(par, TOK_SLASH) || tok_matches(par, TOK_STAR))
+    while
+    (
+        tok_matches(par, TOK_SLASH) ||
+        tok_matches(par, TOK_STAR) ||
+        tok_matches(par, TOK_PERCENT)
+    )
     {
         struct tok *op;
         struct exp *right;

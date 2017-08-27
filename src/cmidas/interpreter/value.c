@@ -20,6 +20,7 @@ static struct val Val_add  (struct val left, struct val right);
 static struct val Val_sub  (struct val left, struct val right);
 static struct val Val_mul  (struct val left, struct val right);
 static struct val Val_div  (struct val left, struct val right);
+static struct val Val_mod  (struct val left, struct val right);
 static struct val Val_equal(struct val left, struct val right);
 static struct val Val_great(struct val left, struct val right);
 static struct val Val_gr_eq(struct val left, struct val right);
@@ -110,6 +111,9 @@ Val_binop(struct tok *tok, struct val left, struct val right)
 
         case TOK_SLASH:
             return Val_div(left, right);
+
+        case TOK_PERCENT:
+            return Val_mod(left, right);
 
         default:
             printf("Encountered an unknown binary operation `%s`.\n",
@@ -281,6 +285,22 @@ Val_bin_op(mul, multiply , *)
 Val_bin_op(div, divide   , /)
 
 #undef Val_bin_op
+
+static struct val
+Val_mod(struct val left, struct val right)
+{
+    if (left.type == right.type && left.type == VAL_INTEGER)
+        left.data.as_long %= right.data.as_long;
+    else
+    {
+        printf("Tried to calculate modulus from incompatible types "
+               "`%s` mod `%s`.\n",
+               Val_type_str(left.type), Val_type_str(right.type));
+        exit(1);
+    }
+
+    return left;
+}
 
 static struct val
 Val_equal(struct val left, struct val right)
