@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+
 #include "hash.h"
 
 #define T Hash_T

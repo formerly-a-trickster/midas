@@ -2,8 +2,8 @@
 #include <stdlib.h>
 
 #include "environment.h"
-#include "error.h"
 #include "interpreter.h"
+#include "lexer.h"
 #include "value.h"
 #include "vector.h"
 
@@ -149,9 +149,11 @@ evaluate(T intpr, struct exp *exp)
             /* XXX should deallocate prev value */
             prev = Env_var_set(intpr->context, name->lexeme, valp);
             if (prev == NULL)
-                err_at_tok(intpr->path, name,
-                    "\n    Cannot assign to undeclared variable `%s`.\n\n",
-                    name->lexeme);
+            {
+                printf("Cannot assign to undeclared variable `%s`.\n",
+                       name->lexeme);
+                exit(1);
+            }
         } break;
 
         case EXP_BINARY:
@@ -185,11 +187,12 @@ evaluate(T intpr, struct exp *exp)
             if (valp != NULL)
                 val = *valp;
             else
-                err_at_tok(intpr->path, name,
-                    "\n    `%s` is not declared in this scope."
-                    "\n    A varible needs to be declared prior to its "
-                        "usage.\n\n",
-                    name->lexeme);
+            {
+                printf("`%s` is not declared in this scope. "
+                       "A varible needs to be declared prior to its usage.\n",
+                       name->lexeme);
+                exit(1);
+            }
         } break;
 
         case EXP_LITERAL:
@@ -205,11 +208,13 @@ var_decl(T intpr, struct tok *name, struct val *val)
 {
     struct val *prev = Env_var_new(intpr->context, name->lexeme, val);
     if (prev != NULL)
-        err_at_tok(intpr->path, name,
-            "\n    `%s` is already declared in this scope."
-            "\n    Use assigment if you want to change the variable's value."
-            "\n    Use a different name if you want to declare a new variable."
-            "\n\n", name->lexeme);
+    {
+        printf("`%s` is already declared in this scope."
+               "Use assigment if you want to change the variable's value."
+               "Use a different name if you want to declare a new variable.\n",
+               name->lexeme);
+        exit(1);
+    }
 }
 
 #undef T

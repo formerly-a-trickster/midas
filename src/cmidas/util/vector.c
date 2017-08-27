@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
+
 #include "vector.h"
 
 #define T Vector_T

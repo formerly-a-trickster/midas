@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "error.h"
 #include "lexer.h"
 #include "parser.h"
 #include "vector.h"
@@ -409,10 +408,8 @@ assignment(T par)
     left = equality(par);
     if (tok_matches(par, TOK_EQUAL))
     {
-        struct tok *eq;
         struct exp *exp;
 
-        eq = par->prev_tok;
         exp = assignment(par);
         if (left->type == EXP_VAR)
         {
@@ -422,9 +419,10 @@ assignment(T par)
             left = exp_new_assign(varname, exp);
         }
         else
-            err_at_tok(par->path, eq,
-                "\n    Invalid assignment target. "
-                "Expected a variable name.\n\n");
+        {
+            printf("Invalid assignment target. Expected a variable name.\n");
+            exit(1);
+        }
     }
 
     return left;
@@ -568,9 +566,11 @@ primary(T par)
             "\n    Expected a closing paren.\n\n");
     }
     else
-        err_at_tok(par->path, par->this_tok,
-            "\n    Expected number, paren or keyword. Instead got `%s`.\n\n",
-            par->this_tok->lexeme);
+    {
+        printf("Expected number, paren or keyword. Instead got `%s`.\n",
+               par->this_tok->lexeme);
+        exit(1);
+    }
 
     return exp;
 }
@@ -612,7 +612,10 @@ tok_consume(T par, enum tok_type type, const char *message)
     if (par->this_tok->type == type)
         tok_next(par);
     else
-        err_at_tok(par->path, par->prev_tok, message);
+    {
+        printf("%s", message);
+        exit(1);
+    }
 }
 
 static struct stm *

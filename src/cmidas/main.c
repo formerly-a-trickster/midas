@@ -1,8 +1,8 @@
-#include "parser.h"
-#include "interpreter.h"
-
 #include <stdio.h>
 #include <stdbool.h>
+
+#include "parser.h"
+#include "interpreter.h"
 
 int
 main(int argc, const char *argv[])

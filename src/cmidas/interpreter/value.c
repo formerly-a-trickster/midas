@@ -5,9 +5,8 @@
 #include <math.h>
 #include <string.h>
 
-#include "error.h"
 #include "interpreter.h"
-#include "parser.h"
+#include "lexer.h"
 #include "value.h"
 
 static const char *Val_type_str(enum val_type type);

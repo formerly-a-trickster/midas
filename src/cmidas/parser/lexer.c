@@ -3,7 +3,6 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include "error.h"
 #include "lexer.h"
 
 #define T Lexer_T
