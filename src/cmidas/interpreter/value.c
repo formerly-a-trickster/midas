@@ -1,5 +1,8 @@
+/* XXX replace with custom printinf function */
+#define _GNU_SOURCE  /* asprintf */
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <string.h>
 
 #include "error.h"
@@ -29,18 +32,25 @@ struct val
     } data;
 };
 */
-static struct val val_add(Interpr_T intpr, struct tok *, struct val, struct val);
-static struct val val_sub(Interpr_T intpr, struct tok *, struct val, struct val);
-static struct val val_mul(Interpr_T intpr, struct tok *, struct val, struct val);
-static struct val val_div(Interpr_T intpr, struct tok *, struct val, struct val);
-
-static bool val_equal  (struct val, struct val);
-static bool val_greater(Interpr_T intpr, struct tok *, struct val, struct val);
-
 static const char *val_type_str(enum val_type type);
 
+struct val Val_to_type(struct val val, enum val_type type);
+      void Val_adapt  (struct val *left, struct val *right);
+      bool Val_is_num (struct val val);
+
+struct val Val_add  (struct val left, struct val right);
+struct val Val_sub  (struct val left, struct val right);
+struct val Val_mul  (struct val left, struct val right);
+struct val Val_div  (struct val left, struct val right);
+struct val Val_equal(struct val left, struct val right);
+struct val Val_great(struct val left, struct val right);
+struct val Val_gr_eq(struct val left, struct val right);
+
+struct val Val_log_negate(struct val val);
+struct val Val_num_negate(struct val val);
+
 struct val
-val_new(Interpr_T intpr, struct tok *tok)
+val_new(struct tok *tok)
 {
     struct val val;
 
@@ -73,9 +83,9 @@ val_new(Interpr_T intpr, struct tok *tok)
             break;
 
         default:
-            err_at_tok("", tok,
-                "\n    Expected a literal value, but instead got `%s`.\n\n",
+            printf("Expected a literal value, but instead got `%s`.\n",
                 tok->lexeme);
+            exit(1);
             break;
     }
 
@@ -89,114 +99,64 @@ val_is_truthy(struct val val)
 }
 
 struct val
-binary_op(Interpr_T intpr, struct tok *tok,
-          struct val left, struct val right)
+binary_op(struct tok *tok, struct val left, struct val right)
 {
-    struct val val;
-    val.type = VAL_BOOLEAN;
-
     switch (tok->type)
     {
         case TOK_BANG_EQUAL:
-            val.data.as_bool = !val_equal(left, right);
-            return val;
+            return Val_log_negate(Val_equal(left, right));
 
         case TOK_EQUAL_EQUAL:
-            val.data.as_bool = val_equal(left, right);
-            return val;
+            return Val_equal(left, right);
 
         case TOK_GREAT:
-            val.data.as_bool = val_greater(intpr, tok, left, right);
-            return val;
+            return Val_great(left, right);
 
         case TOK_LESS:
-            val.data.as_bool = val_greater(intpr, tok, right, left);
-            return val;
+            return Val_great(right, left);
 
         case TOK_GREAT_EQUAL:
-            /* XXX implement dedicated greater equals operation */
-            val.data.as_bool = val_greater(intpr, tok, left, right) ||
-                               val_equal(left, right);
-            return val;
+            return Val_gr_eq(left, right);
 
         case TOK_LESS_EQUAL:
-            val.data.as_bool = val_greater(intpr, tok, right, left) ||
-                               val_equal(left, right);
-            return val;
+            return Val_gr_eq(right, left);
 
         case TOK_PLUS:
-            return val_add(intpr, tok, left, right);
+            return Val_add(left, right);
 
         case TOK_MINUS:
-            return val_sub(intpr, tok, left, right);
+            return Val_sub(left, right);
 
         case TOK_STAR:
-            return val_mul(intpr, tok, left, right);
+            return Val_mul(left, right);
 
         case TOK_SLASH:
-            return val_div(intpr, tok, left, right);
+            return Val_div(left, right);
 
         default:
-            err_at_tok("", tok,
-                "\n    Encountered an unknown binary operation `%s`.\n\n",
-                tok->lexeme);
+            printf("Encountered an unknown binary operation `%s`.\n",
+                   tok->lexeme);
+            exit(1);
+            break;
     }
 }
 
 struct val
-unary_op(Interpr_T intpr, struct tok *tok, struct val operand)
-/*  Unary table
-    +---+---+---+---+---+  B = boolean
-    |   | B | I | D | S |  I = integer
-    +---+---+---+---+---+  D = double
-    | - | . | ? | ? | . |  S = string
-    +---+---+---+---+---+
-    | ! | ? | ? | ? | ? |  ? = test unary
-    +---+---+---+---+---+  . = unnegatable (error)                           */
+unary_op(struct tok *tok, struct val operand)
 {
     switch (tok->type)
     {
         case TOK_MINUS:
-            switch (operand.type)
-            {
-                case VAL_INTEGER:
-                    operand.data.as_long = -operand.data.as_long;
-                    break;
-
-                case VAL_DOUBLE:
-                    operand.data.as_double = -operand.data.as_double;
-                    break;
-
-                default:
-                    err_at_tok("", tok,
-                        "\n    Tried to negate the unnegatable type `%s`.\n\n",
-                        val_type_str(operand.type));
-                    break;
-            }
-            break;
+            return Val_num_negate(operand);
 
         case TOK_BANG:
-            switch (operand.type)
-            {
-                case VAL_BOOLEAN:
-                    operand.data.as_bool = !operand.data.as_bool;
-                    break;
-
-                default:
-                    operand.type = VAL_BOOLEAN;
-                    operand.data.as_bool = false;
-                    break;
-            }
-            break;
+            return Val_log_negate(operand);
 
         default:
-            err_at_tok("", tok,
-                "\n    Encountered an unknown unary operation `%s`.\n\n",
+            printf("Encountered an unknown unary operation `%s`.\n",
                 tok->lexeme);
-            break;
+            exit(0);
     }
-
-    return operand;
 }
 
 void
@@ -226,362 +186,252 @@ val_print(struct val val)
     putchar('\n');
 }
 
+struct val
+Val_to_type(struct val val, enum val_type to_type)
+{
+    if (val.type != to_type)
+    {
+        if (to_type == VAL_BOOLEAN)
+        {
+            val.type = VAL_BOOLEAN;
+            val.data.as_bool = true;
+        }
+        else if (to_type == VAL_STRING)
+        {
+            if (val.type == VAL_BOOLEAN)
+            {
+                val.type = VAL_STRING;
+                if (val.data.as_bool)
+                    val.data.as_string = "true";
+                else
+                    val.data.as_string = "false";
+            }
+            else if (val.type == VAL_INTEGER)
+            {
+                char *int_string;
+
+                asprintf(&int_string, "%li", val.data.as_long);
+                val.type = VAL_STRING;
+                val.data.as_string = int_string;
+            }
+            else /* val.type == VAL_DOUBLE */
+            {
+                char *double_string;
+
+                asprintf(&double_string, "%f", val.data.as_double);
+                val.type = VAL_STRING;
+                val.data.as_string = double_string;
+            }
+        }
+        else if (to_type == VAL_INTEGER)
+        {
+            if (val.type == VAL_DOUBLE)
+            {
+                val.type = VAL_INTEGER;
+                val.data.as_long = (long)val.data.as_double;
+            }
+            else
+            {
+                printf("Tried to convert %s value to %s value.\n",
+                       val_type_str(val.type), val_type_str(to_type));
+                exit(1);
+            }
+        }
+        else /* to_type == VAL_DOUBLE */
+        {
+            if (val.type == VAL_INTEGER)
+            {
+                val.type = VAL_DOUBLE;
+                val.data.as_double = (double)val.data.as_long;
+            }
+            else
+            {
+                printf("Tried to convert %s value to %s value.\n",
+                       val_type_str(val.type), val_type_str(to_type));
+                exit(1);
+            }
+        }
+    }
+
+    return val;
+}
+
+void
+Val_adapt(struct val *left, struct val *right)
+{
+    enum tok_type promotion;
+
+    promotion = left->type > right->type ? left->type : right->type;
+
+    *left = Val_to_type(*left, promotion);
+    *right = Val_to_type(*right, promotion);
+}
+
 bool
-val_equal(struct val left, struct val right)
-/* Comparison table
-   +---+---+---+---+---+  B = boolean
-   |   | B | I | D | S |  I = integer
-   +---+---+---+---+---+  D = double
-   | B | ? | . | . | . |  S = string
-   +---+---+---+---+---+
-   | I | . | ? | ? | . |  ? = test equality
-   +---+---+---+---+---+  . = trivially unequal
-   | D | . | ? | ? | . |
-   +---+---+---+---+---+
-   | S | . | . | . | ? |
-   +---+---+---+---+---+  */
+Val_is_num(struct val val)
 {
-    switch (left.type)
-    {
-        case VAL_BOOLEAN:
-            switch (right.type)
-            {
-                case VAL_BOOLEAN:
-                    return left.data.as_bool == right.data.as_bool;
-
-                default:
-                    return false;
-            }
-
-        case VAL_INTEGER:
-            switch (right.type)
-            {
-                case VAL_INTEGER:
-                    return left.data.as_long == right.data.as_long;
-
-                case VAL_DOUBLE:
-                    return (double)left.data.as_long == right.data.as_double;
-
-                default:
-                    return false;
-            }
-
-        case VAL_DOUBLE:
-            switch (right.type)
-            {
-                case VAL_INTEGER:
-                    return left.data.as_double == (double)right.data.as_long;
-
-                case VAL_DOUBLE:
-                    return left.data.as_double == right.data.as_double;
-
-                default:
-                    return false;
-            }
-
-        case VAL_STRING:
-            switch (right.type)
-            {
-                case VAL_STRING:
-                    return strcmp(left.data.as_string,
-                                  right.data.as_string) == 0;
-
-                default:
-                    return false;
-            }
-    }
+    return val.type == VAL_INTEGER || val.type == VAL_DOUBLE;
 }
 
-bool
-val_greater(Interpr_T intpr, struct tok *tok,
-           struct val left, struct val right)
-/* Ordering table
-   +---+---+---+---+---+  B = boolean
-   |   | B | I | D | S |  I = integer
-   +---+---+---+---+---+  D = double
-   | B | . | . | . | . |  S = string
-   +---+---+---+---+---+
-   | I | . | ? | ? | . |  ? = test ordering
-   +---+---+---+---+---+  . = unorderable (error)
-   | D | . | ? | ? | . |
-   +---+---+---+---+---+
-   | S | . | . | . | ? |
-   +---+---+---+---+---+ */
-{
-    switch (left.type)
-    {
-        case VAL_INTEGER:
-            switch (right.type)
-            {
-                case VAL_INTEGER:
-                    return left.data.as_long > right.data.as_long;
-
-                case VAL_DOUBLE:
-                    return (double)left.data.as_long > right.data.as_double;
-
-                default:
-                    break;
-            }
-            break;
-
-        case VAL_DOUBLE:
-            switch (right.type)
-            {
-                case VAL_INTEGER:
-                    return left.data.as_double > (double)right.data.as_long;
-
-                case VAL_DOUBLE:
-                    return left.data.as_double > right.data.as_double;
-
-                default:
-                    break;
-            }
-            break;
-
-        case VAL_STRING:
-            switch (right.type)
-            {
-                case VAL_STRING:
-                    return strcmp(left.data.as_string,
-                                  right.data.as_string) > 0;
-
-                default:
-                    break;
-            }
-            break;
-
-        default:
-            break;
+#define Val_bin_op(fun_name, op_name, op_symbol)                              \
+    struct val                                                                \
+    Val_##fun_name(struct val left, struct val right)                         \
+    {                                                                         \
+        if (Val_is_num(left) && Val_is_num(right))                            \
+        {                                                                     \
+            Val_adapt(&left, &right);                                         \
+                                                                              \
+            if (left.type == VAL_INTEGER)                                     \
+                left.data.as_long op_symbol##= right.data.as_long;            \
+            else /* left.type = VAL_DOUBLE */                                 \
+                left.data.as_double op_symbol##= right.data.as_double;        \
+        }                                                                     \
+        else                                                                  \
+        {                                                                     \
+            printf("Tried to op_name incompatible types "                     \
+                   "`%s` op_symbol `%s`.\n",                                  \
+                   val_type_str(left.type), val_type_str(right.type));        \
+            exit(1);                                                          \
+        }                                                                     \
+                                                                              \
+        return left;                                                          \
     }
 
-    err_at_tok("", tok,
-        "\n    Tried to compare unorderable types `%s` and `%s`.\n\n",
-        val_type_str(left.type), val_type_str(right.type));
-}
+Val_bin_op(add, add      , +)
+Val_bin_op(sub, substract, -)
+Val_bin_op(mul, multiply , *)
+Val_bin_op(div, divide   , /)
 
-/* XXX the binary operators contain horrendous amounts of repetition */
+#undef Val_bin_op
+
 struct val
-val_add(Interpr_T intpr, struct tok *tok,
-        struct val left, struct val right)
+Val_equal(struct val left, struct val right)
 {
     struct val val;
 
-    switch (left.type)
+    val.type = VAL_BOOLEAN;
+    if (left.type == right.type)
     {
-        case VAL_INTEGER:
-            switch (right.type)
-            {
-                case VAL_INTEGER:
-                    val.type = VAL_INTEGER;
-                    val.data.as_long = left.data.as_long + right.data.as_long;
-                    return val;
-
-                case VAL_DOUBLE:
-                    val.type = VAL_DOUBLE;
-                    val.data.as_double =
-                        (double)left.data.as_long + right.data.as_double;
-                    return val;
-
-                default:
-                    break;
-            }
-
-        case VAL_DOUBLE:
-            switch (right.type)
-            {
-                case VAL_INTEGER:
-                    val.type = VAL_DOUBLE;
-                    val.data.as_double =
-                        left.data.as_double + (double)right.data.as_long;
-                    return val;
-
-                case VAL_DOUBLE:
-                    val.type = VAL_DOUBLE;
-                    val.data.as_double =
-                        left.data.as_double + right.data.as_double;
-                    return val;
-
-                default:
-                    break;
-            }
-
-        default:
-            break;
+        if (left.type == VAL_STRING)
+            val.data.as_bool = strcmp
+            (
+                left.data.as_string,
+                right.data.as_string
+            ) == 0;
+        else
+            val.data.as_bool = left.data.as_long == right.data.as_long;
     }
+    else if (Val_is_num(left) && Val_is_num(right))
+    {
+        Val_adapt(&left, &right);
 
-    err_at_tok("", tok,
-        "\n    Failed to add incompatible types `%s` and `%s`.\n\n",
-        val_type_str(left.type), val_type_str(right.type));
+        val.data.as_bool = left.data.as_long == right.data.as_long;
+    }
+    else
+        val.data.as_bool = false;
 
-    return val; /* Unreachable */
+    return val;
 }
 
 struct val
-val_sub(Interpr_T intpr, struct tok *tok,
-        struct val left, struct val right)
+Val_great(struct val left, struct val right)
 {
     struct val val;
 
-    switch (left.type)
+    val.type = VAL_BOOLEAN;
+    if (left.type == right.type)
     {
-        case VAL_INTEGER:
-            switch (right.type)
-            {
-                case VAL_INTEGER:
-                    val.type = VAL_INTEGER;
-                    val.data.as_long = left.data.as_long - right.data.as_long;
-                    return val;
+        if (left.type == VAL_STRING)
+            val.data.as_bool = strcmp
+            (
+                left.data.as_string,
+                right.data.as_string
+            ) > 0;
+        else if (left.type == VAL_INTEGER)
+            val.data.as_bool = left.data.as_long > right.data.as_long;
+        else if (left.type == VAL_DOUBLE)
+            val.data.as_bool = left.data.as_double > right.data.as_double;
+    }
+    else if (Val_is_num(left) && Val_is_num(right))
+    {
+        Val_adapt(&left, &right);
 
-                case VAL_DOUBLE:
-                    val.type = VAL_DOUBLE;
-                    val.data.as_double =
-                        (double)left.data.as_long - right.data.as_double;
-                    return val;
-
-                default:
-                    break;
-            }
-
-        case VAL_DOUBLE:
-            switch (right.type)
-            {
-                case VAL_INTEGER:
-                    val.type = VAL_DOUBLE;
-                    val.data.as_double =
-                        left.data.as_double - (double)right.data.as_long;
-                    return val;
-
-                case VAL_DOUBLE:
-                    val.type = VAL_DOUBLE;
-                    val.data.as_double =
-                        left.data.as_double - right.data.as_double;
-                    return val;
-
-                default:
-                    break;
-            }
-
-        default:
-            break;
+        val.data.as_bool = left.data.as_long > right.data.as_long;
+    }
+    else
+    {
+        printf("Tried to compare incompatible types `%s` > `%s`.\n",
+               val_type_str(left.type), val_type_str(right.type));
+        exit(1);
     }
 
-    err_at_tok("", tok,
-        "\n    Failed to substract incompatible types `%s` and `%s`.\n\n",
-        val_type_str(left.type), val_type_str(right.type));
-
-    return val; /* Unreachable */
+    return val;
 }
 
 struct val
-val_mul(Interpr_T intpr, struct tok *tok,
-        struct val left, struct val right)
+Val_gr_eq(struct val left, struct val right)
 {
     struct val val;
 
-    switch (left.type)
+    val.type = VAL_BOOLEAN;
+    if (left.type == right.type)
     {
-        case VAL_INTEGER:
-            switch (right.type)
-            {
-                case VAL_INTEGER:
-                    val.type = VAL_INTEGER;
-                    val.data.as_long = left.data.as_long * right.data.as_long;
-                    return val;
+        if (left.type == VAL_STRING)
+            val.data.as_bool = strcmp
+            (
+                left.data.as_string,
+                right.data.as_string
+            ) >= 0;
+        else if (left.type == VAL_INTEGER)
+            val.data.as_bool = left.data.as_long >= right.data.as_long;
+        else if (left.type == VAL_DOUBLE)
+            val.data.as_bool = left.data.as_double >= right.data.as_double;
+    }
+    else if (Val_is_num(left) && Val_is_num(right))
+    {
+        Val_adapt(&left, &right);
 
-                case VAL_DOUBLE:
-                    val.type = VAL_DOUBLE;
-                    val.data.as_double =
-                        (double)left.data.as_long * right.data.as_double;
-                    return val;
-
-                default:
-                    break;
-            }
-
-        case VAL_DOUBLE:
-            switch (right.type)
-            {
-                case VAL_INTEGER:
-                    val.type = VAL_DOUBLE;
-                    val.data.as_double =
-                        left.data.as_double * (double)right.data.as_long;
-                    return val;
-
-                case VAL_DOUBLE:
-                    val.type = VAL_DOUBLE;
-                    val.data.as_double =
-                        left.data.as_double * right.data.as_double;
-                    return val;
-
-                default:
-                    break;
-            }
-
-        default:
-            break;
+        val.data.as_bool = left.data.as_long >= right.data.as_long;
+    }
+    else
+    {
+        printf("Tried to compare incompatible types `%s` >= `%s`.\n",
+               val_type_str(left.type), val_type_str(right.type));
+        exit(1);
     }
 
-    err_at_tok("", tok,
-        "\n    Failed to multiply incompatible types `%s` and `%s`.\n\n",
-        val_type_str(left.type), val_type_str(right.type));
-
-    return val; /* Unreachable */
+    return val;
 }
 
 struct val
-val_div(Interpr_T intpr, struct tok *tok,
-        struct val left, struct val right)
+Val_log_negate(struct val val)
 {
-    struct val val;
-
-    switch (left.type)
+    if (val.type == VAL_BOOLEAN)
+        val.data.as_bool = !val.data.as_bool;
+    else
     {
-        case VAL_INTEGER:
-            switch (right.type)
-            {
-                case VAL_INTEGER:
-                    val.type = VAL_INTEGER;
-                    val.data.as_long = left.data.as_long / right.data.as_long;
-                    return val;
-
-                case VAL_DOUBLE:
-                    val.type = VAL_DOUBLE;
-                    val.data.as_double =
-                        (double)left.data.as_long / right.data.as_double;
-                    return val;
-
-                default:
-                    break;
-            }
-
-        case VAL_DOUBLE:
-            switch (right.type)
-            {
-                case VAL_INTEGER:
-                    val.type = VAL_DOUBLE;
-                    val.data.as_double =
-                        left.data.as_double / (double)right.data.as_long;
-                    return val;
-
-                case VAL_DOUBLE:
-                    val.type = VAL_DOUBLE;
-                    val.data.as_double =
-                        left.data.as_double / right.data.as_double;
-                    return val;
-
-                default:
-                    break;
-            }
-
-        default:
-            break;
+        val.type = VAL_BOOLEAN;
+        val.data.as_bool = false;
     }
 
-    err_at_tok("", tok,
-        "\n    Failed to divide incompatible types `%s` and `%s`.\n\n",
-        val_type_str(left.type), val_type_str(right.type));
+    return val;
+}
 
-    return val; /* Unreachable */
+struct val
+Val_num_negate(struct val val)
+{
+    if (val.type == VAL_INTEGER)
+        val.data.as_long = -val.data.as_long;
+    else if (val.type == VAL_DOUBLE)
+        val.data.as_double = -val.data.as_double;
+    else
+    {
+        printf("Tried to negate non number type `%s`.\n",
+               val_type_str(val.type));
+        exit(1);
+    }
+
+    return val;
 }
 
 static const char *
@@ -597,6 +447,8 @@ val_type_str(enum val_type type)
             return "fractional";
         case VAL_STRING:
             return "string";
+        default:
+            return "<unknown>";
     }
 }
 

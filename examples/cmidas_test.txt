@@ -40,4 +40,3 @@ print "true == false"; print true == false;
 print "false == true"; print false == true;
 print "true != false"; print true != false;
 print "false != true"; print false != true;
-

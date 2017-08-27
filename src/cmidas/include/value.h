@@ -25,9 +25,9 @@ struct val
 };
 
 
-struct val val_new      (Interpr_T interpr, struct tok *);
+struct val val_new      (struct tok *);
       bool val_is_truthy(struct val);
-struct val binary_op    (Interpr_T interpr, struct tok *, struct val, struct val);
-struct val unary_op     (Interpr_T interpr, struct tok *, struct val);
+struct val binary_op    (struct tok *tok, struct val left, struct val right);
+struct val unary_op     (struct tok *tok, struct val operand);
       void val_print    (struct val);
 
