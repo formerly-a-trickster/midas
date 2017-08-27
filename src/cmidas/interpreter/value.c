@@ -10,28 +10,6 @@
 #include "parser.h"
 #include "value.h"
 
-/*
-enum val_type
-{
-    VAL_BOOLEAN,
-    VAL_INTEGER,
-    VAL_DOUBLE,
-    VAL_STRING
-};
-
-struct val
-{
-    enum val_type type;
-
-    union
-    {
-        bool as_bool;
-        long as_long;
-        double as_double;
-        const char* as_string;
-    } data;
-};
-*/
 static const char *val_type_str(enum val_type type);
 
 struct val Val_to_type(struct val val, enum val_type type);

@@ -69,7 +69,7 @@ ctx_pop(T intpr)
 
 static void
 execute(T intpr, struct stm *stm)
-/* Take a statement and produce a side effect.                               */
+/* Take a statement and produce a side effect */
 {
     switch (stm->type)
     {
@@ -129,7 +129,7 @@ execute(T intpr, struct stm *stm)
 
 struct val
 evaluate(T intpr, struct exp *exp)
-/* Take an expression and output a value                                     */
+/* Take an expression and output a value */
 {
     struct val val;
 

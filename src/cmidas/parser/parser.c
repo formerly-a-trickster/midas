@@ -160,13 +160,15 @@ read_file(T par, const char *path)
 
 static Vector_T
 program(T par)
-/*  program -> statement* "EOF"                                              */
+/* program -> statement* "EOF" */
 {
     Vector_T program;
 
     program = Vector_new(sizeof(struct stm *));
-    /* XXX if we would have used !tok_matches(par, TOK_EOF), we would force the
-       lexer to read beyond the EOF upon finally matching it */
+    /*
+     * XXX if we would have used !tok_matches(par, TOK_EOF), we would force the
+     * lexer to read beyond the EOF upon finally matching it
+     */
     while(!tok_is(par, TOK_EOF))
     {
         struct stm *stm = declaration(par);
@@ -178,8 +180,10 @@ program(T par)
 
 static struct stm *
 declaration(T par)
-/*  declaration -> var_decl ";"
-                 | statement                                                 */
+/*
+ * declaration -> var_decl ";"
+ *              | statement
+ */
 {
     struct stm *stm;
 
@@ -193,7 +197,7 @@ declaration(T par)
 
 static struct stm *
 var_decl(T par)
-/*  var_decl -> ^var^ identifier "=" expression ";"                          */
+/* var_decl -> ^var^ identifier "=" expression ";" */
 {
     struct tok *name;
     struct exp *value;
@@ -216,11 +220,13 @@ var_decl(T par)
 
 static struct stm *
 statement(T par)
-/*  statement -> block_stm
-               | if_stm
-               | while_stm
-               | print_stm
-               | exp_stm                                                     */
+/*
+ * statement -> block_stm
+ *            | if_stm
+ *            | while_stm
+ *            | print_stm
+ *            | exp_stm
+ */
 {
     struct stm *stm;
 
@@ -242,7 +248,7 @@ statement(T par)
 
 static struct stm *
 block(T par)
-/*  block_stm -> ^do^ declaration* "end"                                     */
+/* block_stm -> ^do^ declaration* "end" */
 {
     Vector_T statements;
 
@@ -262,7 +268,7 @@ block(T par)
 
 static struct stm *
 if_cond(T par)
-/*  if_stm -> ^if^ "(" expression ")" statement ( "else" statement )?        */
+/* if_stm -> ^if^ "(" expression ")" statement ( "else" statement )? */
 {
     struct stm *then_block, *else_block;
     struct exp *cond;
@@ -287,7 +293,7 @@ if_cond(T par)
 
 static struct stm *
 while_cond(T par)
-/*  while_stm -> ^while^ "(" expression ")" statement                        */
+/* while_stm -> ^while^ "(" expression ")" statement */
 {
     struct exp *cond;
     struct stm *body;
@@ -355,7 +361,7 @@ Note: var_decl and exp_stm already contain ";"                               *
 */
 static struct stm *
 print(T par)
-/*  print_stm -> ^print^ expression ";"                                      */
+/* print_stm -> ^print^ expression ";" */
 {
     struct exp *exp;
 
@@ -369,7 +375,7 @@ print(T par)
 
 static struct stm *
 exp_stm(T par)
-/*  exp_stm -> expression ";"                                              */
+/* exp_stm -> expression ";" */
 {
     struct exp *exp;
 
@@ -390,10 +396,13 @@ expression(T par)
 
 static struct exp *
 assignment(T par)
-/* XXX having assignment be an expression simplifies the grammar, but puts us
-   in the situation of having an expression with a side effect. It would be
-   suited better to being a statement                                        */
-/*  assignment -> equality ( "=" assignment )*                               */
+/*
+ * XXX having assignment be an expression simplifies the grammar, but puts us
+ * in the situation of having an expression with a side effect. It would be
+ * suited better to being a statement.
+ *
+ * assignment -> equality ( "=" assignment )*
+ */
 {
     struct exp *left;
 
@@ -423,7 +432,7 @@ assignment(T par)
 
 static struct exp *
 equality(T par)
-/*  equality -> ordering ( ( "!=" | "==" ) ordering )*                       */
+/* equality -> ordering ( ( "!=" | "==" ) ordering )* */
 {
     struct exp *left;
 
@@ -444,7 +453,7 @@ equality(T par)
 
 static struct exp *
 ordering(T par)
-/*  ordering -> addition ( ( ">" | ">=" | "<" | "<=" ) addition)*          */
+/* ordering -> addition ( ( ">" | ">=" | "<" | "<=" ) addition)* */
 {
     struct exp *left;
 
@@ -465,7 +474,7 @@ ordering(T par)
 
 static struct exp *
 addition(T par)
-/*  addition -> multiplication ( ( "-" | "+" ) multiplication)*              */
+/* addition -> multiplication ( ( "-" | "+" ) multiplication)* */
 {
     struct exp *left;
 
@@ -485,7 +494,7 @@ addition(T par)
 
 static struct exp *
 multiplication(T par)
-/*  multiplication -> unary ( ( "/" | "*" ) unary )*                         */
+/* multiplication -> unary ( ( "/" | "*" ) unary )* */
 {
     struct exp *left;
 
@@ -505,8 +514,10 @@ multiplication(T par)
 
 static struct exp *
 unary(T par)
-/*  unary -> ( ("!" | "-") unary )
-           | primary                                                         */
+/*
+ * unary -> ( ("!" | "-") unary )
+ *        | primary
+ */
 {
     if (tok_matches(par, TOK_BANG) || tok_matches(par, TOK_MINUS))
     {
@@ -523,10 +534,12 @@ unary(T par)
 
 static struct exp *
 primary(T par)
-/* primary -> IDENTIFIER
-            | INTEGER | DOUBLE | STRING | "false" | "true" |
-            | "(" expression ")"
-            | XXX error productions                                          */
+/*
+ * primary -> IDENTIFIER
+ *          | INTEGER | DOUBLE | STRING | "false" | "true" |
+ *          | "(" expression ")"
+ *          | XXX error productions
+ */
 {
     struct exp *exp;
 

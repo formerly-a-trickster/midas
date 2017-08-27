@@ -17,8 +17,10 @@ err_at_tok(const char *path, struct tok *tok, const char *format, ...)
     va_end(args);
 
     show_err_code(path, tok->lineno, tok->colno, tok->length);
-    /* XXX there should be a more elegant shutdown solution than just bailing
-       out on the first error */
+    /*
+     * XXX there should be a more elegant shutdown solution than just bailing
+     * out on the first error
+     */
     exit(1);
 }
 
