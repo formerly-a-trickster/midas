@@ -154,7 +154,10 @@ Lex_get_tok(T lex)
             return tok_new(lex, TOK_SEMICOLON);
 
         case '/':
-            return tok_new(lex, TOK_SLASH);
+            if (char_matches(lex, '/'))
+                return tok_new(lex, TOK_SLASH_SLASH);
+            else
+                return tok_new(lex, TOK_SLASH);
 
         case '*':
             return tok_new(lex, TOK_STAR);

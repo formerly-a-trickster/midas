@@ -16,14 +16,15 @@ static struct val Val_to_type(struct val val, enum val_type type);
 static       void Val_adapt  (struct val *left, struct val *right);
 static       bool Val_is_num (struct val val);
 
-static struct val Val_add  (struct val left, struct val right);
-static struct val Val_sub  (struct val left, struct val right);
-static struct val Val_mul  (struct val left, struct val right);
-static struct val Val_div  (struct val left, struct val right);
-static struct val Val_mod  (struct val left, struct val right);
-static struct val Val_equal(struct val left, struct val right);
-static struct val Val_great(struct val left, struct val right);
-static struct val Val_gr_eq(struct val left, struct val right);
+static struct val Val_add    (struct val left, struct val right);
+static struct val Val_sub    (struct val left, struct val right);
+static struct val Val_mul    (struct val left, struct val right);
+static struct val Val_div    (struct val left, struct val right);
+static struct val Val_int_div(struct val left, struct val right);
+static struct val Val_mod    (struct val left, struct val right);
+static struct val Val_equal  (struct val left, struct val right);
+static struct val Val_great  (struct val left, struct val right);
+static struct val Val_gr_eq  (struct val left, struct val right);
 
 static struct val Val_log_negate(struct val val);
 static struct val Val_num_negate(struct val val);
@@ -108,6 +109,9 @@ Val_binop(struct tok *tok, struct val left, struct val right)
 
         case TOK_STAR:
             return Val_mul(left, right);
+
+        case TOK_SLASH_SLASH:
+            return Val_int_div(left, right);
 
         case TOK_SLASH:
             return Val_div(left, right);
@@ -245,7 +249,7 @@ Val_adapt(struct val *left, struct val *right)
 
     promotion = left->type > right->type ? left->type : right->type;
 
-    *left = Val_to_type(*left, promotion);
+    *left  = Val_to_type(*left , promotion);
     *right = Val_to_type(*right, promotion);
 }
 
@@ -282,9 +286,56 @@ Val_is_num(struct val val)
 Val_bin_op(add, add      , +)
 Val_bin_op(sub, substract, -)
 Val_bin_op(mul, multiply , *)
-Val_bin_op(div, divide   , /)
 
 #undef Val_bin_op
+
+static struct val
+Val_div(struct val left, struct val right)
+{
+    if (Val_is_num(left) && Val_is_num(right))
+    {
+        left  = Val_to_type(left , VAL_DOUBLE);
+        right = Val_to_type(right, VAL_DOUBLE);
+
+        left.data.as_double /= right.data.as_double;
+    }
+    else
+    {
+        printf("Tried to divide incompatible types "
+               "`%s` / `%s`.\n",
+               Val_type_str(left.type), Val_type_str(right.type));
+        exit(1);
+    }
+
+    return left;
+}
+
+static struct val
+Val_int_div(struct val left, struct val right)
+{
+    if (Val_is_num(left) && Val_is_num(right))
+    {
+        Val_adapt(&left, &right);
+
+        if (left.type == VAL_INTEGER)
+            left.data.as_long = left.data.as_long / right.data.as_long;
+        else /* left.type == VAL_DOUBLE */
+        {
+            left.type = VAL_INTEGER;
+            left.data.as_long =
+                    (long)(left.data.as_double / right.data.as_double);
+        }
+    }
+    else
+    {
+        printf("Tried to calculate integer division from incompatible types "
+               "`%s` // `%s`.\n",
+               Val_type_str(left.type), Val_type_str(right.type));
+        exit(1);
+    }
+
+    return left;
+}
 
 static struct val
 Val_mod(struct val left, struct val right)
@@ -294,7 +345,7 @@ Val_mod(struct val left, struct val right)
     else
     {
         printf("Tried to calculate modulus from incompatible types "
-               "`%s` mod `%s`.\n",
+               "`%s` %% `%s`.\n",
                Val_type_str(left.type), Val_type_str(right.type));
         exit(1);
     }
