@@ -10,25 +10,25 @@
 #include "parser.h"
 #include "value.h"
 
-static const char *val_type_str(enum val_type type);
+static const char *Val_type_str(enum val_type type);
 
-struct val Val_to_type(struct val val, enum val_type type);
-      void Val_adapt  (struct val *left, struct val *right);
-      bool Val_is_num (struct val val);
+static struct val Val_to_type(struct val val, enum val_type type);
+static       void Val_adapt  (struct val *left, struct val *right);
+static       bool Val_is_num (struct val val);
 
-struct val Val_add  (struct val left, struct val right);
-struct val Val_sub  (struct val left, struct val right);
-struct val Val_mul  (struct val left, struct val right);
-struct val Val_div  (struct val left, struct val right);
-struct val Val_equal(struct val left, struct val right);
-struct val Val_great(struct val left, struct val right);
-struct val Val_gr_eq(struct val left, struct val right);
+static struct val Val_add  (struct val left, struct val right);
+static struct val Val_sub  (struct val left, struct val right);
+static struct val Val_mul  (struct val left, struct val right);
+static struct val Val_div  (struct val left, struct val right);
+static struct val Val_equal(struct val left, struct val right);
+static struct val Val_great(struct val left, struct val right);
+static struct val Val_gr_eq(struct val left, struct val right);
 
-struct val Val_log_negate(struct val val);
-struct val Val_num_negate(struct val val);
+static struct val Val_log_negate(struct val val);
+static struct val Val_num_negate(struct val val);
 
 struct val
-val_new(struct tok *tok)
+Val_new(struct tok *tok)
 {
     struct val val;
 
@@ -71,13 +71,13 @@ val_new(struct tok *tok)
 }
 
 bool
-val_is_truthy(struct val val)
+Val_is_truthy(struct val val)
 {
     return !(val.type == VAL_BOOLEAN && val.data.as_bool == false);
 }
 
 struct val
-binary_op(struct tok *tok, struct val left, struct val right)
+Val_binop(struct tok *tok, struct val left, struct val right)
 {
     switch (tok->type)
     {
@@ -120,7 +120,7 @@ binary_op(struct tok *tok, struct val left, struct val right)
 }
 
 struct val
-unary_op(struct tok *tok, struct val operand)
+Val_unop(struct tok *tok, struct val operand)
 {
     switch (tok->type)
     {
@@ -138,7 +138,7 @@ unary_op(struct tok *tok, struct val operand)
 }
 
 void
-val_print(struct val val)
+Val_print(struct val val)
 {
     switch (val.type)
     {
@@ -164,7 +164,7 @@ val_print(struct val val)
     putchar('\n');
 }
 
-struct val
+static struct val
 Val_to_type(struct val val, enum val_type to_type)
 {
     if (val.type != to_type)
@@ -211,7 +211,7 @@ Val_to_type(struct val val, enum val_type to_type)
             else
             {
                 printf("Tried to convert %s value to %s value.\n",
-                       val_type_str(val.type), val_type_str(to_type));
+                       Val_type_str(val.type), Val_type_str(to_type));
                 exit(1);
             }
         }
@@ -225,7 +225,7 @@ Val_to_type(struct val val, enum val_type to_type)
             else
             {
                 printf("Tried to convert %s value to %s value.\n",
-                       val_type_str(val.type), val_type_str(to_type));
+                       Val_type_str(val.type), Val_type_str(to_type));
                 exit(1);
             }
         }
@@ -234,7 +234,7 @@ Val_to_type(struct val val, enum val_type to_type)
     return val;
 }
 
-void
+static void
 Val_adapt(struct val *left, struct val *right)
 {
     enum tok_type promotion;
@@ -245,14 +245,14 @@ Val_adapt(struct val *left, struct val *right)
     *right = Val_to_type(*right, promotion);
 }
 
-bool
+static bool
 Val_is_num(struct val val)
 {
     return val.type == VAL_INTEGER || val.type == VAL_DOUBLE;
 }
 
 #define Val_bin_op(fun_name, op_name, op_symbol)                              \
-    struct val                                                                \
+    static struct val                                                         \
     Val_##fun_name(struct val left, struct val right)                         \
     {                                                                         \
         if (Val_is_num(left) && Val_is_num(right))                            \
@@ -268,7 +268,7 @@ Val_is_num(struct val val)
         {                                                                     \
             printf("Tried to op_name incompatible types "                     \
                    "`%s` op_symbol `%s`.\n",                                  \
-                   val_type_str(left.type), val_type_str(right.type));        \
+                   Val_type_str(left.type), Val_type_str(right.type));        \
             exit(1);                                                          \
         }                                                                     \
                                                                               \
@@ -282,7 +282,7 @@ Val_bin_op(div, divide   , /)
 
 #undef Val_bin_op
 
-struct val
+static struct val
 Val_equal(struct val left, struct val right)
 {
     struct val val;
@@ -311,7 +311,7 @@ Val_equal(struct val left, struct val right)
     return val;
 }
 
-struct val
+static struct val
 Val_great(struct val left, struct val right)
 {
     struct val val;
@@ -339,14 +339,14 @@ Val_great(struct val left, struct val right)
     else
     {
         printf("Tried to compare incompatible types `%s` > `%s`.\n",
-               val_type_str(left.type), val_type_str(right.type));
+               Val_type_str(left.type), Val_type_str(right.type));
         exit(1);
     }
 
     return val;
 }
 
-struct val
+static struct val
 Val_gr_eq(struct val left, struct val right)
 {
     struct val val;
@@ -374,14 +374,14 @@ Val_gr_eq(struct val left, struct val right)
     else
     {
         printf("Tried to compare incompatible types `%s` >= `%s`.\n",
-               val_type_str(left.type), val_type_str(right.type));
+               Val_type_str(left.type), Val_type_str(right.type));
         exit(1);
     }
 
     return val;
 }
 
-struct val
+static struct val
 Val_log_negate(struct val val)
 {
     if (val.type == VAL_BOOLEAN)
@@ -395,7 +395,7 @@ Val_log_negate(struct val val)
     return val;
 }
 
-struct val
+static struct val
 Val_num_negate(struct val val)
 {
     if (val.type == VAL_INTEGER)
@@ -405,7 +405,7 @@ Val_num_negate(struct val val)
     else
     {
         printf("Tried to negate non number type `%s`.\n",
-               val_type_str(val.type));
+               Val_type_str(val.type));
         exit(1);
     }
 
@@ -413,7 +413,7 @@ Val_num_negate(struct val val)
 }
 
 static const char *
-val_type_str(enum val_type type)
+Val_type_str(enum val_type type)
 {
     switch (type)
     {

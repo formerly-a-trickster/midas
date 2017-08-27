@@ -25,9 +25,9 @@ struct val
 };
 
 
-struct val val_new      (struct tok *);
-      bool val_is_truthy(struct val);
-struct val binary_op    (struct tok *tok, struct val left, struct val right);
-struct val unary_op     (struct tok *tok, struct val operand);
-      void val_print    (struct val);
+struct val Val_new      (struct tok *);
+      bool Val_is_truthy(struct val);
+struct val Val_binop    (struct tok *tok, struct val left, struct val right);
+struct val Val_unop     (struct tok *tok, struct val operand);
+      void Val_print    (struct val);
 

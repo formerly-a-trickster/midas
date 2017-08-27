@@ -93,7 +93,7 @@ execute(T intpr, struct stm *stm)
             struct val cond;
 
             cond = evaluate(intpr, stm->data.if_cond.cond);
-            if (val_is_truthy(cond))
+            if (Val_is_truthy(cond))
                 execute(intpr, stm->data.if_cond.then_block);
             else if (stm->data.if_cond.else_block != NULL)
                 execute(intpr, stm->data.if_cond.else_block);
@@ -101,7 +101,7 @@ execute(T intpr, struct stm *stm)
 
         case STM_WHILE:
         {
-            while(val_is_truthy(evaluate(intpr, stm->data.while_cond.cond)))
+            while(Val_is_truthy(evaluate(intpr, stm->data.while_cond.cond)))
                 execute(intpr, stm->data.while_cond.body);
         } break;
 
@@ -122,7 +122,7 @@ execute(T intpr, struct stm *stm)
         case STM_PRINT:
         {
             struct val val = evaluate(intpr, stm->data.print.exp);
-            val_print(val);
+            Val_print(val);
         } break;
     }
 }
@@ -160,7 +160,7 @@ evaluate(T intpr, struct exp *exp)
 
             left = evaluate(intpr, exp->data.binary.left);
             right = evaluate(intpr, exp->data.binary.right);
-            val = binary_op(exp->data.binary.op, left, right);
+            val = Val_binop(exp->data.binary.op, left, right);
         } break;
 
         case EXP_UNARY:
@@ -168,7 +168,7 @@ evaluate(T intpr, struct exp *exp)
             struct val operand;
 
             operand = evaluate(intpr, exp->data.unary.exp);
-            val = unary_op(exp->data.unary.op, operand);
+            val = Val_unop(exp->data.unary.op, operand);
         } break;
 
         case EXP_GROUP:
@@ -193,7 +193,7 @@ evaluate(T intpr, struct exp *exp)
         } break;
 
         case EXP_LITERAL:
-            val = val_new(exp->data.literal);
+            val = Val_new(exp->data.literal);
         break;
     }
 
