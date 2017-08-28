@@ -1,6 +1,8 @@
+#include <setjmp.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "lexer.h"
 #include "parser.h"
@@ -14,12 +16,13 @@
 
 struct T
 {
-         Lexer_T  lex;
+       Lexer_T  lex;
     const char *path;
     struct tok *prev_tok;
     struct tok *this_tok;
-          bool  had_error;
-          char  error_msg[256];
+       jmp_buf  handle_err;
+          bool  had_err;
+          char  err_msg[256];
 };
 
 static const char *read_file  (T par, const char *path);
@@ -29,7 +32,6 @@ static struct stm *statement  (T par);
 static struct stm *block      (T par);
 static struct stm *if_cond    (T par);
 static struct stm *while_cond (T par);
-/*static struct stm *for_cond   (T par);*/
 static struct stm *var_decl   (T par);
 static struct stm *exp_stm    (T par);
 static struct stm *print      (T par);
@@ -72,7 +74,7 @@ Par_new(void)
     par->path = NULL;
     par->prev_tok = NULL;
     par->this_tok = NULL;
-    par->had_error = false;
+    par->had_err = false;
 
     return par;
 }
@@ -87,7 +89,7 @@ Par_parse(T par, const char *path)
     buffer = read_file(par, path);
     if (buffer == NULL)
     {
-        printf("%s\n", par->error_msg);
+        printf("%s\n", par->err_msg);
         return NULL;
     }
     Lex_feed(par->lex, buffer);
@@ -107,14 +109,10 @@ read_file(T par, const char *path)
     source = fopen(path, "rb");
     if (source == NULL)
     {
-        sprintf
-        (
-            par->error_msg,
-            "File: %s\n"
-            "Failed to read file. It could not be opened.",
-            path
-        );
-        par->had_error = true;
+        sprintf(par->err_msg, "File: %s\n"
+                "Failed to read file. It could not be opened.",
+                path);
+        par->had_err = true;
         return NULL;
     }
 
@@ -126,33 +124,23 @@ read_file(T par, const char *path)
     buffer = malloc(file_size + 1);
     if (buffer == NULL)
     {
-        sprintf
-        (
-            par->error_msg,
-            "File: %s\n"
-            "Failed to read file. Not enough memory.",
-            path
-        );
-        par->had_error = true;
+        sprintf(par->err_msg, "File: %s\n"
+                "Failed to read file. Not enough memory.",
+                path);
+        par->had_err = true;
         return NULL;
     }
 
     bytes_read = fread(buffer, sizeof(char), file_size, source);
     if (bytes_read < file_size)
     {
-        sprintf
-        (
-            par->error_msg,
-            "File: %s\n"
-            "Failed to read file. Reading stopped midway.",
-            path
-        );
-        par->had_error = true;
+        sprintf(par->err_msg, "File: %s\n"
+                "Failed to read file. Reading stopped midway.",
+                path);
+        par->had_err = true;
         return NULL;
     }
 
-    buffer[file_size] = '\0';
-    fclose(source);
 
     return buffer;
 }
@@ -168,10 +156,22 @@ program(T par)
      * XXX if we would have used !tok_matches(par, TOK_EOF), we would force the
      * lexer to read beyond the EOF upon finally matching it
      */
-    while(!tok_is(par, TOK_EOF))
+    switch(setjmp(par->handle_err))
     {
-        struct stm *stm = declaration(par);
-        Vector_push(program, &stm);
+        case 0:
+            while(!tok_is(par, TOK_EOF))
+            {
+                struct stm *stm = declaration(par);
+                Vector_push(program, &stm);
+            }
+            break;
+
+        case 1:
+            printf("Parsing failed.\n%s\n", par->err_msg);
+
+        case 2:
+            exit(1);
+            break;
     }
 
     return program;
@@ -202,17 +202,17 @@ var_decl(T par)
     struct exp *value;
 
     tok_consume(par, TOK_IDENTIFIER,
-        "\n    A variable name should follow the `var` keyword.\n\n");
+        "A variable name should follow the `var` keyword.");
 
     name = par->prev_tok;
 
     tok_consume(par, TOK_EQUAL,
-        "\n    An equal sign should follow the variable's name.\n\n");
+        "An equal sign should follow the variable's name.");
 
     value = expression(par);
 
     tok_consume(par, TOK_SEMICOLON,
-        "\n    Missing semicolon after variable declaration.\n\n");
+        "Missing semicolon after variable declaration.");
 
     return stm_new_var_decl(name, value);
 }
@@ -235,8 +235,6 @@ statement(T par)
         stm = if_cond(par);
     else if (tok_matches(par, TOK_WHILE))
         stm = while_cond(par);
-/*    else if (tok_matches(par, TOK_FOR))
-        stm = for_cond(par); */
     else if (tok_matches(par, TOK_PRINT))
         stm = print(par);
     else
@@ -260,7 +258,7 @@ block(T par)
         Vector_push(statements, &stm);
     }
 
-    tok_consume(par, TOK_END, "\n    Missing `end` keyword after block.\n\n");
+    tok_consume(par, TOK_END, "Missing `end` keyword after block.");
 
     return stm_new_block(statements);
 }
@@ -273,12 +271,12 @@ if_cond(T par)
     struct exp *cond;
 
     tok_consume(par, TOK_PAREN_LEFT,
-        "\n    Expected an opening paren after `if` keyword.\n\n");
+        "Expected an opening paren after `if` keyword.");
 
     cond = expression(par);
 
     tok_consume(par, TOK_PAREN_RIGHT,
-        "\n    Expected a closing paren after the if condition.\n\n");
+        "Expected a closing paren after the if condition.");
 
     then_block = statement(par);
 
@@ -298,66 +296,18 @@ while_cond(T par)
     struct stm *body;
 
     tok_consume(par, TOK_PAREN_LEFT,
-        "\n    Expected an opening paren after `while` keyword.\n\n");
+        "Expected an opening paren after `while` keyword.");
 
     cond = expression(par);
 
     tok_consume(par, TOK_PAREN_RIGHT,
-        "\n    Expected a closing paren after the while condition.\n\n");
+        "Expected a closing paren after the while condition.");
 
     body = statement(par);
 
     return stm_new_while(cond, body);
 }
-/*
-static struct stm *
-for_cond(T par)
- *  for_stm -> ^for^ "(" ( var_decl | exp_stm | ";" )
-                           expression  ";"
-                           expression? ")" statement
-Note: var_decl and exp_stm already contain ";"                               *
-{
-    struct stm *init, *body;
-    struct exp *cond, *incr;
 
-    tok_consume(par, TOK_PAREN_LEFT,
-        "\n    Missing left paren after `for` keyword.\n\n");
-
-    if (tok_matches(par, TOK_VAR))
-        init = var_decl(par);
-    else if (tok_matches(par, TOK_SEMICOLON))
-        init = NULL;
-    else
-        init = exp_stm(par);
-
-    cond = expression(par);
-
-    tok_consume(par, TOK_SEMICOLON,
-        "\n    Missing semicolon after for condition.\n\n");
-
-    if (tok_is(par, TOK_PAREN_RIGHT))
-        incr = NULL;
-    else
-        incr = expression(par);
-
-    tok_consume(par, TOK_PAREN_RIGHT,
-        "\n    Missing right paren after for construct.\n\n");
-
-    body = statement(par);
-
-    if (incr != NULL)
-    {
-        struct stm *incr_stm;
-
-        incr_stm = stm_new
-        if (body->type == STM_BLOCK)
-        {
-            
-    }
-
-    return stm;
-}
-*/
 static struct stm *
 print(T par)
 /* print_stm -> ^print^ expression ";" */
@@ -367,7 +317,7 @@ print(T par)
     exp = expression(par);
 
     tok_consume(par, TOK_SEMICOLON,
-        "\n    Missing semicolon after print statement.\n\n");
+        "Missing semicolon after print statement.");
 
     return stm_new_print(exp, par->prev_tok);
 }
@@ -381,7 +331,7 @@ exp_stm(T par)
     exp = expression(par);
 
     tok_consume(par, TOK_SEMICOLON,
-        "\n    Missing semicolon after expression statement.\n\n");
+        "Missing semicolon after expression statement.");
 
     return stm_new_exp_stm(exp, par->prev_tok);
 }
@@ -420,8 +370,10 @@ assignment(T par)
         }
         else
         {
-            printf("Invalid assignment target. Expected a variable name.\n");
-            exit(1);
+            sprintf(par->err_msg,
+                    "Invalid assignment target. Expected a variable name.");
+            par->had_err = true;
+            longjmp(par->handle_err, 1);
         }
     }
 
@@ -562,14 +514,15 @@ primary(T par)
     {
         exp = expression(par);
 
-        tok_consume(par, TOK_PAREN_RIGHT,
-            "\n    Expected a closing paren.\n\n");
+        tok_consume(par, TOK_PAREN_RIGHT, "Expected a closing paren.");
     }
     else
     {
-        printf("Expected number, paren or keyword. Instead got `%s`.\n",
-               par->this_tok->lexeme);
-        exit(1);
+        sprintf(par->err_msg,
+                "Expected number, paren or keyword. Instead got `%s`.",
+                par->this_tok->lexeme);
+        par->had_err = true;
+        longjmp(par->handle_err, 1);
     }
 
     return exp;
@@ -585,7 +538,8 @@ tok_next(T par)
     {
         printf("File: %s\n", par->path);
         Lex_get_err(par->lex);
-        exit(1);
+        par->had_err = true;
+        longjmp(par->handle_err, 2);
     }
 
     par->prev_tok = par->this_tok;
@@ -613,8 +567,9 @@ tok_consume(T par, enum tok_type type, const char *message)
         tok_next(par);
     else
     {
-        printf("%s", message);
-        exit(1);
+        strcpy(par->err_msg, message);
+        par->had_err = true;
+        longjmp(par->handle_err, 1);
     }
 }
 
