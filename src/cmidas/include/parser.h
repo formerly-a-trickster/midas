@@ -15,8 +15,8 @@ struct stm
         STM_IF,
         STM_WHILE,
         STM_VAR_DECL,
-        STM_EXP_STM,
-        STM_PRINT
+        STM_PRINT,
+        STM_EXP_STM
     } type;
 
     union
@@ -38,21 +38,13 @@ struct stm
 
         struct
         {
-            struct tok *name;
+            const char *name;
             struct exp *exp;
         } var_decl;
 
-        struct
-        {
-            struct exp *exp;
-            struct tok *last;
-        } exp;
+        struct exp *print;
 
-        struct
-        {
-            struct exp *exp;
-            struct tok *last;
-        } print;
+        struct exp *exp_stm;
     } data;
 };
 

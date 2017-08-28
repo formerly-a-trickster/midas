@@ -22,7 +22,7 @@ static void ctx_pop (T intpr);
 static       void execute (T intpr, struct stm *);
 static struct val evaluate(T intpr, struct exp *);
 
-static void var_decl(T intpr, struct tok *name, struct val *val);
+static void var_decl(T intpr, const char *name, struct val *val);
 
 T
 Interpr_new(void)
@@ -114,16 +114,16 @@ execute(T intpr, struct stm *stm)
             var_decl(intpr, stm->data.var_decl.name, var);
         } break;
 
-        case STM_EXP_STM:
-            /* Evaluate and discard */
-            evaluate(intpr, stm->data.exp.exp);
-        break;
-
         case STM_PRINT:
         {
-            struct val val = evaluate(intpr, stm->data.print.exp);
+            struct val val = evaluate(intpr, stm->data.print);
             Val_print(val);
         } break;
+
+        case STM_EXP_STM:
+            /* Evaluate and discard */
+            evaluate(intpr, stm->data.exp_stm);
+        break;
     }
 }
 
@@ -204,15 +204,15 @@ evaluate(T intpr, struct exp *exp)
 }
 
 void
-var_decl(T intpr, struct tok *name, struct val *val)
+var_decl(T intpr, const char *name, struct val *val)
 {
-    struct val *prev = Env_var_new(intpr->context, name->lexeme, val);
+    struct val *prev = Env_var_new(intpr->context, name, val);
     if (prev != NULL)
     {
         printf("`%s` is already declared in this scope."
                "Use assigment if you want to change the variable's value."
                "Use a different name if you want to declare a new variable.\n",
-               name->lexeme);
+               name);
         exit(1);
     }
 }

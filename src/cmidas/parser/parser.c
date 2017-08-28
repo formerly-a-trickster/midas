@@ -52,9 +52,9 @@ static        void tok_consume(T par, enum tok_type, const char *);
 static struct stm *stm_new_block    (Vector_T);
 static struct stm *stm_new_if       (struct exp *, struct stm *, struct stm *);
 static struct stm *stm_new_while    (struct exp *, struct stm *);
-static struct stm *stm_new_var_decl (struct tok *, struct exp *);
-static struct stm *stm_new_print    (struct exp *, struct tok *);
-static struct stm *stm_new_exp_stm  (struct exp *, struct tok *);
+static struct stm *stm_new_var_decl (const char *, struct exp *);
+static struct stm *stm_new_print    (struct exp *);
+static struct stm *stm_new_exp_stm  (struct exp *);
 
 static struct exp *exp_new_assign (struct tok *, struct exp *);
 static struct exp *exp_new_binary (struct tok *, struct exp *, struct exp *);
@@ -163,8 +163,7 @@ program(T par)
             {
                 struct stm *stm = declaration(par);
                 Vector_push(program, &stm);
-            }
-            break;
+            } break;
 
         case 1:
             printf("Parsing failed.\n%s\n", par->err_msg);
@@ -214,7 +213,7 @@ var_decl(T par)
     tok_consume(par, TOK_SEMICOLON,
         "Missing semicolon after variable declaration.");
 
-    return stm_new_var_decl(name, value);
+    return stm_new_var_decl(name->lexeme, value);
 }
 
 static struct stm *
@@ -319,7 +318,7 @@ print(T par)
     tok_consume(par, TOK_SEMICOLON,
         "Missing semicolon after print statement.");
 
-    return stm_new_print(exp, par->prev_tok);
+    return stm_new_print(exp);
 }
 
 static struct stm *
@@ -333,7 +332,7 @@ exp_stm(T par)
     tok_consume(par, TOK_SEMICOLON,
         "Missing semicolon after expression statement.");
 
-    return stm_new_exp_stm(exp, par->prev_tok);
+    return stm_new_exp_stm(exp);
 }
 
 static struct exp *
@@ -610,7 +609,7 @@ stm_new_while(struct exp *cond, struct stm *body)
 }
 
 static struct stm *
-stm_new_var_decl(struct tok *name, struct exp *exp)
+stm_new_var_decl(const char *name, struct exp *exp)
 {
     struct stm *stm = malloc(sizeof(struct stm));
 
@@ -622,25 +621,23 @@ stm_new_var_decl(struct tok *name, struct exp *exp)
 }
 
 static struct stm *
-stm_new_exp_stm(struct exp *exp, struct tok *last)
+stm_new_print(struct exp *exp)
 {
     struct stm *stm = malloc(sizeof(struct stm));
 
-    stm->type = STM_EXP_STM;
-    stm->data.exp.exp = exp;
-    stm->data.exp.last = last;
+    stm->type = STM_PRINT;
+    stm->data.print = exp;
 
     return stm;
 }
 
 static struct stm *
-stm_new_print(struct exp *exp, struct tok *last)
+stm_new_exp_stm(struct exp *exp)
 {
     struct stm *stm = malloc(sizeof(struct stm));
 
-    stm->type = STM_PRINT;
-    stm->data.print.exp = exp;
-    stm->data.print.last = last;
+    stm->type = STM_EXP_STM;
+    stm->data.exp_stm = exp;
 
     return stm;
 }
@@ -763,22 +760,22 @@ print_stm(struct stm *stm)
 
         case STM_VAR_DECL:
         {
-            printf("[ %s = ", stm->data.var_decl.name->lexeme);
+            printf("[ %s = ", stm->data.var_decl.name);
             print_exp(stm->data.var_decl.exp);
-            puts("]");
-        } break;
-
-        case STM_EXP_STM:
-        {
-            printf("[ expstm ");
-            print_exp(stm->data.exp.exp);
             puts("]");
         } break;
 
         case STM_PRINT:
         {
             printf("[ print ");
-            print_exp(stm->data.exp.exp);
+            print_exp(stm->data.print);
+            puts("]");
+        } break;
+
+        case STM_EXP_STM:
+        {
+            printf("[ expstm ");
+            print_exp(stm->data.exp_stm);
             puts("]");
         } break;
     }
