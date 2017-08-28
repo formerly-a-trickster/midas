@@ -11,9 +11,9 @@
 
 static const char *Val_type_str(enum val_type type);
 
-static struct val Val_to_type(struct val val, enum val_type type);
+static struct val Val_to_type(struct val  val, enum val_type type);
 static       void Val_adapt  (struct val *left, struct val *right);
-static       bool Val_is_num (struct val val);
+static       bool Val_is_num (struct val  val);
 
 static struct val Val_add    (struct val left, struct val right);
 static struct val Val_sub    (struct val left, struct val right);
@@ -78,9 +78,9 @@ Val_is_truthy(struct val val)
 }
 
 struct val
-Val_binop(struct tok *tok, struct val left, struct val right)
+Val_binop(enum tok_t op, struct val left, struct val right)
 {
-    switch (tok->type)
+    switch (op)
     {
         case TOK_BANG_EQUAL:
             return Val_log_negate(Val_equal(left, right));
@@ -119,17 +119,17 @@ Val_binop(struct tok *tok, struct val left, struct val right)
             return Val_mod(left, right);
 
         default:
-            printf("Encountered an unknown binary operation `%s`.\n",
-                   tok->lexeme);
+            /* XXX op is a tok code */
+            printf("Encountered an unknown binary operation `%i`.\n", op);
             exit(1);
             break;
     }
 }
 
 struct val
-Val_unop(struct tok *tok, struct val operand)
+Val_unop(enum tok_t op, struct val operand)
 {
-    switch (tok->type)
+    switch (op)
     {
         case TOK_MINUS:
             return Val_num_negate(operand);
@@ -138,9 +138,9 @@ Val_unop(struct tok *tok, struct val operand)
             return Val_log_negate(operand);
 
         default:
-            printf("Encountered an unknown unary operation `%s`.\n",
-                tok->lexeme);
-            exit(0);
+            /* XXX op is a tok code */
+            printf("Encountered an unknown unary operation `%i`.\n", op);
+            exit(1);
     }
 }
 
@@ -244,7 +244,7 @@ Val_to_type(struct val val, enum val_type to_type)
 static void
 Val_adapt(struct val *left, struct val *right)
 {
-    enum tok_type promotion;
+    enum tok_t promotion;
 
     promotion = left->type > right->type ? left->type : right->type;
 

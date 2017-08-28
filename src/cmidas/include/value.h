@@ -1,6 +1,7 @@
 #include <stdbool.h>
 
 #include "interpreter.h"
+#include "lexer.h"
 #include "parser.h"
 
 enum val_type
@@ -24,10 +25,9 @@ struct val
     } data;
 };
 
-
 struct val Val_new      (struct tok *);
       bool Val_is_truthy(struct val);
-struct val Val_binop    (struct tok *tok, struct val left, struct val right);
-struct val Val_unop     (struct tok *tok, struct val operand);
+struct val Val_binop    (enum tok_t op, struct val left, struct val right);
+struct val Val_unop     (enum tok_t op, struct val operand);
       void Val_print    (struct val);
 

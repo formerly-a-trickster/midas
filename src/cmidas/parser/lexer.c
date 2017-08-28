@@ -32,7 +32,7 @@ struct keyword
 {
     const char *name;
     int length;
-    enum tok_type type;
+    enum tok_t type;
 } keywords[] =
 {
     { "do"   , 3, TOK_DO      },
@@ -48,7 +48,7 @@ struct keyword
     { NULL   , 0, TOK_EOF     }
 };
 
-static struct tok *tok_new   (T lex, enum tok_type type);
+static struct tok *tok_new   (T lex, enum tok_t type);
 static struct tok *identifier(T lex);
 static struct tok *number    (T lex);
 static struct tok *string    (T lex);
@@ -192,7 +192,7 @@ print_tok(struct tok *tok)
 }
 
 static struct tok *
-tok_new(T lex, enum tok_type type)
+tok_new(T lex, enum tok_t type)
 {
     struct tok *tok;
     char *lexeme;

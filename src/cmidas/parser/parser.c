@@ -46,8 +46,8 @@ static struct exp *unary         (T par);
 static struct exp *primary       (T par);
 
 static struct tok *tok_next   (T par);
-static        bool tok_matches(T par, enum tok_type);
-static        void tok_consume(T par, enum tok_type, const char *);
+static        bool tok_matches(T par, enum tok_t);
+static        void tok_consume(T par, enum tok_t, const char *);
 
 static struct stm *stm_new_block    (Vector_T);
 static struct stm *stm_new_if       (struct exp *, struct stm *, struct stm *);
@@ -56,11 +56,11 @@ static struct stm *stm_new_var_decl (const char *, struct exp *);
 static struct stm *stm_new_print    (struct exp *);
 static struct stm *stm_new_exp_stm  (struct exp *);
 
-static struct exp *exp_new_assign (struct tok *, struct exp *);
-static struct exp *exp_new_binary (struct tok *, struct exp *, struct exp *);
-static struct exp *exp_new_unary  (struct tok *, struct exp *);
+static struct exp *exp_new_assign (const char *, struct exp *);
+static struct exp *exp_new_binary (enum tok_t, struct exp *, struct exp *);
+static struct exp *exp_new_unary  (enum tok_t, struct exp *);
 static struct exp *exp_new_group  (struct exp *, struct tok *, struct tok *);
-static struct exp *exp_new_var    (struct tok *);
+static struct exp *exp_new_var    (const char *);
 static struct exp *exp_new_literal(struct tok *);
 
 T
@@ -140,7 +140,6 @@ read_file(T par, const char *path)
         par->had_err = true;
         return NULL;
     }
-
 
     return buffer;
 }
@@ -362,7 +361,7 @@ assignment(T par)
         exp = assignment(par);
         if (left->type == EXP_VAR)
         {
-            struct tok *varname;
+            const char *varname;
 
             varname = left->data.name;
             left = exp_new_assign(varname, exp);
@@ -389,10 +388,10 @@ equality(T par)
     while (tok_matches(par, TOK_BANG_EQUAL) ||
            tok_matches(par, TOK_EQUAL_EQUAL))
     {
-        struct tok *op;
+        enum tok_t  op;
         struct exp *right;
 
-        op = par->prev_tok;
+        op = par->prev_tok->type;
         right = ordering(par);
         left = exp_new_binary(op, left, right);
     }
@@ -410,10 +409,10 @@ ordering(T par)
     while (tok_matches(par, TOK_GREAT) || tok_matches(par, TOK_GREAT_EQUAL) ||
            tok_matches(par, TOK_LESS) || tok_matches(par, TOK_LESS_EQUAL))
     {
-        struct tok *op;
+        enum tok_t  op;
         struct exp *right;
 
-        op = par->prev_tok;
+        op = par->prev_tok->type;
         right = addition(par);
         left = exp_new_binary(op, left, right);
     }
@@ -430,10 +429,10 @@ addition(T par)
     left = multiplication(par);
     while (tok_matches(par, TOK_MINUS) || tok_matches(par, TOK_PLUS))
     {
-        struct tok *op;
+        enum tok_t  op;
         struct exp *right;
 
-        op = par->prev_tok;
+        op = par->prev_tok->type;
         right = multiplication(par);
         left = exp_new_binary(op, left, right);
     }
@@ -456,10 +455,10 @@ multiplication(T par)
         tok_matches(par, TOK_PERCENT)
     )
     {
-        struct tok *op;
+        enum tok_t  op;
         struct exp *right;
 
-        op = par->prev_tok;
+        op = par->prev_tok->type;
         right = unary(par);
         left = exp_new_binary(op, left, right);
     }
@@ -476,10 +475,10 @@ unary(T par)
 {
     if (tok_matches(par, TOK_BANG) || tok_matches(par, TOK_MINUS))
     {
-        struct tok *op;
+        enum tok_t  op;
         struct exp *exp;
 
-        op = par->prev_tok;
+        op = par->prev_tok->type;
         exp = unary(par);
         return exp_new_unary(op, exp);
     }
@@ -499,7 +498,7 @@ primary(T par)
     struct exp *exp;
 
     if (tok_matches(par, TOK_IDENTIFIER))
-        exp = exp_new_var(par->prev_tok);
+        exp = exp_new_var(par->prev_tok->lexeme);
     else if
     (
         tok_matches(par, TOK_INTEGER) ||
@@ -548,7 +547,7 @@ tok_next(T par)
 }
 
 static bool
-tok_matches(T par, enum tok_type type)
+tok_matches(T par, enum tok_t type)
 {
     if (par->this_tok->type == type)
     {
@@ -560,7 +559,7 @@ tok_matches(T par, enum tok_type type)
 }
 
 static void
-tok_consume(T par, enum tok_type type, const char *message)
+tok_consume(T par, enum tok_t type, const char *message)
 {
     if (par->this_tok->type == type)
         tok_next(par);
@@ -643,7 +642,7 @@ stm_new_exp_stm(struct exp *exp)
 }
 
 static struct exp *
-exp_new_assign(struct tok *name, struct exp *value)
+exp_new_assign(const char *name, struct exp *value)
 {
     struct exp *exp = malloc(sizeof(struct stm));
 
@@ -655,7 +654,7 @@ exp_new_assign(struct tok *name, struct exp *value)
 }
 
 static struct exp *
-exp_new_binary(struct tok *op, struct exp *left, struct exp *right)
+exp_new_binary(enum tok_t op, struct exp *left, struct exp *right)
 {
     struct exp *exp = malloc(sizeof(struct exp));
 
@@ -668,7 +667,7 @@ exp_new_binary(struct tok *op, struct exp *left, struct exp *right)
 }
 
 static struct exp *
-exp_new_unary(struct tok *op, struct exp *operand)
+exp_new_unary(enum tok_t op, struct exp *operand)
 {
     struct exp *exp = malloc(sizeof(struct exp));
 
@@ -694,12 +693,12 @@ exp_new_group(struct exp *group, struct tok *lparen, struct tok *rparen)
 }
 
 static struct exp *
-exp_new_var(struct tok *tok)
+exp_new_var(const char *name)
 {
     struct exp *exp = malloc(sizeof(struct exp));
 
     exp->type = EXP_VAR;
-    exp->data.name = tok;
+    exp->data.name = name;
 
     return exp;
 }
@@ -788,14 +787,15 @@ print_exp(struct exp *exp)
     {
         case EXP_ASSIGN:
         {
-            printf("( assign %s ", exp->data.assign.name->lexeme);
+            printf("( assign %s ", exp->data.assign.name);
             print_exp(exp->data.assign.exp);
             printf(") ");
         } break;
 
         case EXP_BINARY:
         {
-            printf("( %s ", exp->data.binary.op->lexeme);
+            /* XXX op is just a token code */
+            printf("( %i ", exp->data.binary.op);
             print_exp(exp->data.binary.left);
             print_exp(exp->data.binary.right);
             printf(") ");
@@ -803,7 +803,8 @@ print_exp(struct exp *exp)
 
         case EXP_UNARY:
         {
-            printf("( %s ", exp->data.unary.op->lexeme);
+            /* XXX op is just a token code */
+            printf("( %i ", exp->data.unary.op);
             print_exp(exp->data.unary.exp);
             printf(") ");
         } break;
@@ -816,7 +817,7 @@ print_exp(struct exp *exp)
         } break;
 
         case EXP_VAR:
-            printf("%s ", exp->data.name->lexeme);
+            printf("%s ", exp->data.name);
         break;
 
         case EXP_LITERAL:

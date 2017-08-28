@@ -5,7 +5,7 @@
 
 typedef struct T *T;
 
-enum tok_type
+enum tok_t
 {
     TOK_EOF,
 
@@ -25,7 +25,7 @@ enum tok_type
 struct tok
 {
     const char *lexeme;
-    enum tok_type type;
+    enum tok_t type;
     int length;
     int lineno;
     int colno;

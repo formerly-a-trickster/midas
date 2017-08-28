@@ -137,7 +137,7 @@ evaluate(T intpr, struct exp *exp)
     {
         case EXP_ASSIGN:
         {
-            struct tok *name;
+            const char *name;
             struct val *valp, *prev;
 
             name = exp->data.assign.name;
@@ -147,11 +147,11 @@ evaluate(T intpr, struct exp *exp)
             *valp = val;
 
             /* XXX should deallocate prev value */
-            prev = Env_var_set(intpr->context, name->lexeme, valp);
+            prev = Env_var_set(intpr->context, name, valp);
             if (prev == NULL)
             {
                 printf("Cannot assign to undeclared variable `%s`.\n",
-                       name->lexeme);
+                       name);
                 exit(1);
             }
         } break;
@@ -179,18 +179,18 @@ evaluate(T intpr, struct exp *exp)
 
         case EXP_VAR:
         {
-            struct tok *name;
+            const char *name;
             struct val *valp;
 
             name = exp->data.name;
-            valp = Env_var_get(intpr->context, name->lexeme);
+            valp = Env_var_get(intpr->context, name);
             if (valp != NULL)
                 val = *valp;
             else
             {
                 printf("`%s` is not declared in this scope. "
                        "A varible needs to be declared prior to its usage.\n",
-                       name->lexeme);
+                       name);
                 exit(1);
             }
         } break;

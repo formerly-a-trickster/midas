@@ -1,6 +1,7 @@
 #ifndef MD_parser_h_
 #define MD_parser_h_
 
+#include "lexer.h"
 #include "vector.h"
 
 #define T Parser_T
@@ -64,20 +65,20 @@ struct exp
     {
         struct
         {
-            struct tok *name;
+            const char *name;
             struct exp *exp;
         } assign;
 
         struct
         {
-            struct tok *op;
+            enum tok_t  op;
             struct exp *left;
             struct exp *right;
         } binary;
 
         struct
         {
-            struct tok *op;
+            enum tok_t  op;
             struct exp *exp;
         } unary;
 
@@ -88,7 +89,7 @@ struct exp
             struct tok *rparen;
         } group;
 
-        struct tok *name;
+        const char *name;
 
         struct tok *literal;
     } data;
