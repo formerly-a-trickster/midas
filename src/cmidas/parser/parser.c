@@ -32,6 +32,7 @@ static struct stm *statement  (T par);
 static struct stm *block      (T par);
 static struct stm *if_cond    (T par);
 static struct stm *while_cond (T par);
+static struct stm *for_cond   (T par);
 static struct stm *var_decl   (T par);
 static struct stm *exp_stm    (T par);
 static struct stm *print      (T par);
@@ -233,6 +234,8 @@ statement(T par)
         stm = if_cond(par);
     else if (tok_matches(par, TOK_WHILE))
         stm = while_cond(par);
+    else if (tok_matches(par, TOK_FOR))
+        stm = for_cond(par);
     else if (tok_matches(par, TOK_PRINT))
         stm = print(par);
     else
@@ -304,6 +307,99 @@ while_cond(T par)
     body = statement(par);
 
     return stm_new_while(cond, body);
+}
+
+static struct stm*
+for_cond(T par)
+/*
+ * for_stm -> ^for^ "("
+ *                      ( var_decl | expr_stm | ";" )
+ *                      expression? ";"
+ *                      assignment?
+ *                  ")" statement
+ *
+ *  NB: var_decl and expr_stm already contain a semicolon
+ */
+{
+    struct stm *init, *body, *loop;
+    struct exp *cond, *incr;
+
+    tok_consume(par, TOK_PAREN_LEFT,
+            "Expected an opening paren after the `for` keyword.");
+
+    if (tok_matches(par, TOK_VAR))
+        init = var_decl(par);
+    else if (tok_matches(par, TOK_SEMICOLON))
+        init = NULL;
+    else
+        init = exp_stm(par);
+
+    if (!tok_matches(par, TOK_SEMICOLON))
+    {
+        cond = expression(par);
+        tok_consume(par, TOK_SEMICOLON,
+                "Expected a semicolon after the for condition.");
+    }
+    else
+        cond = NULL;
+
+    if (!tok_matches(par, TOK_PAREN_RIGHT))
+    {
+        incr = assignment(par);
+        tok_consume(par, TOK_PAREN_RIGHT,
+                "Expected a closing paren after the for construct.");
+    }
+    else
+        incr = NULL;
+
+    body = statement(par);
+
+    if (incr != NULL)
+    {
+        struct stm *incr_stm;
+
+        incr_stm = stm_new_exp_stm(incr);
+        if (body->type == STM_BLOCK)
+            Vector_push(body->data.block, &incr_stm);
+        else
+        {
+            Vector_T statements;
+
+            statements = Vector_new(sizeof(struct stm *));
+            Vector_push(statements, &body);
+            Vector_push(statements, &incr_stm);
+            body = stm_new_block(statements);
+        }
+    }
+
+    if (cond == NULL)
+    {
+        /* XXX we should be able to just slap together a token */
+        struct tok *true_tok;
+
+        true_tok = malloc(sizeof(struct tok));
+        true_tok->lexeme = "true";
+        true_tok->length = 5;
+        true_tok->type   = TOK_TRUE;
+        true_tok->lineno = 0;
+        true_tok->colno  = 0;
+
+        cond = exp_new_literal(true_tok);
+    }
+
+    loop = stm_new_while(cond, body);
+
+    if (init != NULL)
+    {
+        Vector_T statements;
+
+        statements = Vector_new(sizeof(struct stm *));
+        Vector_push(statements, &init);
+        Vector_push(statements, &loop);
+        loop = stm_new_block(statements);
+    }
+
+    return loop;
 }
 
 static struct stm *
