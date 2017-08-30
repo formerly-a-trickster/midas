@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <setjmp.h>
 
-#include "environment.h"
+#include "environ.h"
 #include "interpreter.h"
 #include "lexer.h"
 #include "value.h"
@@ -19,7 +20,7 @@ struct T
 static void ctx_push(T intpr);
 static void ctx_pop (T intpr);
 
-static       void execute (T intpr, struct stm *);
+static        int execute (T intpr, struct stm *);
 static struct val evaluate(T intpr, struct exp *);
 
 static void var_decl(T intpr, const char *name, struct val *val);
@@ -29,7 +30,7 @@ Interpr_new(void)
 {
     T intpr = malloc(sizeof(struct T));
     intpr->path = NULL;
-    intpr->globals = Env_new(NULL);
+    intpr->globals = Environ_new(NULL);
     intpr->context = intpr->globals;
 
     return intpr;
@@ -52,7 +53,7 @@ ctx_push(T intpr)
 {
     Environ_T new_ctx;
 
-    new_ctx = Env_new(intpr->context);
+    new_ctx = Environ_new(intpr->context);
     intpr->context = new_ctx;
 }
 
@@ -62,14 +63,20 @@ ctx_pop(T intpr)
     Environ_T old_ctx;
 
     old_ctx = intpr->context;
-    intpr->context = Env_parent(old_ctx);
+    intpr->context = Environ_parent(old_ctx);
 
-    Env_free(old_ctx);
+    Environ_free(old_ctx);
 }
 
-static void
+static int
 execute(T intpr, struct stm *stm)
-/* Take a statement and produce a side effect */
+/* XXX break handling code is smeared everywhere */
+/*
+ *  Take a statement and produce a side effect.
+ *
+ *  Statements that produce or bubble a break return 1.
+ *  Others return 0.
+ */
 {
     switch (stm->type)
     {
@@ -83,7 +90,13 @@ execute(T intpr, struct stm *stm)
             vector = stm->data.block;
             len = Vector_length(vector);
             for (i = 0; i < len; ++i)
-                execute(intpr, *(struct stm**)Vector_get(vector, i));
+            {
+                if (execute(intpr, *(struct stm**)Vector_get(vector, i)))
+                {
+                    ctx_pop(intpr);
+                    return 1;
+                }
+            }
 
             ctx_pop(intpr);
         } break;
@@ -91,19 +104,28 @@ execute(T intpr, struct stm *stm)
         case STM_IF:
         {
             struct val cond;
+            int ret_code;
 
+            ret_code = 0;
             cond = evaluate(intpr, stm->data.if_cond.cond);
             if (Val_is_truthy(cond))
-                execute(intpr, stm->data.if_cond.then_block);
+                ret_code = execute(intpr, stm->data.if_cond.then_block);
             else if (stm->data.if_cond.else_block != NULL)
-                execute(intpr, stm->data.if_cond.else_block);
-        } break;
+                ret_code = execute(intpr, stm->data.if_cond.else_block);
+
+            return ret_code;
+        }
 
         case STM_WHILE:
-        {
             while(Val_is_truthy(evaluate(intpr, stm->data.while_cond.cond)))
-                execute(intpr, stm->data.while_cond.body);
-        } break;
+            {
+                if (execute(intpr, stm->data.while_cond.body))
+                    break;
+            }
+        break;
+
+        case STM_BREAK:
+            return 1;
 
         case STM_VAR_DECL:
         {
@@ -121,10 +143,16 @@ execute(T intpr, struct stm *stm)
         } break;
 
         case STM_EXP_STM:
-            /* Evaluate and discard */
-            evaluate(intpr, stm->data.exp_stm);
+            evaluate(intpr, stm->data.exp_stm); /* Evaluate and discard */
+        break;
+
+        default:
+            printf("Encoutered unknown statement\n");
+            exit(1);
         break;
     }
+
+    return 0;
 }
 
 struct val
@@ -147,7 +175,7 @@ evaluate(T intpr, struct exp *exp)
             *valp = val;
 
             /* XXX should deallocate prev value */
-            prev = Env_var_set(intpr->context, name, valp);
+            prev = Environ_var_set(intpr->context, name, valp);
             if (prev == NULL)
             {
                 printf("Cannot assign to undeclared variable `%s`.\n",
@@ -183,7 +211,7 @@ evaluate(T intpr, struct exp *exp)
             struct val *valp;
 
             name = exp->data.name;
-            valp = Env_var_get(intpr->context, name);
+            valp = Environ_var_get(intpr->context, name);
             if (valp != NULL)
                 val = *valp;
             else
@@ -206,7 +234,7 @@ evaluate(T intpr, struct exp *exp)
 void
 var_decl(T intpr, const char *name, struct val *val)
 {
-    struct val *prev = Env_var_new(intpr->context, name, val);
+    struct val *prev = Environ_var_new(intpr->context, name, val);
     if (prev != NULL)
     {
         printf("`%s` is already declared in this scope."

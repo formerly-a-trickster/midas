@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-#include "environment.h"
+#include "environ.h"
 #include "hash.h"
 
 #define T Environ_T
@@ -12,7 +12,7 @@ struct T
 };
 
 T
-Env_new(T parent)
+Environ_new(T parent)
 {
     T env;
 
@@ -24,19 +24,19 @@ Env_new(T parent)
 }
 
 T
-Env_parent(T env)
+Environ_parent(T env)
 {
     return env->parent;
 }
 
 void *
-Env_var_new(T env, const char *key, void *val)
+Environ_var_new(T env, const char *key, void *val)
 {
     return Hash_set(env->hash, key, val);
 }
 
 void *
-Env_var_set(T env, const char *key, void *val)
+Environ_var_set(T env, const char *key, void *val)
 {
     T ctx;
 
@@ -50,7 +50,7 @@ Env_var_set(T env, const char *key, void *val)
 }
 
 void *
-Env_var_get(T env, const char* key)
+Environ_var_get(T env, const char* key)
 {
     T ctx;
     void *val;
@@ -67,7 +67,7 @@ Env_var_get(T env, const char* key)
 }
 
 void
-Env_free(T env)
+Environ_free(T env)
 {
     Hash_free(env->hash);
     free(env);

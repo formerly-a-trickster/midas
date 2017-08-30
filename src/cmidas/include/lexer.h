@@ -1,5 +1,5 @@
-#ifndef MD_lexer_h_
-#define MD_lexer_h_
+#ifndef MD_LEXER
+#define MD_LEXER
 
 #define T Lexer_T
 
@@ -18,8 +18,8 @@ enum tok_t
 
     TOK_DOUBLE, TOK_INTEGER, TOK_STRING,
 
-    TOK_DO, TOK_ELSE, TOK_END, TOK_FALSE, TOK_FOR, TOK_IDENTIFIER, TOK_IF,
-    TOK_PRINT, TOK_TRUE, TOK_VAR, TOK_WHILE
+    TOK_BREAK, TOK_DO, TOK_ELSE, TOK_END, TOK_FALSE, TOK_FOR, TOK_IDENTIFIER,
+    TOK_IF, TOK_PRINT, TOK_TRUE, TOK_VAR, TOK_WHILE
 };
 
 struct tok
@@ -40,5 +40,5 @@ struct tok *Lex_get_tok(T lex);
 
 #undef T
 
-#endif
+#endif /* MD_LEXER */
 

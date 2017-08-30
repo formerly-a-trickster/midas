@@ -1,5 +1,5 @@
-#ifndef MD_interpreter_h_
-#define MD_interpreter_h_
+#ifndef MD_INTERPRETER
+#define MD_INTERPRETER
 
 #include "vector.h"
 
@@ -12,5 +12,5 @@ void Interpr_run(T intpr, const char *path, Vector_T ast);
 
 #undef T
 
-#endif
+#endif /* MD_INTERPRETER */
 

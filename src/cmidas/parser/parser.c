@@ -23,6 +23,7 @@ struct T
        jmp_buf  handle_err;
           bool  had_err;
           char  err_msg[256];
+  unsigned int  loop_depth;
 };
 
 static const char *read_file  (T par, const char *path);
@@ -33,9 +34,10 @@ static struct stm *block      (T par);
 static struct stm *if_cond    (T par);
 static struct stm *while_cond (T par);
 static struct stm *for_cond   (T par);
+static struct stm *break_stm  (T par);
 static struct stm *var_decl   (T par);
-static struct stm *exp_stm    (T par);
 static struct stm *print      (T par);
+static struct stm *exp_stm    (T par);
 
 static struct exp *expression    (T par);
 static struct exp *assignment    (T par);
@@ -53,6 +55,7 @@ static        void tok_consume(T par, enum tok_t, const char *);
 static struct stm *stm_new_block    (Vector_T);
 static struct stm *stm_new_if       (struct exp *, struct stm *, struct stm *);
 static struct stm *stm_new_while    (struct exp *, struct stm *);
+static struct stm *stm_new_break    (void);
 static struct stm *stm_new_var_decl (const char *, struct exp *);
 static struct stm *stm_new_print    (struct exp *);
 static struct stm *stm_new_exp_stm  (struct exp *);
@@ -76,6 +79,7 @@ Par_new(void)
     par->prev_tok = NULL;
     par->this_tok = NULL;
     par->had_err = false;
+    par->loop_depth = 0;
 
     return par;
 }
@@ -222,6 +226,8 @@ statement(T par)
  * statement -> block_stm
  *            | if_stm
  *            | while_stm
+ *            | for_stm
+ *            | break_stm
  *            | print_stm
  *            | exp_stm
  */
@@ -236,6 +242,8 @@ statement(T par)
         stm = while_cond(par);
     else if (tok_matches(par, TOK_FOR))
         stm = for_cond(par);
+    else if (tok_matches(par, TOK_BREAK))
+        stm = break_stm(par);
     else if (tok_matches(par, TOK_PRINT))
         stm = print(par);
     else
@@ -304,7 +312,9 @@ while_cond(T par)
     tok_consume(par, TOK_PAREN_RIGHT,
         "Expected a closing paren after the while condition.");
 
+    ++par->loop_depth;
     body = statement(par);
+    --par->loop_depth;
 
     return stm_new_while(cond, body);
 }
@@ -352,7 +362,9 @@ for_cond(T par)
     else
         incr = NULL;
 
+    ++par->loop_depth;
     body = statement(par);
+    --par->loop_depth;
 
     if (incr != NULL)
     {
@@ -400,6 +412,24 @@ for_cond(T par)
     }
 
     return loop;
+}
+
+static struct stm *
+break_stm(T par)
+/* break_stm -> ^break^ ";" */
+{
+    if (par->loop_depth)
+        tok_consume(par, TOK_SEMICOLON,
+                "Missing semicolone after break statement.");
+    else
+    {
+        sprintf(par->err_msg,
+                "Encoutered `break` outside of a for or while loop");
+        par->had_err = true;
+        longjmp(par->handle_err, 1);
+    }
+
+    return stm_new_break();
 }
 
 static struct stm *
@@ -691,7 +721,7 @@ stm_new_if(struct exp *cond, struct stm *then_block, struct stm *else_block)
     return stm;
 }
 
-struct stm*
+static struct stm*
 stm_new_while(struct exp *cond, struct stm *body)
 {
     struct stm *stm = malloc(sizeof(struct stm));
@@ -699,6 +729,16 @@ stm_new_while(struct exp *cond, struct stm *body)
     stm->type = STM_WHILE;
     stm->data.while_cond.cond = cond;
     stm->data.while_cond.body = body;
+
+    return stm;
+}
+
+static struct stm *
+stm_new_break(void)
+{
+    struct stm *stm = malloc(sizeof(struct stm));
+
+    stm->type = STM_BREAK;
 
     return stm;
 }
@@ -852,6 +892,10 @@ print_stm(struct stm *stm)
             print_stm(stm->data.while_cond.body);
             puts("]");
         } break;
+
+        case STM_BREAK:
+            printf("[ break ]");
+        break;
 
         case STM_VAR_DECL:
         {

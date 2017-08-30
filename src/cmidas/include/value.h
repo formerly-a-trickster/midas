@@ -1,3 +1,6 @@
+#ifndef MD_VALUE
+#define MD_VALUE
+
 #include <stdbool.h>
 
 #include "interpreter.h"
@@ -30,4 +33,6 @@ struct val Val_new      (struct tok *);
 struct val Val_binop    (enum tok_t op, struct val left, struct val right);
 struct val Val_unop     (enum tok_t op, struct val operand);
       void Val_print    (struct val);
+
+#endif /* MD_VALUE */
 

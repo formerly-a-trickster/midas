@@ -1,5 +1,5 @@
-#ifndef ALG_vector_h_
-#define ALG_vector_h_
+#ifndef MD_VECTOR
+#define MD_VECTOR
 
 /*
  * Stores contents of the same size in a contiguous block of memory, like a
@@ -24,5 +24,5 @@ extern  int  Vector_length(T vector);
 
 #undef T
 
-#endif
+#endif /* MD_VECTOR */
 

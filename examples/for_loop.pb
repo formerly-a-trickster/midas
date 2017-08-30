@@ -1,22 +1,12 @@
 for (var i = 0; i < 10; i = i + 1) do
-    print i;
+    var k = 10;
+
+    for (;;) do
+        print k;
+
+        if (k < 8)
+            break;
+
+        k = k - 1;
+    end
 end
-
-print "===";
-
-for (var i = 0; i < 10;)
-    print i = i + 1;
-
-print "===";
-
-var j = 0;
-for (; j < 10;) do
-    print j;
-    j = j + 1;
-end
-
-print "===";
-
-#var k = 0;
-#for (;;)
-#    print k;

@@ -1,5 +1,5 @@
-#ifndef MD_hash_h_
-#define MD_hash_h_
+#ifndef MD_HASH
+#define MD_HASH
 
 /*
  * An open adressing hash table. Collisions are solved with Robin Hood hashing.
@@ -27,5 +27,5 @@ extern void  Hash_free(T hash);
 
 #undef T
 
-#endif
+#endif /* MD_HASH */
 

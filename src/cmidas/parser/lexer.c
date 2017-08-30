@@ -35,17 +35,18 @@ struct keyword
     enum tok_t type;
 } keywords[] =
 {
-    { "do"   , 3, TOK_DO      },
-    { "else" , 5, TOK_ELSE    },
-    { "end"  , 4, TOK_END     },
-    { "false", 6, TOK_FALSE   },
-    { "for"  , 4, TOK_FOR     },
-    { "if"   , 3, TOK_IF      },
-    { "print", 6, TOK_PRINT   },
-    { "true" , 5, TOK_TRUE    },
-    { "var"  , 4, TOK_VAR     },
-    { "while", 6, TOK_WHILE   },
-    { NULL   , 0, TOK_EOF     }
+    { "break", 6, TOK_BREAK },
+    { "do"   , 3, TOK_DO    },
+    { "else" , 5, TOK_ELSE  },
+    { "end"  , 4, TOK_END   },
+    { "false", 6, TOK_FALSE },
+    { "for"  , 4, TOK_FOR   },
+    { "if"   , 3, TOK_IF    },
+    { "print", 6, TOK_PRINT },
+    { "true" , 5, TOK_TRUE  },
+    { "var"  , 4, TOK_VAR   },
+    { "while", 6, TOK_WHILE },
+    { NULL   , 0, TOK_EOF   }
 };
 
 static struct tok *tok_new   (T lex, enum tok_t type);

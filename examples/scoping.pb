@@ -12,11 +12,13 @@ do
         print a;
         print b;
         print c;
+        print "========";
     end
 
     print a;
     print b;
     print c;
+    print "========";
 end
 
 print a;

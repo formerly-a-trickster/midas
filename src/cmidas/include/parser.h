@@ -1,5 +1,5 @@
-#ifndef MD_parser_h_
-#define MD_parser_h_
+#ifndef MD_PARSER
+#define MD_PARSER
 
 #include "lexer.h"
 #include "vector.h"
@@ -15,6 +15,7 @@ struct stm
         STM_BLOCK,
         STM_IF,
         STM_WHILE,
+        STM_BREAK,
         STM_VAR_DECL,
         STM_PRINT,
         STM_EXP_STM
@@ -103,5 +104,5 @@ Vector_T Par_parse(T par, const char *path);
 
 #undef T
 
-#endif
+#endif /* MD_PARSER */
 
