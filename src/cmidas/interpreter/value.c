@@ -24,6 +24,8 @@ static struct val Val_mod    (struct val left, struct val right);
 static struct val Val_equal  (struct val left, struct val right);
 static struct val Val_great  (struct val left, struct val right);
 static struct val Val_gr_eq  (struct val left, struct val right);
+static struct val Val_log_or (struct val left, struct val right);
+static struct val Val_log_and(struct val left, struct val right);
 
 static struct val Val_log_negate(struct val val);
 static struct val Val_num_negate(struct val val);
@@ -77,11 +79,23 @@ Val_is_truthy(struct val val)
     return !(val.type == VAL_BOOLEAN && val.data.as_bool == false);
 }
 
+bool
+Val_is_falsey(struct val val)
+{
+    return (val.type == VAL_BOOLEAN && val.data.as_bool == false);
+}
+
 struct val
 Val_binop(enum tok_t op, struct val left, struct val right)
 {
     switch (op)
     {
+        case TOK_OR:
+            return Val_log_or(left, right);
+
+        case TOK_AND:
+            return Val_log_and(left, right);
+
         case TOK_BANG_EQUAL:
             return Val_log_negate(Val_equal(left, right));
 
@@ -449,6 +463,18 @@ Val_gr_eq(struct val left, struct val right)
     }
 
     return val;
+}
+
+static struct val
+Val_log_and(struct val left, struct val right)
+{
+    return Val_is_truthy(left) ? right : left;
+}
+
+static struct val
+Val_log_or(struct val left, struct val right)
+{
+    return Val_is_falsey(left) ? right : left;
 }
 
 static struct val

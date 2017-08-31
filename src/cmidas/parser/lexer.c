@@ -35,6 +35,7 @@ struct keyword
     enum tok_t type;
 } keywords[] =
 {
+    { "and"  , 4, TOK_AND   },
     { "break", 6, TOK_BREAK },
     { "do"   , 3, TOK_DO    },
     { "else" , 5, TOK_ELSE  },
@@ -42,6 +43,7 @@ struct keyword
     { "false", 6, TOK_FALSE },
     { "for"  , 4, TOK_FOR   },
     { "if"   , 3, TOK_IF    },
+    { "or"   , 3, TOK_OR    },
     { "print", 6, TOK_PRINT },
     { "true" , 5, TOK_TRUE  },
     { "var"  , 4, TOK_VAR   },

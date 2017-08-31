@@ -1,12 +1,9 @@
 for (var i = 0; i < 10; i = i + 1) do
-    var k = 10;
 
-    for (;;) do
+    for (var k = 10; ; k = k - 1) do
         print k;
 
         if (k < 8)
             break;
-
-        k = k - 1;
     end
 end

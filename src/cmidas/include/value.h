@@ -30,6 +30,7 @@ struct val
 
 struct val Val_new      (struct tok *);
       bool Val_is_truthy(struct val);
+      bool Val_is_falsey(struct val);
 struct val Val_binop    (enum tok_t op, struct val left, struct val right);
 struct val Val_unop     (enum tok_t op, struct val operand);
       void Val_print    (struct val);

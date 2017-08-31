@@ -41,6 +41,8 @@ static struct stm *exp_stm    (T par);
 
 static struct exp *expression    (T par);
 static struct exp *assignment    (T par);
+static struct exp *logic_or      (T par);
+static struct exp *logic_and     (T par);
 static struct exp *equality      (T par);
 static struct exp *ordering      (T par);
 static struct exp *addition      (T par);
@@ -151,7 +153,9 @@ read_file(T par, const char *path)
 
 static Vector_T
 program(T par)
-/* program -> statement* "EOF" */
+/*
+ * program -> statement* "EOF"
+ */
 {
     Vector_T program;
 
@@ -199,7 +203,9 @@ declaration(T par)
 
 static struct stm *
 var_decl(T par)
-/* var_decl -> ^var^ identifier "=" expression ";" */
+/*
+ * var_decl -> ^var^ identifier "=" expression ";"
+ */
 {
     struct tok *name;
     struct exp *value;
@@ -254,7 +260,9 @@ statement(T par)
 
 static struct stm *
 block(T par)
-/* block_stm -> ^do^ declaration* "end" */
+/*
+ * block_stm -> ^do^ declaration* "end"
+ */
 {
     Vector_T statements;
 
@@ -274,7 +282,9 @@ block(T par)
 
 static struct stm *
 if_cond(T par)
-/* if_stm -> ^if^ "(" expression ")" statement ( "else" statement )? */
+/*
+ * if_stm -> ^if^ "(" expression ")" statement ( "else" statement )?
+ */
 {
     struct stm *then_block, *else_block;
     struct exp *cond;
@@ -299,7 +309,9 @@ if_cond(T par)
 
 static struct stm *
 while_cond(T par)
-/* while_stm -> ^while^ "(" expression ")" statement */
+/*
+ * while_stm -> ^while^ "(" expression ")" statement
+ */
 {
     struct exp *cond;
     struct stm *body;
@@ -416,7 +428,9 @@ for_cond(T par)
 
 static struct stm *
 break_stm(T par)
-/* break_stm -> ^break^ ";" */
+/*
+ * break_stm -> ^break^ ";"
+ */
 {
     if (par->loop_depth)
         tok_consume(par, TOK_SEMICOLON,
@@ -434,7 +448,9 @@ break_stm(T par)
 
 static struct stm *
 print(T par)
-/* print_stm -> ^print^ expression ";" */
+/*
+ * print_stm -> ^print^ expression ";"
+ */
 {
     struct exp *exp;
 
@@ -448,7 +464,9 @@ print(T par)
 
 static struct stm *
 exp_stm(T par)
-/* exp_stm -> expression ";" */
+/*
+ * exp_stm -> expression ";"
+ */
 {
     struct exp *exp;
 
@@ -462,7 +480,9 @@ exp_stm(T par)
 
 static struct exp *
 expression(T par)
-/*  expression -> assignment */
+/*
+ * expression -> assignment
+ */
 {
     return assignment(par);
 }
@@ -474,28 +494,23 @@ assignment(T par)
  * in the situation of having an expression with a side effect. It would be
  * suited better to being a statement.
  *
- * assignment -> equality ( "=" assignment )*
+ * assignment -> logic_or ( "=" assignment )
  */
 {
     struct exp *left;
 
-    left = equality(par);
+    left = logic_or(par);
     if (tok_matches(par, TOK_EQUAL))
     {
-        struct exp *exp;
+        struct exp *right;
 
-        exp = assignment(par);
+        right = assignment(par);
+
         if (left->type == EXP_VAR)
-        {
-            const char *varname;
-
-            varname = left->data.name;
-            left = exp_new_assign(varname, exp);
-        }
+            return exp_new_assign(left->data.name, right);
         else
         {
-            sprintf(par->err_msg,
-                    "Invalid assignment target. Expected a variable name.");
+            sprintf(par->err_msg, "Cannot assign to this target.");
             par->had_err = true;
             longjmp(par->handle_err, 1);
         }
@@ -505,8 +520,54 @@ assignment(T par)
 }
 
 static struct exp *
+logic_or(T par)
+/*
+ * or -> and ( "or" and )*
+ */
+{
+    struct exp *left;
+
+    left = logic_and(par);
+    while (tok_matches(par, TOK_OR))
+    {
+        enum tok_t  op;
+        struct exp *right;
+
+        op = par->prev_tok->type;
+        right = logic_and(par);
+        left = exp_new_binary(op, left, right);
+    }
+
+    return left;
+}
+
+static struct exp *
+logic_and(T par)
+/*
+ * and -> equality ( "or" equality )*
+ */
+{
+    struct exp *left;
+
+    left = equality(par);
+    while (tok_matches(par, TOK_AND))
+    {
+        enum tok_t  op;
+        struct exp *right;
+
+        op = par->prev_tok->type;
+        right = equality(par);
+        left = exp_new_binary(op, left, right);
+    }
+
+    return left;
+}
+
+static struct exp *
 equality(T par)
-/* equality -> ordering ( ( "!=" | "==" ) ordering )* */
+/*
+ * equality -> ordering ( ( "!=" | "==" ) ordering )*
+ */
 {
     struct exp *left;
 
@@ -527,7 +588,9 @@ equality(T par)
 
 static struct exp *
 ordering(T par)
-/* ordering -> addition ( ( ">" | ">=" | "<" | "<=" ) addition)* */
+/*
+ * ordering -> addition ( ( ">" | ">=" | "<" | "<=" ) addition)*
+ */
 {
     struct exp *left;
 
@@ -548,7 +611,9 @@ ordering(T par)
 
 static struct exp *
 addition(T par)
-/* addition -> multiplication ( ( "-" | "+" ) multiplication)* */
+/*
+ * addition -> multiplication ( ( "-" | "+" ) multiplication)*
+ */
 {
     struct exp *left;
 
@@ -568,7 +633,9 @@ addition(T par)
 
 static struct exp *
 multiplication(T par)
-/* multiplication -> unary ( ( "/" | "//" | "*" | "%" ) unary )* */
+/*
+ * multiplication -> unary ( ( "/" | "//" | "*" | "%" ) unary )*
+ */
 {
     struct exp *left;
 
