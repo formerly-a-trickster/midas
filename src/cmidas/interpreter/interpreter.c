@@ -13,6 +13,7 @@
 struct brkpnt
 {
     struct brkpnt *prev;
+        Environ_T  context;
           jmp_buf  point;
 };
 
@@ -81,6 +82,7 @@ brk_push(T intpr)
 
     brkpnt = malloc(sizeof(struct brkpnt));
     brkpnt->prev = intpr->brkpnt;
+    brkpnt->context = intpr->context;
     intpr->brkpnt = brkpnt;
 }
 
@@ -142,6 +144,11 @@ execute(T intpr, struct stm *stm)
                 {
                     execute(intpr, stm->data.while_cond.body);
                 }
+            }
+            else
+            {
+                while (intpr->context != intpr->brkpnt->context)
+                    ctx_pop(intpr);
             }
 
             brk_pop(intpr);

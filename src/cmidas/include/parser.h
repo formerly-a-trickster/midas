@@ -12,18 +12,32 @@ struct stm
 {
     enum
     {
+        STM_VAR_DECL,
+        STM_FUN_DECL,
         STM_BLOCK,
         STM_IF,
         STM_WHILE,
         STM_BREAK,
-        STM_VAR_DECL,
-        STM_FUN_DECL,
+        STM_RETURN,
         STM_PRINT,
         STM_EXP_STM
     } type;
 
     union
     {
+        struct
+        {
+            const char *name;
+            struct exp *exp;
+        } var_decl;
+
+        struct
+        {
+            const char *name;
+              Vector_T  formals; /* (const char *) */
+            struct stm *body;
+        } fun_decl;
+
         Vector_T block; /* (struct stm *) */
 
         struct
@@ -39,18 +53,7 @@ struct stm
             struct stm *body;
         } while_cond;
 
-        struct
-        {
-            const char *name;
-            struct exp *exp;
-        } var_decl;
-
-        struct
-        {
-            const char *name;
-              Vector_T  formals; /* (const char *) */
-            struct stm *body;
-        } fun_decl;
+        struct exp *ret_exp;
 
         struct exp *print;
 

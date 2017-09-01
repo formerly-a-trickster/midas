@@ -37,6 +37,7 @@ static struct stm *if_cond    (T par);
 static struct stm *while_cond (T par);
 static struct stm *for_cond   (T par);
 static struct stm *break_stm  (T par);
+static struct stm *return_stm (T par);
 static struct stm *print      (T par);
 static struct stm *exp_stm    (T par);
 
@@ -56,12 +57,13 @@ static struct tok *tok_next   (T par);
 static       bool  tok_matches(T par, enum tok_t);
 static       void  tok_consume(T par, enum tok_t, const char *);
 
+static struct stm *stm_new_var_decl (const char *, struct exp *);
+static struct stm *stm_new_fun_decl (const char *, Vector_T, struct stm *);
 static struct stm *stm_new_block    (Vector_T);
 static struct stm *stm_new_if       (struct exp *, struct stm *, struct stm *);
 static struct stm *stm_new_while    (struct exp *, struct stm *);
 static struct stm *stm_new_break    (void);
-static struct stm *stm_new_var_decl (const char *, struct exp *);
-static struct stm *stm_new_fun_decl (const char *, Vector_T, struct stm *);
+static struct stm *stm_new_return   (struct exp *);
 static struct stm *stm_new_print    (struct exp *);
 static struct stm *stm_new_exp_stm  (struct exp *);
 
@@ -282,6 +284,7 @@ statement(T par)
  *            | while_stm
  *            | for_stm
  *            | break_stm
+ *            | return_stm
  *            | print_stm
  *            | exp_stm
  */
@@ -298,6 +301,8 @@ statement(T par)
         stm = for_cond(par);
     else if (tok_matches(par, TOK_BREAK))
         stm = break_stm(par);
+    else if (tok_matches(par, TOK_RETURN))
+        stm = return_stm(par);
     else if (tok_matches(par, TOK_PRINT))
         stm = print(par);
     else
@@ -492,6 +497,39 @@ break_stm(T par)
     }
 
     return stm_new_break();
+}
+
+static struct stm *
+return_stm(T par)
+/*
+ * return_stm -> ^return^ primary? ";"
+ */
+{
+    if (!tok_matches(par, TOK_SEMICOLON))
+    {
+        struct exp *ret_exp;
+
+        ret_exp = primary(par);
+
+        tok_consume(par, TOK_SEMICOLON,
+                "Missing semicolon after return statement");
+
+        return stm_new_return(ret_exp);
+    }
+    else
+    {
+        struct tok *nil;
+
+        /* XXX using a literal token is less than ideal */
+        nil = malloc(sizeof(struct tok));
+        nil->lexeme = "nil";
+        nil->type = TOK_NIL;
+        nil->length = 4;
+        nil->lineno = 0;
+        nil->colno = 0;
+
+        return stm_new_return(exp_new_literal(nil));
+    }
 }
 
 static struct stm *
@@ -851,6 +889,31 @@ tok_consume(T par, enum tok_t type, const char *message)
 }
 
 static struct stm *
+stm_new_var_decl(const char *name, struct exp *exp)
+{
+    struct stm *stm = malloc(sizeof(struct stm));
+
+    stm->type = STM_VAR_DECL;
+    stm->data.var_decl.name = name;
+    stm->data.var_decl.exp = exp;
+
+    return stm;
+}
+
+static struct stm *
+stm_new_fun_decl(const char *name, Vector_T formals, struct stm *body)
+{
+    struct stm *stm = malloc(sizeof(struct stm));
+
+    stm->type = STM_FUN_DECL;
+    stm->data.fun_decl.name = name;
+    stm->data.fun_decl.formals = formals;
+    stm->data.fun_decl.body = body;
+
+    return stm;
+}
+
+static struct stm *
 stm_new_block(Vector_T block)
 {
     struct stm *stm = malloc(sizeof(struct stm));
@@ -897,26 +960,12 @@ stm_new_break(void)
 }
 
 static struct stm *
-stm_new_var_decl(const char *name, struct exp *exp)
+stm_new_return(struct exp *ret_exp)
 {
     struct stm *stm = malloc(sizeof(struct stm));
 
-    stm->type = STM_VAR_DECL;
-    stm->data.var_decl.name = name;
-    stm->data.var_decl.exp = exp;
-
-    return stm;
-}
-
-static struct stm *
-stm_new_fun_decl(const char *name, Vector_T formals, struct stm *body)
-{
-    struct stm *stm = malloc(sizeof(struct stm));
-
-    stm->type = STM_FUN_DECL;
-    stm->data.fun_decl.name = name;
-    stm->data.fun_decl.formals = formals;
-    stm->data.fun_decl.body = body;
+    stm->type = STM_RETURN;
+    stm->data.ret_exp = ret_exp;
 
     return stm;
 }
@@ -1082,6 +1131,12 @@ print_stm(struct stm *stm, int indent)
 
         case STM_BREAK:
             puts("[ break ]");
+        break;
+
+        case STM_RETURN:
+            printf("[ return ");
+            print_exp(stm->data.ret_exp);
+            puts("]");
         break;
 
         case STM_VAR_DECL:
