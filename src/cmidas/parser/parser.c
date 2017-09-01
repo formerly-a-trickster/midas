@@ -24,6 +24,7 @@ struct T
           bool  had_err;
           char  err_msg[256];
   unsigned int  loop_depth;
+  unsigned int  fun_depth;
 };
 
 static const char *read_file  (T par, const char *path);
@@ -264,14 +265,17 @@ fun_decl(T par)
                         "of identifiers.");
             Vector_push(formals, &par->prev_tok->lexeme);
         } while (tok_matches(par, TOK_COMMA));
+
+        tok_consume(par, TOK_PAREN_RIGHT,
+                "Expected a closing paren after function arguments");
     }
 
-    tok_consume(par, TOK_PAREN_RIGHT,
-            "Expected a closing paren after function arguments");
     tok_consume(par, TOK_DO,
             "Expected a do...end block after function parameter list.");
 
+    ++par->fun_depth;
     body = block(par);
+    --par->fun_depth;
 
     return stm_new_fun_decl(name, formals, body);
 }
@@ -491,7 +495,7 @@ break_stm(T par)
     else
     {
         sprintf(par->err_msg,
-                "Encoutered `break` outside of a for or while loop");
+                "Encoutered break statement outside of a for or while loop");
         par->had_err = true;
         longjmp(par->handle_err, 1);
     }
@@ -505,30 +509,41 @@ return_stm(T par)
  * return_stm -> ^return^ primary? ";"
  */
 {
-    if (!tok_matches(par, TOK_SEMICOLON))
+    if (par->fun_depth)
     {
-        struct exp *ret_exp;
+        if (!tok_matches(par, TOK_SEMICOLON))
+        {
+            struct exp *ret_exp;
 
-        ret_exp = primary(par);
+            ret_exp = primary(par);
 
-        tok_consume(par, TOK_SEMICOLON,
-                "Missing semicolon after return statement");
+            tok_consume(par, TOK_SEMICOLON,
+                    "Missing semicolon after return statement");
 
-        return stm_new_return(ret_exp);
+            return stm_new_return(ret_exp);
+        }
+        else
+        {
+            struct tok *nil;
+
+            /* XXX using a literal token is less than ideal */
+            nil = malloc(sizeof(struct tok));
+            nil->lexeme = "nil";
+            nil->type = TOK_NIL;
+            nil->length = 4;
+            nil->lineno = 0;
+            nil->colno = 0;
+
+            return stm_new_return(exp_new_literal(nil));
+        }
     }
     else
     {
-        struct tok *nil;
-
-        /* XXX using a literal token is less than ideal */
-        nil = malloc(sizeof(struct tok));
-        nil->lexeme = "nil";
-        nil->type = TOK_NIL;
-        nil->length = 4;
-        nil->lineno = 0;
-        nil->colno = 0;
-
-        return stm_new_return(exp_new_literal(nil));
+        sprintf(par->err_msg,
+                "Encountered return statement outside of a function "
+                "declaration.");
+        par->had_err = true;
+        longjmp(par->handle_err, 1);
     }
 }
 

@@ -1,4 +1,6 @@
-return 1;
+fun one() do
+    return 1;
+end
 
 # var 1;
 
