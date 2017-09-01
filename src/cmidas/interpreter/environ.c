@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "environ.h"
 #include "hash.h"
@@ -64,6 +65,15 @@ Environ_var_get(T env, const char* key)
     }
 
     return NULL;
+}
+
+void
+Environ_map(T env, void map_fun(const char *key, void *val))
+{
+    T ctx;
+
+    for (ctx = env; ctx != NULL; ctx = ctx->parent)
+        Hash_map(ctx->hash, map_fun);
 }
 
 void

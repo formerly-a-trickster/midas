@@ -1,6 +1,6 @@
-fun fib(num) do
+fun imp_fib(num) do
     var a = 0;
-    var b = 0;
+    var b = 1;
     var c = 1;
 
     for (var i = 0; i < num; i = i + 1) do
@@ -9,18 +9,16 @@ fun fib(num) do
         c = a + b;
     end
 
-    print b;
+    return b;
 end
 
-fib(0);
-fib(1);
-fib(2);
-fib(3);
-fib(4);
-fib(5);
-fib(6);
-fib(7);
-fib(8);
-fib(9);
-fib(10);
+fun rec_fib(num) do
+    if (num <= 1)
+        return 1;
+    else
+        return rec_fib(num - 2) + rec_fib(num - 1);
+end
+
+print imp_fib(25);
+print rec_fib(25);
 

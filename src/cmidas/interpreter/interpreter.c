@@ -19,28 +19,36 @@ struct brkpnt
 
 struct T
 {
- struct brkpnt *brkpnt;
-     Environ_T  globals;
-     Environ_T  context;
+    struct brkpnt *brkpnt;
+        Environ_T  globals;
+        Environ_T  context;
+       struct val  ret_val;
 };
 
 static void ctx_push(T intpr);
 static void ctx_pop (T intpr);
-static void brk_push(T intpr);
+static void brk_push(T intpr, Environ_T env);
 static void brk_pop (T intpr);
 
 static       void execute (T intpr, struct stm *);
 static struct val evaluate(T intpr, struct exp *);
+static struct val exp_call(T intpr, struct exp *);
 
 static void var_decl(T intpr, const char *name, struct val *val);
 
 T
 Interpr_new(void)
 {
-    T intpr = malloc(sizeof(struct T));
+    struct val val;
+         T intpr;
+
+    val.type = VAL_NIL;
+
+    intpr = malloc(sizeof(struct T));
     intpr->globals = Environ_new(NULL);
     intpr->context = intpr->globals;
     intpr->brkpnt = NULL;
+    intpr->ret_val = val;
 
     return intpr;
 }
@@ -76,13 +84,13 @@ ctx_pop(T intpr)
 }
 
 static void
-brk_push(T intpr)
+brk_push(T intpr, Environ_T env)
 {
     struct brkpnt *brkpnt;
 
     brkpnt = malloc(sizeof(struct brkpnt));
     brkpnt->prev = intpr->brkpnt;
-    brkpnt->context = intpr->context;
+    brkpnt->context = env;
     intpr->brkpnt = brkpnt;
 }
 
@@ -133,7 +141,7 @@ execute(T intpr, struct stm *stm)
 
         case STM_WHILE:
         {
-            brk_push(intpr);
+            brk_push(intpr, intpr->context);
 
             if (setjmp(intpr->brkpnt->point) == 0)
             {
@@ -158,6 +166,12 @@ execute(T intpr, struct stm *stm)
         case STM_BREAK:
             longjmp(intpr->brkpnt->point, 1);
         break;
+
+        case STM_RETURN:
+        {
+            intpr->ret_val = evaluate(intpr, stm->data.ret_exp);
+            longjmp(intpr->brkpnt->point, 1);
+        } break;
 
         case STM_VAR_DECL:
         {
@@ -258,62 +272,8 @@ evaluate(T intpr, struct exp *exp)
         } break;
 
         case EXP_CALL:
-        {
-            struct val fun;
-            int arity;
-
-            fun = evaluate(intpr, exp->data.call.callee);
-            if (fun.type != VAL_FUNCTION)
-            {
-                printf("Tried to call a non-function variable: ");
-                Val_print(fun);
-                exit(1);
-            }
-
-            arity = Vector_length(exp->data.call.params);
-            if (arity == fun.data.as_fun->arity)
-            {
-                Vector_T args;
-                int i;
-
-                args = Vector_new(sizeof(struct val));
-                for (i = 0; i < arity; ++i)
-                {
-                    struct val arg;
-
-                    arg = evaluate
-                    (
-                        intpr,
-                        *(struct exp **)Vector_get(exp->data.call.params, i)
-                    );
-                    Vector_push(args, &arg);
-                }
-
-                ctx_push(intpr);
-
-                for (i = 0; i < arity; ++i)
-                {
-                    var_decl
-                    (
-                        intpr,
-                        *(const char **)Vector_get(fun.data.as_fun->params, i),
-                        Vector_get(args, i)
-                    );
-                }
-
-                execute(intpr, fun.data.as_fun->body);
-
-                ctx_pop(intpr);
-
-                /* XXX temporary */
-                val = fun;
-            }
-            else
-            {
-                puts("Called function with wrong number of arguments.");
-                exit(1);
-            }
-        } break;
+            val = exp_call(intpr, exp);
+        break;
 
         case EXP_LITERAL:
             val = Val_new(exp->data.literal);
@@ -337,6 +297,66 @@ var_decl(T intpr, const char *name, struct val *val)
                name);
         exit(1);
     }
+}
+
+struct val
+exp_call(T intpr, struct exp *exp)
+{
+    struct val fun, ret_val;
+           int i, arity;
+      Vector_T args;
+     Environ_T prev_env;
+
+    fun = evaluate(intpr, exp->data.call.callee);
+    if (fun.type != VAL_FUNCTION)
+    {
+        printf("Tried to call a non-function variable: ");
+        Val_print(fun);
+        exit(1);
+    }
+
+    arity = Vector_length(exp->data.call.params);
+    if (arity != fun.data.as_fun->arity)
+    {
+        puts("Called function with wrong number of arguments.");
+        exit(1);
+    }
+
+    args = Vector_new(sizeof(struct val));
+    for (i = 0; i < arity; ++i)
+    {
+        struct val arg;
+
+        arg = evaluate(intpr,
+                       *(struct exp **)Vector_get(exp->data.call.params, i));
+        Vector_push(args, &arg);
+    }
+
+    prev_env = intpr->context;
+    intpr->context = Environ_new(intpr->globals);
+
+    for (i = 0; i < arity; ++i)
+    {
+        var_decl(intpr,
+                 *(const char **)Vector_get(fun.data.as_fun->params, i),
+                 Vector_get(args, i));
+    }
+
+    brk_push(intpr, intpr->globals);
+    if (setjmp(intpr->brkpnt->point) == 0)
+        execute(intpr, fun.data.as_fun->body);
+    else
+    {
+        while (intpr->context != intpr->brkpnt->context)
+            ctx_pop(intpr);
+    }
+    brk_pop(intpr);
+
+    intpr->context = prev_env;
+    ret_val = intpr->ret_val;
+    intpr->ret_val.type = VAL_NIL;
+
+    return ret_val;
 }
 
 #undef T

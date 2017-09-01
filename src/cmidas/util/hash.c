@@ -68,6 +68,21 @@ Hash_get(T hash, const char *key)
 }
 
 void
+Hash_map(T hash, void map_fun(const char *key, void *val))
+{
+    int i;
+
+    for (i = 0; i < hash->size + hash->slack; ++i)
+    {
+        struct row *row;
+
+        row = hash->table + i;
+        if (row->key != NULL)
+            map_fun(row->key, row->val);
+    }
+}
+
+void
 Hash_free(T hash)
 {
     free(hash->table);
@@ -87,7 +102,7 @@ Hash_get_row(T hash, const char *key)
         row = hash->table + hkey,
         probes = 0;
 
-        probes < hash->slack && row->key != NULL;
+        probes <= hash->slack && row->key != NULL;
 
         ++probes,
         ++row

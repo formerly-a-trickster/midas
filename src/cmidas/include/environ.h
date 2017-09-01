@@ -10,6 +10,7 @@ extern    T  Environ_parent (T env);
 extern void *Environ_var_new(T env, const char *key, void *val);
 extern void *Environ_var_set(T env, const char *key, void *vel);
 extern void *Environ_var_get(T env, const char *key);
+extern void  Environ_map    (T enc, void map_fun(const char *key, void *val));
 extern void  Environ_free   (T env);
 
 #undef T

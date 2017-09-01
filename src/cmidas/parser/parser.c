@@ -506,7 +506,7 @@ break_stm(T par)
 static struct stm *
 return_stm(T par)
 /*
- * return_stm -> ^return^ primary? ";"
+ * return_stm -> ^return^ expression? ";"
  */
 {
     if (par->fun_depth)
@@ -515,7 +515,7 @@ return_stm(T par)
         {
             struct exp *ret_exp;
 
-            ret_exp = primary(par);
+            ret_exp = expression(par);
 
             tok_consume(par, TOK_SEMICOLON,
                     "Missing semicolon after return statement");

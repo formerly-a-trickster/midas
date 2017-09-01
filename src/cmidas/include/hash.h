@@ -23,6 +23,7 @@ typedef struct T *T;
 extern    T  Hash_new (void);
 extern void *Hash_set (T hash, const char *key, void *val);
 extern void *Hash_get (T hash, const char *key);
+extern void  Hash_map (T hash, void map_fun(const char *key, void *val));
 extern void  Hash_free(T hash);
 
 #undef T
