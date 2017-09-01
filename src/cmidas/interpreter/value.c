@@ -38,11 +38,15 @@ Val_new(struct tok *tok)
 
     switch (tok->type)
     {
+        case TOK_NIL:
+            val.type = VAL_NIL;
+        break;
+
         case TOK_INTEGER:
             val.type = VAL_INTEGER;
             /* XXX this will silently fail for large enough numbers */
             val.data.as_long = atol(tok->lexeme);
-            break;
+        break;
 
         case TOK_DOUBLE:
             val.type = VAL_DOUBLE;
@@ -52,23 +56,23 @@ Val_new(struct tok *tok)
         case TOK_STRING:
             val.type = VAL_STRING;
             val.data.as_string = tok->lexeme;
-            break;
+        break;
 
         case TOK_TRUE:
             val.type = VAL_BOOLEAN;
             val.data.as_bool = true;
-            break;
+        break;
 
         case TOK_FALSE:
             val.type = VAL_BOOLEAN;
             val.data.as_bool = false;
-            break;
+        break;
 
         default:
             printf("Expected a literal value, but instead got `%s`.\n",
                 tok->lexeme);
             exit(1);
-            break;
+        break;
     }
 
     return val;
@@ -189,6 +193,10 @@ Val_print(struct val val)
 {
     switch (val.type)
     {
+        case VAL_NIL:
+            printf("nil");
+        break;
+
         case VAL_BOOLEAN:
             if (val.data.as_bool == true)
                 printf("true");
@@ -227,7 +235,12 @@ Val_to_type(struct val val, enum val_type to_type)
         }
         else if (to_type == VAL_STRING)
         {
-            if (val.type == VAL_BOOLEAN)
+            if (val.type == VAL_NIL)
+            {
+                val.type = VAL_STRING;
+                val.data.as_string = "nil";
+            }
+            else if (val.type == VAL_BOOLEAN)
             {
                 val.type = VAL_STRING;
                 if (val.data.as_bool)
@@ -243,7 +256,7 @@ Val_to_type(struct val val, enum val_type to_type)
                 val.type = VAL_STRING;
                 val.data.as_string = int_string;
             }
-            else /* val.type == VAL_DOUBLE */
+            else if (val.type == VAL_DOUBLE)
             {
                 char *double_string;
 
@@ -251,6 +264,13 @@ Val_to_type(struct val val, enum val_type to_type)
                 val.type = VAL_STRING;
                 val.data.as_string = double_string;
             }
+            else if (val.type == VAL_FUNCTION)
+            {
+                val.type = VAL_STRING;
+                val.data.as_string = "<FUNCTION>";
+            }
+            else
+                goto fail;
         }
         else if (to_type == VAL_INTEGER)
         {
@@ -260,13 +280,9 @@ Val_to_type(struct val val, enum val_type to_type)
                 val.data.as_long = (long)val.data.as_double;
             }
             else
-            {
-                printf("Tried to convert %s value to %s value.\n",
-                       Val_type_str(val.type), Val_type_str(to_type));
-                exit(1);
-            }
+                goto fail;
         }
-        else /* to_type == VAL_DOUBLE */
+        else if (to_type == VAL_DOUBLE)
         {
             if (val.type == VAL_INTEGER)
             {
@@ -274,15 +290,18 @@ Val_to_type(struct val val, enum val_type to_type)
                 val.data.as_double = (double)val.data.as_long;
             }
             else
-            {
-                printf("Tried to convert %s value to %s value.\n",
-                       Val_type_str(val.type), Val_type_str(to_type));
-                exit(1);
-            }
+                goto fail;
         }
+        else
+            goto fail;
     }
 
     return val;
+
+fail:
+    printf("Tried to convert %s value to %s value.\n",
+           Val_type_str(val.type), Val_type_str(to_type));
+    exit(1);
 }
 
 static void

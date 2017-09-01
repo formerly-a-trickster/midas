@@ -767,7 +767,7 @@ static struct exp *
 primary(T par)
 /*
  * primary -> IDENTIFIER
- *          | INTEGER | DOUBLE | STRING | "false" | "true" |
+ *          | INTEGER | DOUBLE | STRING | NIL | "false" | "true" |
  *          | "(" expression ")"
  *          | XXX error productions
  */
@@ -779,10 +779,11 @@ primary(T par)
     else if
     (
         tok_matches(par, TOK_INTEGER) ||
-        tok_matches(par, TOK_DOUBLE) ||
-        tok_matches(par, TOK_STRING) ||
-        tok_matches(par, TOK_FALSE) ||
-        tok_matches(par, TOK_TRUE)
+        tok_matches(par, TOK_DOUBLE ) ||
+        tok_matches(par, TOK_STRING ) ||
+        tok_matches(par, TOK_NIL    ) ||
+        tok_matches(par, TOK_FALSE  ) ||
+        tok_matches(par, TOK_TRUE   )
     )
         exp = exp_new_literal(par->prev_tok);
     else if (tok_matches(par, TOK_PAREN_LEFT))

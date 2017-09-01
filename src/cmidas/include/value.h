@@ -9,6 +9,7 @@
 
 enum val_type
 {
+    VAL_NIL,
     VAL_BOOLEAN,
     VAL_INTEGER,
     VAL_DOUBLE,

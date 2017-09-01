@@ -44,6 +44,7 @@ struct keyword
     { "for"  , 4, TOK_FOR   },
     { "fun"  , 4, TOK_FUN   },
     { "if"   , 3, TOK_IF    },
+    { "nil"  , 4, TOK_NIL   },
     { "or"   , 3, TOK_OR    },
     { "print", 6, TOK_PRINT },
     { "true" , 5, TOK_TRUE  },
