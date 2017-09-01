@@ -1049,14 +1049,18 @@ print_stm(struct stm *stm, int indent)
             print_exp(stm->data.if_cond.cond);
             putchar('\n');
 
-            pspaces(indent);
-            printf("then ");
-            print_stm(stm->data.if_cond.then_block, indent + 4);
+            pspaces(indent + 4);
+            puts("[ then");
+            print_stm(stm->data.if_cond.then_block, indent + 8);
+            pspaces(indent + 4);
+            puts("]");
 
             if (stm->data.if_cond.else_block != NULL)
             {
                 pspaces(indent);
-                printf("else ");
+                puts("else");
+                pspaces(indent);
+                puts("[");
                 print_stm(stm->data.if_cond.else_block, indent + 4);
             }
 
@@ -1076,7 +1080,7 @@ print_stm(struct stm *stm, int indent)
         } break;
 
         case STM_BREAK:
-            printf("[ break ]");
+            puts("[ break ]");
         break;
 
         case STM_VAR_DECL:
@@ -1114,8 +1118,6 @@ print_stm(struct stm *stm, int indent)
         {
             printf("[ expstm ");
             print_exp(stm->data.exp_stm);
-
-            pspaces(indent);
             puts("]");
         } break;
     }

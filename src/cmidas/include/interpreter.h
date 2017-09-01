@@ -8,7 +8,7 @@
 typedef struct T *T;
 
    T Interpr_new(void);
-void Interpr_run(T intpr, const char *path, Vector_T ast);
+void Interpr_run(T intpr, Vector_T ast);
 
 #undef T
 

@@ -10,17 +10,25 @@
 
 #define T Interpr_T
 
+struct brkpnt
+{
+    struct brkpnt *prev;
+          jmp_buf  point;
+};
+
 struct T
 {
-    const char *path;
+ struct brkpnt *brkpnt;
      Environ_T  globals;
      Environ_T  context;
 };
 
 static void ctx_push(T intpr);
 static void ctx_pop (T intpr);
+static void brk_push(T intpr);
+static void brk_pop (T intpr);
 
-static        int execute (T intpr, struct stm *);
+static       void execute (T intpr, struct stm *);
 static struct val evaluate(T intpr, struct exp *);
 
 static void var_decl(T intpr, const char *name, struct val *val);
@@ -29,19 +37,17 @@ T
 Interpr_new(void)
 {
     T intpr = malloc(sizeof(struct T));
-    intpr->path = NULL;
     intpr->globals = Environ_new(NULL);
     intpr->context = intpr->globals;
+    intpr->brkpnt = NULL;
 
     return intpr;
 }
 
 void
-Interpr_run(T intpr, const char *path, Vector_T ast)
+Interpr_run(T intpr, Vector_T ast)
 {
     int i, len;
-
-    intpr->path = path;
 
     len = Vector_length(ast);
     for (i = 0; i < len; ++i)
@@ -68,14 +74,31 @@ ctx_pop(T intpr)
     Environ_free(old_ctx);
 }
 
-static int
+static void
+brk_push(T intpr)
+{
+    struct brkpnt *brkpnt;
+
+    brkpnt = malloc(sizeof(struct brkpnt));
+    brkpnt->prev = intpr->brkpnt;
+    intpr->brkpnt = brkpnt;
+}
+
+static void
+brk_pop(T intpr)
+{
+    struct brkpnt *oldpnt;
+
+    oldpnt = intpr->brkpnt;
+    intpr->brkpnt = intpr->brkpnt->prev;
+
+    free(oldpnt);
+}
+
+static void
 execute(T intpr, struct stm *stm)
-/* XXX break handling code is smeared everywhere */
 /*
  *  Take a statement and produce a side effect.
- *
- *  Statements that produce or bubble a break return 1.
- *  Others return 0.
  */
 {
     switch (stm->type)
@@ -90,13 +113,7 @@ execute(T intpr, struct stm *stm)
             vector = stm->data.block;
             len = Vector_length(vector);
             for (i = 0; i < len; ++i)
-            {
-                if (execute(intpr, *(struct stm**)Vector_get(vector, i)))
-                {
-                    ctx_pop(intpr);
-                    return 1;
-                }
-            }
+                execute(intpr, *(struct stm**)Vector_get(vector, i));
 
             ctx_pop(intpr);
         } break;
@@ -104,28 +121,36 @@ execute(T intpr, struct stm *stm)
         case STM_IF:
         {
             struct val cond;
-            int ret_code;
 
-            ret_code = 0;
             cond = evaluate(intpr, stm->data.if_cond.cond);
             if (Val_is_truthy(cond))
-                ret_code = execute(intpr, stm->data.if_cond.then_block);
+                execute(intpr, stm->data.if_cond.then_block);
             else if (stm->data.if_cond.else_block != NULL)
-                ret_code = execute(intpr, stm->data.if_cond.else_block);
-
-            return ret_code;
-        }
+                execute(intpr, stm->data.if_cond.else_block);
+        } break;
 
         case STM_WHILE:
-            while(Val_is_truthy(evaluate(intpr, stm->data.while_cond.cond)))
+        {
+            brk_push(intpr);
+
+            if (setjmp(intpr->brkpnt->point) == 0)
             {
-                if (execute(intpr, stm->data.while_cond.body))
-                    break;
+                while
+                (
+                    Val_is_truthy(evaluate(intpr, stm->data.while_cond.cond))
+                )
+                {
+                    execute(intpr, stm->data.while_cond.body);
+                }
             }
+
+            brk_pop(intpr);
+        }
         break;
 
         case STM_BREAK:
-            return 1;
+            longjmp(intpr->brkpnt->point, 1);
+        break;
 
         case STM_VAR_DECL:
         {
@@ -159,8 +184,6 @@ execute(T intpr, struct stm *stm)
             exit(1);
         break;
     }
-
-    return 0;
 }
 
 struct val

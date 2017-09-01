@@ -25,7 +25,7 @@ main(int argc, const char *argv[])
             print_stm(*(struct stm **)Vector_get(ast, i), 0);
 
         intpr = Interpr_new();
-        Interpr_run(intpr, argv[1], ast);
+        Interpr_run(intpr, ast);
     }
     else
         puts("Usage: cmidas file");
