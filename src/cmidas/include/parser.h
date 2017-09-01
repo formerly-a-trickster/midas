@@ -17,13 +17,14 @@ struct stm
         STM_WHILE,
         STM_BREAK,
         STM_VAR_DECL,
+        STM_FUN_DECL,
         STM_PRINT,
         STM_EXP_STM
     } type;
 
     union
     {
-        Vector_T block;
+        Vector_T block; /* (struct stm *) */
 
         struct
         {
@@ -44,6 +45,13 @@ struct stm
             struct exp *exp;
         } var_decl;
 
+        struct
+        {
+            const char *name;
+              Vector_T  formals; /* (const char *) */
+            struct stm *body;
+        } fun_decl;
+
         struct exp *print;
 
         struct exp *exp_stm;
@@ -57,8 +65,8 @@ struct exp
         EXP_ASSIGN,
         EXP_BINARY,
         EXP_UNARY,
-        EXP_GROUP,
-        EXP_VAR,
+        EXP_CALL,
+        EXP_IDENT,
         EXP_LITERAL
     } type;
 
@@ -85,10 +93,9 @@ struct exp
 
         struct
         {
-            struct exp *exp;
-            struct tok *lparen;
-            struct tok *rparen;
-        } group;
+            struct exp *callee;
+              Vector_T  params; /* (struct exp *) */
+        } call;
 
         const char *name;
 
@@ -99,7 +106,7 @@ struct exp
        T Par_new  (void);
 Vector_T Par_parse(T par, const char *path);
 
-    void print_stm(struct stm *);
+    void print_stm(struct stm *, int);
     void print_exp(struct exp *);
 
 #undef T

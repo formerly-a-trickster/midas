@@ -29,13 +29,14 @@ struct T
 static const char *read_file  (T par, const char *path);
 static   Vector_T  program    (T par);
 static struct stm *declaration(T par);
+static struct stm *var_decl   (T par);
+static struct stm *fun_decl   (T par);
 static struct stm *statement  (T par);
 static struct stm *block      (T par);
 static struct stm *if_cond    (T par);
 static struct stm *while_cond (T par);
 static struct stm *for_cond   (T par);
 static struct stm *break_stm  (T par);
-static struct stm *var_decl   (T par);
 static struct stm *print      (T par);
 static struct stm *exp_stm    (T par);
 
@@ -48,25 +49,27 @@ static struct exp *ordering      (T par);
 static struct exp *addition      (T par);
 static struct exp *multiplication(T par);
 static struct exp *unary         (T par);
+static struct exp *call          (T par);
 static struct exp *primary       (T par);
 
 static struct tok *tok_next   (T par);
-static        bool tok_matches(T par, enum tok_t);
-static        void tok_consume(T par, enum tok_t, const char *);
+static       bool  tok_matches(T par, enum tok_t);
+static       void  tok_consume(T par, enum tok_t, const char *);
 
 static struct stm *stm_new_block    (Vector_T);
 static struct stm *stm_new_if       (struct exp *, struct stm *, struct stm *);
 static struct stm *stm_new_while    (struct exp *, struct stm *);
 static struct stm *stm_new_break    (void);
 static struct stm *stm_new_var_decl (const char *, struct exp *);
+static struct stm *stm_new_fun_decl (const char *, Vector_T, struct stm *);
 static struct stm *stm_new_print    (struct exp *);
 static struct stm *stm_new_exp_stm  (struct exp *);
 
 static struct exp *exp_new_assign (const char *, struct exp *);
 static struct exp *exp_new_binary (enum tok_t, struct exp *, struct exp *);
 static struct exp *exp_new_unary  (enum tok_t, struct exp *);
-static struct exp *exp_new_group  (struct exp *, struct tok *, struct tok *);
-static struct exp *exp_new_var    (const char *);
+static struct exp *exp_new_call   (struct exp *, Vector_T);
+static struct exp *exp_new_ident  (const char *);
 static struct exp *exp_new_literal(struct tok *);
 
 T
@@ -188,6 +191,7 @@ static struct stm *
 declaration(T par)
 /*
  * declaration -> var_decl ";"
+ *              | fun_decl ";"
  *              | statement
  */
 {
@@ -195,6 +199,8 @@ declaration(T par)
 
     if (tok_matches(par, TOK_VAR))
         stm = var_decl(par);
+    else if (tok_matches(par, TOK_FUN))
+        stm = fun_decl(par);
     else
         stm = statement(par);
 
@@ -207,13 +213,13 @@ var_decl(T par)
  * var_decl -> ^var^ identifier "=" expression ";"
  */
 {
-    struct tok *name;
+    const char *name;
     struct exp *value;
 
     tok_consume(par, TOK_IDENTIFIER,
         "A variable name should follow the `var` keyword.");
 
-    name = par->prev_tok;
+    name = par->prev_tok->lexeme;
 
     tok_consume(par, TOK_EQUAL,
         "An equal sign should follow the variable's name.");
@@ -223,7 +229,49 @@ var_decl(T par)
     tok_consume(par, TOK_SEMICOLON,
         "Missing semicolon after variable declaration.");
 
-    return stm_new_var_decl(name->lexeme, value);
+    return stm_new_var_decl(name, value);
+}
+
+static struct stm *
+fun_decl(T par)
+/*
+ * fun_decl -> ^fun^ identifier "(" formals? ")" block_stm
+ *
+ * formals -> identifier ( "," identifier )*
+ */
+{
+    const char *name;
+      Vector_T  formals;
+    struct stm *body;
+
+    tok_consume(par, TOK_IDENTIFIER,
+            "A function name should follow the `fun` keyword.");
+
+    name = par->prev_tok->lexeme;
+
+    tok_consume(par, TOK_PAREN_LEFT,
+            "Expected an opening paren after the function name");
+
+    formals = Vector_new(sizeof(const char *));
+    if (!tok_matches(par, TOK_PAREN_RIGHT))
+    {
+        do
+        {
+            tok_consume(par, TOK_IDENTIFIER,
+                        "Function parameters should be a comma-separated list"
+                        "of identifiers.");
+            Vector_push(formals, &par->prev_tok->lexeme);
+        } while (tok_matches(par, TOK_COMMA));
+    }
+
+    tok_consume(par, TOK_PAREN_RIGHT,
+            "Expected a closing paren after function arguments");
+    tok_consume(par, TOK_DO,
+            "Expected a do...end block after function parameter list.");
+
+    body = block(par);
+
+    return stm_new_fun_decl(name, formals, body);
 }
 
 static struct stm *
@@ -264,20 +312,20 @@ block(T par)
  * block_stm -> ^do^ declaration* "end"
  */
 {
-    Vector_T statements;
+    Vector_T stmts;
 
-    statements = Vector_new(sizeof(struct stm *));
+    stmts = Vector_new(sizeof(struct stm *));
     while (!tok_is(par, TOK_END) && !tok_is(par, TOK_EOF))
     {
         struct stm *stm;
 
         stm = declaration(par);
-        Vector_push(statements, &stm);
+        Vector_push(stmts, &stm);
     }
 
     tok_consume(par, TOK_END, "Missing `end` keyword after block.");
 
-    return stm_new_block(statements);
+    return stm_new_block(stmts);
 }
 
 static struct stm *
@@ -387,12 +435,12 @@ for_cond(T par)
             Vector_push(body->data.block, &incr_stm);
         else
         {
-            Vector_T statements;
+            Vector_T stmts;
 
-            statements = Vector_new(sizeof(struct stm *));
-            Vector_push(statements, &body);
-            Vector_push(statements, &incr_stm);
-            body = stm_new_block(statements);
+            stmts = Vector_new(sizeof(struct stm *));
+            Vector_push(stmts, &body);
+            Vector_push(stmts, &incr_stm);
+            body = stm_new_block(stmts);
         }
     }
 
@@ -415,12 +463,12 @@ for_cond(T par)
 
     if (init != NULL)
     {
-        Vector_T statements;
+        Vector_T stmts;
 
-        statements = Vector_new(sizeof(struct stm *));
-        Vector_push(statements, &init);
-        Vector_push(statements, &loop);
-        loop = stm_new_block(statements);
+        stmts = Vector_new(sizeof(struct stm *));
+        Vector_push(stmts, &init);
+        Vector_push(stmts, &loop);
+        loop = stm_new_block(stmts);
     }
 
     return loop;
@@ -506,7 +554,7 @@ assignment(T par)
 
         right = assignment(par);
 
-        if (left->type == EXP_VAR)
+        if (left->type == EXP_IDENT)
             return exp_new_assign(left->data.name, right);
         else
         {
@@ -663,7 +711,7 @@ static struct exp *
 unary(T par)
 /*
  * unary -> ( ("!" | "-") unary )
- *        | primary
+ *        | call
  */
 {
     if (tok_matches(par, TOK_BANG) || tok_matches(par, TOK_MINUS))
@@ -676,7 +724,43 @@ unary(T par)
         return exp_new_unary(op, exp);
     }
     else
-        return primary(par);
+        return call(par);
+}
+
+static struct exp *
+/*
+ * call -> primary ( "(" parameters? ")" )*
+ *
+ * parameters -> expression ( "," expression )*
+ */
+call(T par)
+{
+    struct exp *callee;
+
+    callee = primary(par);
+    while (tok_matches(par, TOK_PAREN_LEFT))
+    {
+        Vector_T params;
+
+        params = Vector_new(sizeof(struct exp *));
+        if (!tok_matches(par, TOK_PAREN_RIGHT))
+        {
+            do
+            {
+                struct exp *exp;
+
+                exp = expression(par);
+                Vector_push(params, &exp);
+            } while (tok_matches(par, TOK_COMMA));
+        }
+
+        tok_consume(par, TOK_PAREN_RIGHT,
+                "Expected a closing paren after arguments.");
+
+        callee = exp_new_call(callee, params);
+    }
+
+    return callee;
 }
 
 static struct exp *
@@ -691,7 +775,7 @@ primary(T par)
     struct exp *exp;
 
     if (tok_matches(par, TOK_IDENTIFIER))
-        exp = exp_new_var(par->prev_tok->lexeme);
+        exp = exp_new_ident(par->prev_tok->lexeme);
     else if
     (
         tok_matches(par, TOK_INTEGER) ||
@@ -732,6 +816,7 @@ tok_next(T par)
         par->had_err = true;
         longjmp(par->handle_err, 2);
     }
+    printf("(%s)\n", tok->lexeme);
 
     par->prev_tok = par->this_tok;
     par->this_tok = tok;
@@ -823,6 +908,19 @@ stm_new_var_decl(const char *name, struct exp *exp)
 }
 
 static struct stm *
+stm_new_fun_decl(const char *name, Vector_T formals, struct stm *body)
+{
+    struct stm *stm = malloc(sizeof(struct stm));
+
+    stm->type = STM_FUN_DECL;
+    stm->data.fun_decl.name = name;
+    stm->data.fun_decl.formals = formals;
+    stm->data.fun_decl.body = body;
+
+    return stm;
+}
+
+static struct stm *
 stm_new_print(struct exp *exp)
 {
     struct stm *stm = malloc(sizeof(struct stm));
@@ -882,25 +980,23 @@ exp_new_unary(enum tok_t op, struct exp *operand)
 }
 
 static struct exp *
-exp_new_group(struct exp *group, struct tok *lparen, struct tok *rparen)
-/* XXX group codepaths are neither used nor tested */
+exp_new_call(struct exp *callee, Vector_T params)
 {
     struct exp *exp = malloc(sizeof(struct exp));
 
-    exp->type = EXP_GROUP;
-    exp->data.group.exp = group;
-    exp->data.group.lparen = lparen;
-    exp->data.group.rparen = rparen;
+    exp->type = EXP_CALL;
+    exp->data.call.callee = callee;
+    exp->data.call.params = params;
 
     return exp;
 }
 
 static struct exp *
-exp_new_var(const char *name)
+exp_new_ident(const char *name)
 {
     struct exp *exp = malloc(sizeof(struct exp));
 
-    exp->type = EXP_VAR;
+    exp->type = EXP_IDENT;
     exp->data.name = name;
 
     return exp;
@@ -917,9 +1013,19 @@ exp_new_literal(struct tok *tok)
     return exp;
 }
 
-void
-print_stm(struct stm *stm)
+static void
+pspaces(int indent)
 {
+    int i;
+
+    for (i = 0; i < indent; ++i)
+        putchar(' ');
+}
+
+void
+print_stm(struct stm *stm, int indent)
+{
+    pspaces(indent);
     switch (stm->type)
     {
         case STM_BLOCK:
@@ -931,7 +1037,9 @@ print_stm(struct stm *stm)
             vector = stm->data.block;
             len = Vector_length(vector);
             for (i = 0; i < len; ++i)
-                print_stm(*(struct stm **)Vector_get(vector, i));
+                print_stm(*(struct stm **)Vector_get(vector, i), indent + 4);
+
+            pspaces(indent);
             puts("]");
         } break;
 
@@ -940,14 +1048,19 @@ print_stm(struct stm *stm)
             printf("[ if ");
             print_exp(stm->data.if_cond.cond);
             putchar('\n');
+
+            pspaces(indent);
             printf("then ");
-            print_stm(stm->data.if_cond.then_block);
+            print_stm(stm->data.if_cond.then_block, indent + 4);
 
             if (stm->data.if_cond.else_block != NULL)
             {
+                pspaces(indent);
                 printf("else ");
-                print_stm(stm->data.if_cond.else_block);
+                print_stm(stm->data.if_cond.else_block, indent + 4);
             }
+
+            pspaces(indent);
             puts("]");
         } break;
 
@@ -956,7 +1069,9 @@ print_stm(struct stm *stm)
             printf("[ while ");
             print_exp(stm->data.while_cond.cond);
             putchar('\n');
-            print_stm(stm->data.while_cond.body);
+            print_stm(stm->data.while_cond.body, indent + 4);
+
+            pspaces(indent);
             puts("]");
         } break;
 
@@ -971,6 +1086,23 @@ print_stm(struct stm *stm)
             puts("]");
         } break;
 
+        case STM_FUN_DECL:
+        {
+            int len, i;
+
+            printf("[ %s = <fun", stm->data.fun_decl.name);
+            len = Vector_length(stm->data.fun_decl.formals);
+            for (i = 0; i < len; ++i)
+            {
+                printf
+                (
+                    " %s",
+                    *(const char **)Vector_get(stm->data.fun_decl.formals, i)
+                );
+            }
+            puts("> ]");
+        } break;
+
         case STM_PRINT:
         {
             printf("[ print ");
@@ -982,6 +1114,8 @@ print_stm(struct stm *stm)
         {
             printf("[ expstm ");
             print_exp(stm->data.exp_stm);
+
+            pspaces(indent);
             puts("]");
         } break;
     }
@@ -1016,14 +1150,22 @@ print_exp(struct exp *exp)
             printf(") ");
         } break;
 
-        case EXP_GROUP:
+        case EXP_CALL:
         {
-            printf("( ");
-            print_exp(exp->data.group.exp);
+            int len, i;
+
+            printf("(call ");
+            print_exp(exp->data.call.callee);
+            printf("with ");
+
+            len = Vector_length(exp->data.call.params);
+            for (i = 0; i < len; ++i)
+                print_exp(*(struct exp**)Vector_get(exp->data.call.params, i));
+
             printf(") ");
         } break;
 
-        case EXP_VAR:
+        case EXP_IDENT:
             printf("%s ", exp->data.name);
         break;
 

@@ -8,6 +8,7 @@
 #include "interpreter.h"
 #include "lexer.h"
 #include "value.h"
+#include "vector.h"
 
 static const char *Val_type_str(enum val_type type);
 
@@ -69,6 +70,31 @@ Val_new(struct tok *tok)
             exit(1);
             break;
     }
+
+    return val;
+}
+
+struct val *
+Val_new_fun(struct stm *stm)
+{
+    struct val *val;
+    struct fun *fun;
+
+    if (stm->type != STM_FUN_DECL)
+    {
+        puts("Passed statement that was not STM_FUN_DECL.");
+        exit(1);
+    }
+
+    fun = malloc(sizeof(struct fun));
+    fun->name = stm->data.fun_decl.name;
+    fun->params = stm->data.fun_decl.formals;
+    fun->body = stm->data.fun_decl.body;
+    fun->arity = Vector_length(fun->params);
+
+    val = malloc(sizeof(struct val));
+    val->type = VAL_FUNCTION;
+    val->data.as_fun = fun;
 
     return val;
 }
@@ -181,6 +207,10 @@ Val_print(struct val val)
         case VAL_STRING:
             printf("%s", val.data.as_string);
         break;
+
+        case VAL_FUNCTION:
+            printf("<fun %s>", val.data.as_fun->name);
+        break;
     }
     putchar('\n');
 }
@@ -287,18 +317,19 @@ Val_is_num(struct val val)
         }                                                                     \
         else                                                                  \
         {                                                                     \
-            printf("Tried to op_name incompatible types "                     \
-                   "`%s` op_symbol `%s`.\n",                                  \
-                   Val_type_str(left.type), Val_type_str(right.type));        \
+            printf("Tried to %s incompatible types `%s` and `%s`.\n",         \
+                   op_name,                                                   \
+                   Val_type_str(left.type),                                   \
+                   Val_type_str(right.type));                                 \
             exit(1);                                                          \
         }                                                                     \
                                                                               \
         return left;                                                          \
     }
 
-Val_bin_op(add, add      , +)
-Val_bin_op(sub, substract, -)
-Val_bin_op(mul, multiply , *)
+Val_bin_op(add, "add"      , +)
+Val_bin_op(sub, "substract", -)
+Val_bin_op(mul, "multiply" , *)
 
 #undef Val_bin_op
 

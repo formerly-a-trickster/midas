@@ -129,11 +129,19 @@ execute(T intpr, struct stm *stm)
 
         case STM_VAR_DECL:
         {
-            struct val *var;
+            struct val *val;
 
-            var = malloc(sizeof(struct val));
-            *var = evaluate(intpr, stm->data.var_decl.exp);
-            var_decl(intpr, stm->data.var_decl.name, var);
+            val = malloc(sizeof(struct val));
+            *val = evaluate(intpr, stm->data.var_decl.exp);
+            var_decl(intpr, stm->data.var_decl.name, val);
+        } break;
+
+        case STM_FUN_DECL:
+        {
+            struct val *fun;
+
+            fun = Val_new_fun(stm);
+            var_decl(intpr, stm->data.fun_decl.name, fun);
         } break;
 
         case STM_PRINT:
@@ -201,11 +209,7 @@ evaluate(T intpr, struct exp *exp)
             val = Val_unop(exp->data.unary.op, operand);
         } break;
 
-        case EXP_GROUP:
-            val = evaluate(intpr, exp->data.group.exp);
-        break;
-
-        case EXP_VAR:
+        case EXP_IDENT:
         {
             const char *name;
             struct val *valp;
@@ -223,6 +227,64 @@ evaluate(T intpr, struct exp *exp)
             }
         } break;
 
+        case EXP_CALL:
+        {
+            struct val fun;
+            int arity;
+
+            fun = evaluate(intpr, exp->data.call.callee);
+            if (fun.type != VAL_FUNCTION)
+            {
+                printf("Tried to call a non-function variable: ");
+                Val_print(fun);
+                exit(1);
+            }
+
+            arity = Vector_length(exp->data.call.params);
+            if (arity == fun.data.as_fun->arity)
+            {
+                Vector_T args;
+                int i;
+
+                args = Vector_new(sizeof(struct val));
+                for (i = 0; i < arity; ++i)
+                {
+                    struct val arg;
+
+                    arg = evaluate
+                    (
+                        intpr,
+                        *(struct exp **)Vector_get(exp->data.call.params, i)
+                    );
+                    Vector_push(args, &arg);
+                }
+
+                ctx_push(intpr);
+
+                for (i = 0; i < arity; ++i)
+                {
+                    var_decl
+                    (
+                        intpr,
+                        *(const char **)Vector_get(fun.data.as_fun->params, i),
+                        Vector_get(args, i)
+                    );
+                }
+
+                execute(intpr, fun.data.as_fun->body);
+
+                ctx_pop(intpr);
+
+                /* XXX temporary */
+                val = fun;
+            }
+            else
+            {
+                puts("Called function with wrong number of arguments.");
+                exit(1);
+            }
+        } break;
+
         case EXP_LITERAL:
             val = Val_new(exp->data.literal);
         break;
@@ -234,7 +296,9 @@ evaluate(T intpr, struct exp *exp)
 void
 var_decl(T intpr, const char *name, struct val *val)
 {
-    struct val *prev = Environ_var_new(intpr->context, name, val);
+    struct val *prev;
+
+    prev = Environ_var_new(intpr->context, name, val);
     if (prev != NULL)
     {
         printf("`%s` is already declared in this scope."

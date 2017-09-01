@@ -42,6 +42,7 @@ struct keyword
     { "end"  , 4, TOK_END   },
     { "false", 6, TOK_FALSE },
     { "for"  , 4, TOK_FOR   },
+    { "fun"  , 4, TOK_FUN   },
     { "if"   , 3, TOK_IF    },
     { "or"   , 3, TOK_OR    },
     { "print", 6, TOK_PRINT },

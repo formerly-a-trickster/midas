@@ -18,17 +18,17 @@ enum tok_t
 
     TOK_DOUBLE, TOK_INTEGER, TOK_STRING,
 
-    TOK_AND, TOK_BREAK, TOK_DO, TOK_ELSE, TOK_END, TOK_FALSE, TOK_FOR,
+    TOK_AND, TOK_BREAK, TOK_DO, TOK_ELSE, TOK_END, TOK_FALSE, TOK_FOR, TOK_FUN,
     TOK_IDENTIFIER, TOK_IF, TOK_OR, TOK_PRINT, TOK_TRUE, TOK_VAR, TOK_WHILE
 };
 
 struct tok
 {
     const char *lexeme;
-    enum tok_t type;
-    int length;
-    int lineno;
-    int colno;
+    enum tok_t  type;
+           int  length;
+           int  lineno;
+           int  colno;
 };
 
          T  Lex_new    (void);
