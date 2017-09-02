@@ -2,7 +2,7 @@ BIN = bin
 SRC = src/cmidas
 
 CC     = gcc
-CFLAGS = -std=c89 -pedantic -Wextra -Wall -g -I$(SRC)/include
+CFLAGS = -std=c89 -pedantic -Wextra -Wall -g -I$(SRC)/include -O3
 
 MAIN   = $(addprefix $(SRC)/, main.c)
 PARSER = $(addprefix $(SRC)/parser/, parser.c lexer.c)

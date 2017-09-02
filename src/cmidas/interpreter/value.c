@@ -27,6 +27,7 @@ static struct val Val_great  (struct val left, struct val right);
 static struct val Val_gr_eq  (struct val left, struct val right);
 static struct val Val_log_or (struct val left, struct val right);
 static struct val Val_log_and(struct val left, struct val right);
+static struct val Val_concat (struct val left, struct val right);
 
 static struct val Val_log_negate(struct val val);
 static struct val Val_num_negate(struct val val);
@@ -120,6 +121,9 @@ Val_binop(enum tok_t op, struct val left, struct val right)
 {
     switch (op)
     {
+        case TOK_PLUS_PLUS:
+            return Val_concat(left, right);
+
         case TOK_OR:
             return Val_log_or(left, right);
 
@@ -525,6 +529,28 @@ static struct val
 Val_log_or(struct val left, struct val right)
 {
     return Val_is_falsey(left) ? right : left;
+}
+
+static struct val
+Val_concat(struct val left, struct val right)
+{
+    char *new_string;
+    int left_len, right_len;
+
+    left = Val_to_type(left, VAL_STRING);
+    right = Val_to_type(right, VAL_STRING);
+
+    left_len = strlen(left.data.as_string);
+    right_len = strlen(right.data.as_string);
+
+    new_string = malloc(left_len + right_len + 1);
+    strncpy(new_string           , left.data.as_string , left_len );
+    strncpy(new_string + left_len, right.data.as_string, right_len);
+    new_string[left_len + right_len] = '\0';
+
+    left.data.as_string = new_string;
+
+    return left;
 }
 
 static struct val

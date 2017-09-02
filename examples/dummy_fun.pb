@@ -19,6 +19,7 @@ fun rec_fib(num) do
         return rec_fib(num - 2) + rec_fib(num - 1);
 end
 
-print imp_fib(25);
-print rec_fib(25);
+for (var i = 0; i < 20; i = i + 1) do
+    print i ++ ": " ++ rec_fib(i);
+end
 

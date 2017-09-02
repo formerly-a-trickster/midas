@@ -44,6 +44,7 @@ static struct stm *exp_stm    (T par);
 
 static struct exp *expression    (T par);
 static struct exp *assignment    (T par);
+static struct exp *concat        (T par);
 static struct exp *logic_or      (T par);
 static struct exp *logic_and     (T par);
 static struct exp *equality      (T par);
@@ -595,12 +596,12 @@ assignment(T par)
  * in the situation of having an expression with a side effect. It would be
  * suited better to being a statement.
  *
- * assignment -> logic_or ( "=" assignment )
+ * assignment -> concat ( "=" assignment )
  */
 {
     struct exp *left;
 
-    left = logic_or(par);
+    left = concat(par);
     if (tok_matches(par, TOK_EQUAL))
     {
         struct exp *right;
@@ -615,6 +616,28 @@ assignment(T par)
             par->had_err = true;
             longjmp(par->handle_err, 1);
         }
+    }
+
+    return left;
+}
+
+static struct exp *
+concat(T par)
+/*
+ * concat -> or ( "++" or )*
+ */
+{
+    struct exp *left;
+
+    left = logic_or(par);
+    while (tok_matches(par, TOK_PLUS_PLUS))
+    {
+        enum tok_t op;
+        struct exp *right;
+
+        op = par->prev_tok->type;
+        right = logic_or(par);
+        left = exp_new_binary(op, left, right);
     }
 
     return left;
@@ -870,7 +893,6 @@ tok_next(T par)
         par->had_err = true;
         longjmp(par->handle_err, 2);
     }
-    printf("(%s)\n", tok->lexeme);
 
     par->prev_tok = par->this_tok;
     par->this_tok = tok;
