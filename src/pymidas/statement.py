@@ -1,35 +1,41 @@
 from typing import List
-from expr import Exp
+import expression as E
 
-STM_VAR_DECL = "STM_VAR_DECL"
-STM_FUN_DECL = "STM_FUN_DECL"
-STM_BLOCK    = "STM_BLOCK"
-STM_IF       = "STM_IF"
-STM_WHILE    = "STM_WHILE"
-STM_BREAK    = "STM_BREAK"
-STM_RETURN   = "STM_RETURN"
-STM_PRINT    = "STM_PRINT"
-STM_EXP_STM  = "STM_EXP_STM"
+VAR_DECL = "STM_VAR_DECL"
+FUN_DECL = "STM_FUN_DECL"
+BLOCK    = "STM_BLOCK"
+IF       = "STM_IF"
+WHILE    = "STM_WHILE"
+BREAK    = "STM_BREAK"
+RETURN   = "STM_RETURN"
+PRINT    = "STM_PRINT"
+EXP_STM  = "STM_EXP_STM"
 
 
 class Stm(object):
     def __init__(self, kind):
         self.kind = kind
 
+    def accept(self, visitor):
+        raise NotImplemented
 
-class StmVarDecl(Stm):
-    def __init__(self, name: str, exp: Exp):
-        super().__init__(STM_VAR_DECL)
+
+class VarDecl(Stm):
+    def __init__(self, name: str, exp: E.Exp):
+        super().__init__(VAR_DECL)
         self.name = name
         self.exp = exp
 
     def __str__(self, i=0):
         return " " * i + "[ var " + self.name + " as " + str(self.exp) + "]\n"
 
+    def accept(self, visitor):
+        return visitor.visitStmVarDecl(self)
 
-class StmFunDecl(Stm):
+
+class FunDecl(Stm):
     def __init__(self, name: str, formals: List[str], body: Stm):
-        super().__init__(STM_FUN_DECL)
+        super().__init__(FUN_DECL)
         self.name = name
         self.formals = formals
         self.body = body
@@ -42,10 +48,13 @@ class StmFunDecl(Stm):
         res += self.body.__str__(i)
         return res
 
+    def accept(self, visitor):
+        return visitor.visitStmFunDecl(self)
 
-class StmBlock(Stm):
+
+class Block(Stm):
     def __init__(self, block: List[Stm]):
-        super().__init__(STM_BLOCK)
+        super().__init__(BLOCK)
         self.block = block
 
     def __str__(self, i=0):
@@ -55,10 +64,13 @@ class StmBlock(Stm):
         res += " " * i + "]\n"
         return res
 
+    def accept(self, visitor):
+        return visitor.visitStmBlock(self)
 
-class StmIf(Stm):
-    def __init__(self, cond: Exp, then_block: Stm, else_block: Stm):
-        super().__init__(STM_IF)
+
+class If(Stm):
+    def __init__(self, cond: E.Exp, then_block: Stm, else_block: Stm):
+        super().__init__(IF)
         self.cond = cond
         self.then_block = then_block
         self.else_block = else_block
@@ -73,10 +85,13 @@ class StmIf(Stm):
         res += " " * i + "]\n"
         return res
 
+    def accept(self, visitor):
+        return visitor.visitStmIf(self)
 
-class StmWhile(Stm):
-    def __init__(self, cond: Exp, body: Stm):
-        super().__init__(STM_WHILE)
+
+class While(Stm):
+    def __init__(self, cond: E.Exp, body: Stm):
+        super().__init__(WHILE)
         self.cond = cond
         self.body = body
 
@@ -87,37 +102,52 @@ class StmWhile(Stm):
         res += " " * i + "]\n"
         return res
 
+    def accept(self, visitor):
+        return visitor.visitStmWhile(self)
 
-class StmBreak(Stm):
+
+class Break(Stm):
     def __init__(self):
-        super().__init__(STM_BREAK)
+        super().__init__(BREAK)
 
     def __str__(self, i=0):
         return " " * i + "[ break ]\n"
 
+    def accept(self, visitor):
+        return visitor.visitStmBreak(self)
 
-class StmReturn(Stm):
-    def __init__(self, ret_exp: Exp):
-        super().__init__(STM_RETURN)
+
+class Return(Stm):
+    def __init__(self, ret_exp: E.Exp):
+        super().__init__(RETURN)
         self.ret_exp = ret_exp
 
     def __str__(self, i=0):
         return " " * i + "[ return " + str(self.ret_exp) + "]\n"
 
+    def accept(self, visitor):
+        return visitor.visitStmReturn(self)
 
-class StmPrint(Stm):
-    def __init__(self, print_exp: Exp):
-        super().__init__(STM_PRINT)
+
+class Print(Stm):
+    def __init__(self, print_exp: E.Exp):
+        super().__init__(PRINT)
         self.print_exp = print_exp
 
     def __str__(self, i=0):
         return " " * i + "[ print " + str(self.print_exp) + "]\n"
 
+    def accept(self, visitor):
+        return visitor.visitStmPrint(self)
 
-class StmExp(Stm):
-    def __init__(self, exp: Exp):
-        super().__init__(STM_EXP_STM)
+
+class Exp(Stm):
+    def __init__(self, exp: E.Exp):
+        super().__init__(EXP_STM)
         self.exp = exp
 
     def __str__(self, i=0):
         return " " * i + "[ exp " + str(self.exp) + "]\n"
+
+    def accept(self, visitor):
+        return visitor.visitStmExp(self)

@@ -1,22 +1,22 @@
-from toks import *
+import tokens as Tok
 
 keywords = {
-    "and"   : TOK_AND,
-    "break" : TOK_BREAK,
-    "do"    : TOK_DO,
-    "else"  : TOK_ELSE,
-    "end"   : TOK_END,
-    "false" : TOK_FALSE,
-    "for"   : TOK_FOR,
-    "fun"   : TOK_FUN,
-    "if"    : TOK_IF,
-    "nil"   : TOK_NIL,
-    "or"    : TOK_OR,
-    "print" : TOK_PRINT,
-    "return": TOK_RETURN,
-    "true"  : TOK_TRUE,
-    "var"   : TOK_VAR,
-    "while" : TOK_WHILE
+    "and"   : Tok.AND,
+    "break" : Tok.BREAK,
+    "do"    : Tok.DO,
+    "else"  : Tok.ELSE,
+    "end"   : Tok.END,
+    "false" : Tok.FALSE,
+    "for"   : Tok.FOR,
+    "fun"   : Tok.FUN,
+    "if"    : Tok.IF,
+    "nil"   : Tok.NIL,
+    "or"    : Tok.OR,
+    "print" : Tok.PRINT,
+    "return": Tok.RETURN,
+    "true"  : Tok.TRUE,
+    "var"   : Tok.VAR,
+    "while" : Tok.WHILE
 }
 
 
@@ -122,55 +122,55 @@ class Lexer():
 
         if char == "!":
             if self.char_matches("="):
-                return self.tok(TOK_BANG_EQUAL)
+                return self.tok(Tok.BANG_EQUAL)
             else:
-                return self.tok(TOK_BANG)
+                return self.tok(Tok.BANG)
         elif char == ",":
-            return self.tok(TOK_COMMA)
+            return self.tok(Tok.COMMA)
         elif char == "=":
             if self.char_matches("="):
-                return self.tok(TOK_EQUAL_EQUAL)
+                return self.tok(Tok.EQUAL_EQUAL)
             else:
-                return self.tok(TOK_EQUAL)
+                return self.tok(Tok.EQUAL)
         elif char == ">":
             if self.char_matches("="):
-                return self.tok(TOK_GREAT_EQUAL)
+                return self.tok(Tok.GREAT_EQUAL)
             else:
-                return self.tok(TOK_GREAT)
+                return self.tok(Tok.GREAT)
         elif char == "#":
             self.skip_line()
             return self.get_tok()
         elif char == "<":
             if self.char_matches("="):
-                return self.tok(TOK_LESS_EQUAL)
+                return self.tok(Tok.LESS_EQUAL)
             else:
-                return self.tok(TOK_LESS)
+                return self.tok(Tok.LESS)
         elif char == "-":
-            return self.tok(TOK_MINUS)
+            return self.tok(Tok.MINUS)
         elif char == "(":
-            return self.tok(TOK_PAREN_LEFT)
+            return self.tok(Tok.PAREN_LEFT)
         elif char == ")":
-            return self.tok(TOK_PAREN_RIGHT)
+            return self.tok(Tok.PAREN_RIGHT)
         elif char == "%":
-            return self.tok(TOK_PERCENT)
+            return self.tok(Tok.PERCENT)
         elif char == "+":
             if self.char_matches("+"):
-                return self.tok(TOK_PLUS_PLUS)
+                return self.tok(Tok.PLUS_PLUS)
             else:
-                return self.tok(TOK_PLUS)
+                return self.tok(Tok.PLUS)
         elif char == "\"":
             return self.string()
         elif char == ";":
-            return self.tok(TOK_SEMICOLON)
+            return self.tok(Tok.SEMICOLON)
         elif char == "/":
             if self.char_matches("/"):
-                return self.tok(TOK_SLASH_SLASH)
+                return self.tok(Tok.SLASH_SLASH)
             else:
-                return self.tok(TOK_SLASH)
+                return self.tok(Tok.SLASH)
         elif char == "*":
-            return self.tok(TOK_STAR)
+            return self.tok(Tok.STAR)
         elif char == "\0":
-            return self.tok(TOK_EOF)
+            return self.tok(Tok.EOF)
         else:
             raise LexerError("Unknown character: '%s'" % char)
 
@@ -183,7 +183,7 @@ class Lexer():
         while is_alpha_num(self.lookahead()):
             self.char_next()
 
-        tok = self.tok(TOK_IDENTIFIER)
+        tok = self.tok(Tok.IDENTIFIER)
         if tok.lexeme in keywords:
             tok.kind = keywords[tok.lexeme]
 
@@ -205,14 +205,14 @@ class Lexer():
                 break
 
         if is_double:
-            return self.tok(TOK_DOUBLE)
+            return self.tok(Tok.DOUBLE)
         else:
-            return self.tok(TOK_INTEGER)
+            return self.tok(Tok.INTEGER)
 
     def string(self) -> Token:
         self.start = self.index
         while self.lookahead() != "\"":
             self.char_next()
-        tok = self.tok(TOK_STRING)
+        tok = self.tok(Tok.STRING)
         self.char_next()
         return tok

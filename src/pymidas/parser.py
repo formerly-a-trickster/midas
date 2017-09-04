@@ -1,7 +1,7 @@
 from lexer import Token, Lexer
-from toks import *
-from stmt import *
-from expr import *
+import tokens as Tok
+import statement as Stm
+import expression as Exp
 
 
 class ParserError(Exception):
@@ -27,7 +27,7 @@ class Parser():
     def program(self):
         # program -> statement* "EOF"
         stmts = []
-        while not self.tok_is(TOK_EOF):
+        while not self.tok_is(Tok.EOF):
             stm = self.declaration()
             stmts.append(stm)
         return stmts
@@ -36,9 +36,9 @@ class Parser():
         # declaration -> var_decl ";"
         #              | fun_decl ";"
         #              | statement
-        if self.tok_matches(TOK_VAR):
+        if self.tok_matches(Tok.VAR):
             stm = self.var_decl()
-        elif self.tok_matches(TOK_FUN):
+        elif self.tok_matches(Tok.FUN):
             stm = self.fun_decl()
         else:
             stm = self.statement()
@@ -46,46 +46,46 @@ class Parser():
 
     def var_decl(self):
         # var_decl -> ^var^ identifier "=" expression ";"
-        self.tok_consume(TOK_IDENTIFIER,
+        self.tok_consume(Tok.IDENTIFIER,
                 "A variable should follow the `var` keyword")
         name = self.prev_tok.lexeme
-        self.tok_consume(TOK_EQUAL,
+        self.tok_consume(Tok.EQUAL,
                 "An equal sign should follow the variable's name")
         value = self.expression()
-        self.tok_consume(TOK_SEMICOLON,
+        self.tok_consume(Tok.SEMICOLON,
                 "Missing semicolon after variable declaration")
-        return StmVarDecl(name, value)
+        return Stm.VarDecl(name, value)
 
     def fun_decl(self):
         # fun_decl -> ^fun^ identifier "(" formals? ")" block
         # formals  -> identifier ( "," identifier )*
-        self.tok_consume(TOK_IDENTIFIER,
+        self.tok_consume(Tok.IDENTIFIER,
                 "A function name should follow the `fun` keuyword")
         name = self.prev_tok.lexeme
-        self.tok_consume(TOK_PAREN_LEFT,
+        self.tok_consume(Tok.PAREN_LEFT,
                 "Expected an opening paren after the function name")
         formals = []
 
-        if not self.tok_matches(TOK_PAREN_RIGHT):
-            self.tok_consume(TOK_IDENTIFIER,
+        if not self.tok_matches(Tok.PAREN_RIGHT):
+            self.tok_consume(Tok.IDENTIFIER,
                     "Function parameters should be a comma-separated list" +
                     "of identifiers")
             formals.append(self.prev_tok.lexeme)
 
-            while self.tok_matches(TOK_COMMA):
-                self.tok_consume(TOK_IDENTIFIER,
+            while self.tok_matches(Tok.COMMA):
+                self.tok_consume(Tok.IDENTIFIER,
                         "Function parameters should be a comma-separated " +
                         "list of identifiers")
                 formals.append(self.prev_tok.lexeme)
-            self.tok_consume(TOK_PAREN_RIGHT,
+            self.tok_consume(Tok.PAREN_RIGHT,
                     "Expected a closing paren after function arguments")
-        self.tok_consume(TOK_DO,
+        self.tok_consume(Tok.DO,
                 "Expected a do...end block after function parameter list")
         self.fun_depth += 1
         body = self.block()
         self.fun_depth -= 1
 
-        return StmFunDecl(name, formals, body)
+        return Stm.FunDecl(name, formals, body)
 
     def statement(self):
         # statement -> block
@@ -96,19 +96,19 @@ class Parser():
         #            | return_stm
         #            | print_stm
         #            | exp_stm
-        if self.tok_matches(TOK_DO):
+        if self.tok_matches(Tok.DO):
             stm = self.block()
-        elif self.tok_matches(TOK_IF):
+        elif self.tok_matches(Tok.IF):
             stm = self.if_cond()
-        elif self.tok_matches(TOK_WHILE):
+        elif self.tok_matches(Tok.WHILE):
             stm = self.while_cond()
-        elif self.tok_matches(TOK_FOR):
+        elif self.tok_matches(Tok.FOR):
             stm = self.for_cond()
-        elif self.tok_matches(TOK_BREAK):
+        elif self.tok_matches(Tok.BREAK):
             stm = self.break_stm()
-        elif self.tok_matches(TOK_RETURN):
+        elif self.tok_matches(Tok.RETURN):
             stm = self.return_stm()
-        elif self.tok_matches(TOK_PRINT):
+        elif self.tok_matches(Tok.PRINT):
             stm = self.print_stm()
         else:
             stm = self.exp_stm()
@@ -118,40 +118,40 @@ class Parser():
     def block(self):
         # block -> ^do^ declaration* "end"
         stmts = []
-        while not self.tok_is(TOK_END) and not self.tok_is(TOK_EOF):
+        while not self.tok_is(Tok.END) and not self.tok_is(Tok.EOF):
             stm = self.declaration()
             stmts.append(stm)
-        self.tok_consume(TOK_END,
+        self.tok_consume(Tok.END,
                 "Missing `end` keyword after block")
-        return StmBlock(stmts)
+        return Stm.Block(stmts)
 
     def if_cond(self):
         # if_stm -> ^if^ "(" expression ")" statement ( "else" statement )?
-        self.tok_consume(TOK_PAREN_LEFT,
+        self.tok_consume(Tok.PAREN_LEFT,
                 "Expected an opening paren after `if` keyword")
         cond = self.expression()
-        self.tok_consume(TOK_PAREN_RIGHT,
+        self.tok_consume(Tok.PAREN_RIGHT,
                 "Expected a closing paren after the if condition")
         then_block = self.statement()
 
-        if self.tok_matches(TOK_ELSE):
+        if self.tok_matches(Tok.ELSE):
             else_block = self.statement()
         else:
             else_block = None
-        return StmIf(cond, then_block, else_block)
+        return Stm.If(cond, then_block, else_block)
 
     def while_cond(self):
         # while_stm -> ^while^ "(" expresion ")" statement
-        self.tok_consume(TOK_PAREN_LEFT,
+        self.tok_consume(Tok.PAREN_LEFT,
                 "Expected an opening paren after `while` keyword")
         cond = self.expression()
-        self.tok_consume(TOK_PAREN_RIGHT,
+        self.tok_consume(Tok.PAREN_RIGHT,
                 "Expected a closing paren after the while condition")
         self.loop_depth += 1
         body = self.statement()
         self.loop_depth -= 1
 
-        return StmWhile(cond, body)
+        return Stm.While(cond, body)
 
     def for_cond(self):
         # for_stm -> ^for^ "("
@@ -160,25 +160,25 @@ class Parser():
         #                      assignment?
         #                  ")" statement
         # NB: var_decl and exp_stm already contain a semicolon
-        self.tok_consume(TOK_PAREN_LEFT,
+        self.tok_consume(Tok.PAREN_LEFT,
                 "Expected an opening paren after the `for` keyword")
-        if self.tok_matches(TOK_VAR):
+        if self.tok_matches(Tok.VAR):
             init = self.var_decl()
-        elif self.tok_matches(TOK_SEMICOLON):
+        elif self.tok_matches(Tok.SEMICOLON):
             init = None
         else:
             init = self.exp_stm()
 
-        if not self.tok_matches(TOK_SEMICOLON):
+        if not self.tok_matches(Tok.SEMICOLON):
             cond = self.expression()
-            self.tok_consume(TOK_SEMICOLON,
+            self.tok_consume(Tok.SEMICOLON,
                     "Expected a semicolon after the for condition")
         else:
             cond = None
 
-        if not self.tok_matches(TOK_PAREN_RIGHT):
+        if not self.tok_matches(Tok.PAREN_RIGHT):
             incr = self.assignment()
-            self.tok_consume(TOK_PAREN_RIGHT,
+            self.tok_consume(Tok.PAREN_RIGHT,
                     "Expected a closing paren after the for construct")
         else:
             incr = None
@@ -188,50 +188,50 @@ class Parser():
         self.loop_depth -= 1
 
         if incr != None:
-            incr_stm = StmExp(incr)
-            if body.kind == STM_BLOCK:
+            incr_stm = Stm.Exp(incr)
+            if body.kind == Stm.BLOCK:
                 body.block.append(incr_stm)
             else:
                 stmts = []
                 stmts.append(body)
                 stmts.append(incr_stm)
-                body = StmBlock(stmts)
+                body = Stm.Block(stmts)
 
         if cond == None:
-            tok = Token("true", TOK_TRUE, 4, 0, 0)
-            cond = ExpLiteral(tok)
+            tok = Token("true", Tok.TRUE, 4, 0, 0)
+            cond = Exp.Literal(tok)
 
-        loop = StmWhile(cond, body)
+        loop = Stm.While(cond, body)
 
         if init != None:
             stmts = []
             stmts.append(init)
             stmts.append(loop)
-            loop = StmBlock(stmts)
+            loop = Stm.Block(stmts)
 
         return loop
 
     def break_stm(self):
         # ^break^ ";"
         if self.loop_depth != 0:
-            self.tok_consume(TOK_SEMICOLON,
+            self.tok_consume(Tok.SEMICOLON,
                     "Missing semicolon after break statement")
         else:
             raise ParserError("Encountered break statement outside of a for " +
                               "or while loop")
-        return StmBreak()
+        return Stm.Break()
 
     def return_stm(self):
         # return_stm -> ^return^ expression? ";"
         if self.fun_depth != 0:
-            if not self.tok_matches(TOK_SEMICOLON):
+            if not self.tok_matches(Tok.SEMICOLON):
                 ret_exp = self.expression()
-                self.tok_consume(TOK_SEMICOLON,
+                self.tok_consume(Tok.SEMICOLON,
                         "Missing semicolon after return statement")
-                return StmReturn(ret_exp)
+                return Stm.Return(ret_exp)
             else:
-                nil = Token("nil", TOK_NIL, 3, 0, 0)
-                return StmReturn(ExpLiteral(nil))
+                nil = Token("nil", Tok.NIL, 3, 0, 0)
+                return Stm.Return(Exp.Literal(nil))
         else:
             raise ParserError("Encountered a return statements outside of a " +
                     "function declaration")
@@ -239,15 +239,15 @@ class Parser():
     def print_stm(self):
         # print_stm -> ^print^ expression ";"
         exp = self.expression()
-        self.tok_consume(TOK_SEMICOLON, "Missing semicolon after print statement")
-        return StmPrint(exp)
+        self.tok_consume(Tok.SEMICOLON, "Missing semicolon after print statement")
+        return Stm.Print(exp)
 
     def exp_stm(self):
         # exp_stm -> expression ";"
         exp = self.expression()
-        self.tok_consume(TOK_SEMICOLON,
+        self.tok_consume(Tok.SEMICOLON,
                 "Missing semicolon after expression statement")
-        return StmExp(exp)
+        return Stm.Exp(exp)
 
     def expression(self):
         # expression -> assigment
@@ -256,10 +256,10 @@ class Parser():
     def assignment(self):
         # assignment -> concat ( "=" assignment )
         left = self.concat()
-        if self.tok_matches(TOK_EQUAL):
+        if self.tok_matches(Tok.EQUAL):
             right = self.assignment()
-            if left.kind == EXP_IDENT:
-                return ExpAssign(left.name, right)
+            if left.kind == Exp.IDENT:
+                return Exp.Assign(left.name, right)
             else:
                 raise ParserError("Cannot assign to this target")
         return left
@@ -267,116 +267,116 @@ class Parser():
     def concat(self):
         # concat -> or ( "++" or )*
         left = self.logic_or()
-        while self.tok_matches(TOK_PLUS_PLUS):
+        while self.tok_matches(Tok.PLUS_PLUS):
             op = self.prev_tok.kind
             right = self.logic_or()
-            left = ExpBinary(op, left, right)
+            left = Exp.Binary(op, left, right)
         return left
 
     def logic_or(self):
         # or -> and ( "or" and )*
         left = self.logic_and()
-        while self.tok_matches(TOK_OR):
+        while self.tok_matches(Tok.OR):
             op = self.prev_tok.kind
             right = self.logic_and()
-            left = ExpBinary(op, left, right)
+            left = Exp.Binary(op, left, right)
         return left
 
     def logic_and(self):
         # and -> equality ( "or" equality )*
         left = self.equality()
-        while self.tok_matches(TOK_AND):
+        while self.tok_matches(Tok.AND):
             op =  self.prev_tok.kind
             right = self.equality()
-            left = ExpBinary(op, left, right)
+            left = Exp.Binary(op, left, right)
         return left
 
     def equality(self):
         # equality -> ordering ( ( "!=" | "==" ) ordering )*
         left = self.ordering()
-        while self.tok_matches(TOK_BANG_EQUAL) or \
-                self.tok_matches(TOK_EQUAL_EQUAL):
+        while self.tok_matches(Tok.BANG_EQUAL) or \
+                self.tok_matches(Tok.EQUAL_EQUAL):
             op = self.prev_tok.kind
             right = self.ordering()
-            left = ExpBinary(op, left, right)
+            left = Exp.Binary(op, left, right)
         return left
 
     def ordering(self):
         # ordering -> addition ( ( ">" | ">=" | "<" | "<=" ) addition )*
         left = self.addition()
-        while self.tok_matches(TOK_GREAT) or \
-                self.tok_matches(TOK_GREAT_EQUAL) or \
-                self.tok_matches(TOK_LESS) or \
-                self.tok_matches(TOK_LESS_EQUAL):
+        while self.tok_matches(Tok.GREAT) or \
+                self.tok_matches(Tok.GREAT_EQUAL) or \
+                self.tok_matches(Tok.LESS) or \
+                self.tok_matches(Tok.LESS_EQUAL):
             op = self.prev_tok.kind
             right = self.addition()
-            left = ExpBinary(op, left, right)
+            left = Exp.Binary(op, left, right)
         return left
 
     def addition(self):
         # addition -> multiplication ( ( "-" | "+" ) multiplication )*
         left = self.multiplication()
-        while self.tok_matches(TOK_MINUS) or \
-                self.tok_matches(TOK_PLUS):
+        while self.tok_matches(Tok.MINUS) or \
+                self.tok_matches(Tok.PLUS):
             op = self.prev_tok.kind
             right = self.multiplication()
-            left = ExpBinary(op, left, right)
+            left = Exp.Binary(op, left, right)
         return left
 
     def multiplication(self):
         # multiplication -> unary ( ( "/" | "//" | "*" | "%" ) unary )*
         left = self.unary()
-        while self.tok_matches(TOK_SLASH) or \
-                self.tok_matches(TOK_SLASH_SLASH) or \
-                self.tok_matches(TOK_STAR) or \
-                self.tok_matches(TOK_PERCENT):
+        while self.tok_matches(Tok.SLASH) or \
+                self.tok_matches(Tok.SLASH_SLASH) or \
+                self.tok_matches(Tok.STAR) or \
+                self.tok_matches(Tok.PERCENT):
             op = self.prev_tok.kind
             right = self.unary()
-            left = ExpBinary(op, left, right)
+            left = Exp.Binary(op, left, right)
         return left
 
     def unary(self):
         # unary -> ( ( "!" | "-" ) unary )
         #        | call
-        if self.tok_matches(TOK_BANG) or self.tok_matches(TOK_MINUS):
+        if self.tok_matches(Tok.BANG) or self.tok_matches(Tok.MINUS):
             op = self.prev_tok.kind
             exp = self.unary()
-            return ExpUnary(op, exp)
+            return Exp.Unary(op, exp)
         else:
             return self.call()
 
     def call(self):
         # call -> primary ( "(" parameters? ")" )*
         callee = self.primary()
-        while self.tok_matches(TOK_PAREN_LEFT):
+        while self.tok_matches(Tok.PAREN_LEFT):
             params = []
-            if not self.tok_matches(TOK_PAREN_RIGHT):
+            if not self.tok_matches(Tok.PAREN_RIGHT):
                 exp = self.expression()
                 params.append(exp)
-                while self.tok_matches(TOK_COMMA):
+                while self.tok_matches(Tok.COMMA):
                     exp = self.expression()
                     params.append(exp)
-                self.tok_consume(TOK_PAREN_RIGHT,
+                self.tok_consume(Tok.PAREN_RIGHT,
                         "Expected a closing paren after arguments")
-            callee = ExpCall(callee, params)
+            callee = Exp.Call(callee, params)
         return callee
 
     def primary(self):
         # primary -> IDENTIFIER
         #          | INTEGER | DOUBLE | STRING | NIL | "false" | "true" |
         #          | "(" expression ")"
-        if self.tok_matches(TOK_IDENTIFIER):
-            exp = ExpIdent(self.prev_tok.lexeme)
-        elif self.tok_matches(TOK_INTEGER) or \
-                self.tok_matches(TOK_DOUBLE) or \
-                self.tok_matches(TOK_STRING) or \
-                self.tok_matches(TOK_NIL) or \
-                self.tok_matches(TOK_FALSE) or \
-                self.tok_matches(TOK_TRUE):
-            exp = ExpLiteral(self.prev_tok)
-        elif self.tok_matches(TOK_PAREN_LEFT):
+        if self.tok_matches(Tok.IDENTIFIER):
+            exp = Exp.Ident(self.prev_tok.lexeme)
+        elif self.tok_matches(Tok.INTEGER) or \
+                self.tok_matches(Tok.DOUBLE) or \
+                self.tok_matches(Tok.STRING) or \
+                self.tok_matches(Tok.NIL) or \
+                self.tok_matches(Tok.FALSE) or \
+                self.tok_matches(Tok.TRUE):
+            exp = Exp.Literal(self.prev_tok)
+        elif self.tok_matches(Tok.PAREN_LEFT):
             exp = self.expression()
-            self.tok_consume(TOK_PAREN_RIGHT, "Expected a closing paren")
+            self.tok_consume(Tok.PAREN_RIGHT, "Expected a closing paren")
         else:
             raise ParserError("Expected number, paren or keyword. Got " +
                     str(self.this_tok))
