@@ -283,7 +283,7 @@ class Parser():
         return left
 
     def logic_and(self):
-        # and -> equality ( "or" equality )*
+        # and -> equality ( "and" equality )*
         left = self.equality()
         while self.tok_matches(Tok.AND):
             op =  self.prev_tok.kind
