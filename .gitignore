@@ -1,4 +1,6 @@
 .idea
 .*.swp
+__pycache__/
+*.py[cod]
 src/jmidas/Expr.java
 src/jmidas/Stmt.java

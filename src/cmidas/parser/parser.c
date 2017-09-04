@@ -492,11 +492,11 @@ break_stm(T par)
 {
     if (par->loop_depth)
         tok_consume(par, TOK_SEMICOLON,
-                "Missing semicolone after break statement.");
+                "Missing semicolon after break statement.");
     else
     {
         sprintf(par->err_msg,
-                "Encoutered break statement outside of a for or while loop");
+                "Encoutered break statement outside of a for or while loop.");
         par->had_err = true;
         longjmp(par->handle_err, 1);
     }
@@ -713,7 +713,7 @@ equality(T par)
 static struct exp *
 ordering(T par)
 /*
- * ordering -> addition ( ( ">" | ">=" | "<" | "<=" ) addition)*
+ * ordering -> addition ( ( ">" | ">=" | "<" | "<=" ) addition )*
  */
 {
     struct exp *left;
@@ -736,7 +736,7 @@ ordering(T par)
 static struct exp *
 addition(T par)
 /*
- * addition -> multiplication ( ( "-" | "+" ) multiplication)*
+ * addition -> multiplication ( ( "-" | "+" ) multiplication )*
  */
 {
     struct exp *left;
@@ -786,7 +786,7 @@ multiplication(T par)
 static struct exp *
 unary(T par)
 /*
- * unary -> ( ("!" | "-") unary )
+ * unary -> ( ( "!" | "-" ) unary )
  *        | call
  */
 {
