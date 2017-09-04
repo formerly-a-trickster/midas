@@ -19,16 +19,20 @@ keywords = {
     "while" : TOK_WHILE
 }
 
-def is_alpha(char):
-    return (char >= "a" and char <= "z") or\
-           (char >= "A" and char <= "Z") or\
+
+def is_alpha(char: str) -> bool:
+    return ("a" <= char <= "z") or \
+           ("A" <= char <= "Z") or\
             char == "_"
 
-def is_numeric(char):
-    return char >= "0" and char <= "9"
 
-def is_alpha_num(char):
+def is_numeric(char: str) -> bool:
+    return "0" <= char <= "9"
+
+
+def is_alpha_num(char: str) -> bool:
     return is_alpha(char) or is_numeric(char)
+
 
 class Token():
     def __init__(self, lexeme, kind, length, lineno, colno):
@@ -44,8 +48,10 @@ class Token():
         else:
             return "(%s @ %i %i)" % (self.lexeme, self.lineno, self.colno)
 
+
 class LexerError(Exception):
     pass
+
 
 class Lexer():
     def __init__(self):
@@ -58,22 +64,22 @@ class Lexer():
     def feed(self, buf):
         self.buffer = buf
 
-    def char_next(self):
+    def char_next(self) -> str:
         char = self.buffer[self.index]
         self.index += 1
         self.colno += 1
         return char
 
-    def lookahead(self):
+    def lookahead(self) -> str:
         return self.buffer[self.index]
 
-    def is_at_end(self):
+    def is_at_end(self) -> bool:
         return self.buffer[self.index] == '\0'
 
-    def char_matches(self, char):
-        if (self.is_at_end()):
+    def char_matches(self, char: str) -> bool:
+        if self.is_at_end():
             return False
-        elif (self.buffer[self.index] == char):
+        elif self.buffer[self.index] == char:
             self.char_next()
             return True
         else:
@@ -104,7 +110,7 @@ class Lexer():
             else:
                 self.char_next()
 
-    def get_tok(self):
+    def get_tok(self) -> Token:
         self.skip_space()
         self.start = self.index
         char = self.char_next()
@@ -168,12 +174,12 @@ class Lexer():
         else:
             raise LexerError("Unknown character: '%s'" % char)
 
-    def tok(self, kind):
+    def tok(self, kind) -> Token:
         lexeme = self.buffer[self.start:self.index]
         length = self.index - self.start
         return Token(lexeme, kind, length, self.lineno, self.colno - length)
 
-    def identifier(self):
+    def identifier(self) -> Token:
         while is_alpha_num(self.lookahead()):
             self.char_next()
 
@@ -183,14 +189,14 @@ class Lexer():
 
         return tok
 
-    def number(self):
+    def number(self) -> Token:
         is_double = False
 
         while True:
             if is_numeric(self.lookahead()):
                 self.char_next()
             elif self.lookahead() == ".":
-                if is_double == False:
+                if not is_double:
                     is_double = True
                     self.char_next()
                 else:
@@ -203,11 +209,10 @@ class Lexer():
         else:
             return self.tok(TOK_INTEGER)
 
-    def string(self):
+    def string(self) -> Token:
         self.start = self.index
         while self.lookahead() != "\"":
             self.char_next()
         tok = self.tok(TOK_STRING)
         self.char_next()
         return tok
-

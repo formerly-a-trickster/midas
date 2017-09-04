@@ -11,5 +11,4 @@ if __name__ == "__main__":
         for stm in ast:
             print(stm, end="")
     else:
-        print("Usage: pymidas [script]");
-
+        print("Usage: pymidas [script]")

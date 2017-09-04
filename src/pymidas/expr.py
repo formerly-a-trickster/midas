@@ -1,4 +1,4 @@
-from typing import List, Type
+from typing import List
 from parser import Token
 from toks import *
 
@@ -9,9 +9,11 @@ EXP_CALL    = "EXP_CALL"
 EXP_IDENT   = "EXP_IDENT"
 EXP_LITERAL = "EXP_LITERAL"
 
+
 class Exp(object):
     def __init__(self, kind):
         self.kind = kind
+
 
 class ExpAssign(Exp):
     def __init__(self, name: str, exp: Exp):
@@ -21,6 +23,7 @@ class ExpAssign(Exp):
 
     def __str__(self):
         return "( " + self.name + " <- " + str(self.exp) + ") "
+
 
 class ExpBinary(Exp):
     def __init__(self, op: str, left: Exp, right: Exp):
@@ -33,6 +36,7 @@ class ExpBinary(Exp):
         return "( " + tok_str[self.op] + " " +\
                 str(self.left) + str(self.right) + ") "
 
+
 class ExpUnary(Exp):
     def __init__(self, op: str, exp: Exp):
         super().__init__(EXP_UNARY)
@@ -41,6 +45,7 @@ class ExpUnary(Exp):
 
     def __str__(self):
         return "( " + tok_str[self.op] + " " + str(self.exp) + ") "
+
 
 class ExpCall(Exp):
     def __init__(self, callee: Exp, params: List[Exp]):
@@ -54,6 +59,7 @@ class ExpCall(Exp):
             res += str(param)
         return res + ") "
 
+
 class ExpIdent(Exp):
     def __init__(self, name: str):
         super().__init__(EXP_IDENT)
@@ -61,6 +67,7 @@ class ExpIdent(Exp):
 
     def __str__(self):
         return "( ID " + self.name + " ) "
+
 
 class ExpLiteral(Exp):
     def __init__(self, tok: Token):
@@ -72,4 +79,3 @@ class ExpLiteral(Exp):
             return "\"" + self.tok.lexeme + "\" "
         else:
             return self.tok.lexeme + " "
-

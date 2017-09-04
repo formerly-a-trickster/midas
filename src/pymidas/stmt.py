@@ -1,4 +1,4 @@
-from typing import List, Type
+from typing import List
 from expr import Exp
 
 STM_VAR_DECL = "STM_VAR_DECL"
@@ -11,9 +11,11 @@ STM_RETURN   = "STM_RETURN"
 STM_PRINT    = "STM_PRINT"
 STM_EXP_STM  = "STM_EXP_STM"
 
+
 class Stm(object):
     def __init__(self, kind):
         self.kind = kind
+
 
 class StmVarDecl(Stm):
     def __init__(self, name: str, exp: Exp):
@@ -23,6 +25,7 @@ class StmVarDecl(Stm):
 
     def __str__(self, i=0):
         return " " * i + "[ var " + self.name + " as " + str(self.exp) + "]\n"
+
 
 class StmFunDecl(Stm):
     def __init__(self, name: str, formals: List[str], body: Stm):
@@ -39,6 +42,7 @@ class StmFunDecl(Stm):
         res += self.body.__str__(i)
         return res
 
+
 class StmBlock(Stm):
     def __init__(self, block: List[Stm]):
         super().__init__(STM_BLOCK)
@@ -50,6 +54,7 @@ class StmBlock(Stm):
             res += stm.__str__(i + 4)
         res += " " * i + "]\n"
         return res
+
 
 class StmIf(Stm):
     def __init__(self, cond: Exp, then_block: Stm, else_block: Stm):
@@ -68,6 +73,7 @@ class StmIf(Stm):
         res += " " * i + "]\n"
         return res
 
+
 class StmWhile(Stm):
     def __init__(self, cond: Exp, body: Stm):
         super().__init__(STM_WHILE)
@@ -81,12 +87,14 @@ class StmWhile(Stm):
         res += " " * i + "]\n"
         return res
 
+
 class StmBreak(Stm):
     def __init__(self):
         super().__init__(STM_BREAK)
 
     def __str__(self, i=0):
         return " " * i + "[ break ]\n"
+
 
 class StmReturn(Stm):
     def __init__(self, ret_exp: Exp):
@@ -96,6 +104,7 @@ class StmReturn(Stm):
     def __str__(self, i=0):
         return " " * i + "[ return " + str(self.ret_exp) + "]\n"
 
+
 class StmPrint(Stm):
     def __init__(self, print_exp: Exp):
         super().__init__(STM_PRINT)
@@ -104,6 +113,7 @@ class StmPrint(Stm):
     def __str__(self, i=0):
         return " " * i + "[ print " + str(self.print_exp) + "]\n"
 
+
 class StmExp(Stm):
     def __init__(self, exp: Exp):
         super().__init__(STM_EXP_STM)
@@ -111,4 +121,3 @@ class StmExp(Stm):
 
     def __str__(self, i=0):
         return " " * i + "[ exp " + str(self.exp) + "]\n"
-

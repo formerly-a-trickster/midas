@@ -3,8 +3,10 @@ from toks import *
 from stmt import *
 from expr import *
 
+
 class ParserError(Exception):
     pass
+
 
 class Parser():
     def __init__(self):
@@ -403,4 +405,3 @@ class Parser():
 
     def tok_was(self, kind):
         return self.prev_tok.kind == kind
-
