@@ -1,25 +1,25 @@
-from lexer import Token, Lexer
+import lexer as Lex
 import tokens as Tok
 import statement as Stm
 import expression as Exp
 
 
 class ParserError(Exception):
-    pass
+    def __init__(self, lineno, msg):
+        self.lineno = lineno
+        self.msg = msg
 
 
 class Parser():
     def __init__(self):
-        self.lex = Lexer()
+        self.lex = Lex.Lexer()
         self.path = None
         self.prev_tok = None
         self.this_tok = None
         self.loop_depth = 0
         self.fun_depth = 0
 
-    def parse(self, path):
-        with open(path, "r") as source:
-            text = source.read() + "\0"
+    def parse(self, text):
         self.lex.feed(text)
         self.tok_next()
         return self.program()
@@ -47,7 +47,7 @@ class Parser():
     def var_decl(self):
         # var_decl -> ^var^ identifier "=" expression ";"
         self.tok_consume(Tok.IDENTIFIER,
-                "A variable should follow the `var` keyword")
+                "A variable name should follow the `var` keyword")
         name = self.prev_tok.lexeme
         self.tok_consume(Tok.EQUAL,
                 "An equal sign should follow the variable's name")
@@ -198,7 +198,7 @@ class Parser():
                 body = Stm.Block(stmts)
 
         if cond == None:
-            tok = Token("true", Tok.TRUE, 4, 0, 0)
+            tok = Lex.Token("true", Tok.TRUE, 4, 0, 0)
             cond = Exp.Literal(tok)
 
         loop = Stm.While(cond, body)
@@ -217,7 +217,9 @@ class Parser():
             self.tok_consume(Tok.SEMICOLON,
                     "Missing semicolon after break statement")
         else:
-            raise ParserError("Encountered break statement outside of a for " +
+            lineno = self.this_tok.lineno
+            raise ParserError(lineno,
+                              "Encountered break statement outside of a for " +
                               "or while loop")
         return Stm.Break()
 
@@ -230,11 +232,13 @@ class Parser():
                         "Missing semicolon after return statement")
                 return Stm.Return(ret_exp)
             else:
-                nil = Token("nil", Tok.NIL, 3, 0, 0)
+                nil = Lex.Token("nil", Tok.NIL, 3, 0, 0)
                 return Stm.Return(Exp.Literal(nil))
         else:
-            raise ParserError("Encountered a return statements outside of a " +
-                    "function declaration")
+            lineno = self.this_tok.lineno
+            raise ParserError(lineno,
+                              "Encountered a return statements outside of a " +
+                              "function declaration")
 
     def print_stm(self):
         # print_stm -> ^print^ expression ";"
@@ -261,7 +265,8 @@ class Parser():
             if left.kind == Exp.IDENT:
                 return Exp.Assign(left.name, right)
             else:
-                raise ParserError("Cannot assign to this target")
+                lineno = self.this_tok.lineno
+                raise ParserError(lineno, "Cannot assign to this target")
         return left
 
     def concat(self):
@@ -378,8 +383,10 @@ class Parser():
             exp = self.expression()
             self.tok_consume(Tok.PAREN_RIGHT, "Expected a closing paren")
         else:
-            raise ParserError("Expected number, paren or keyword. Got " +
-                    str(self.this_tok))
+            lineno = self.this_tok.lineno
+            raise ParserError(lineno,
+                              "Expected number, paren or keyword. Got " +
+                              str(self.this_tok))
         return exp
 
     def tok_next(self):
@@ -398,7 +405,8 @@ class Parser():
         if self.this_tok.kind == kind:
             self.tok_next()
         else:
-            raise ParserError(message)
+            lineno = self.this_tok.lineno
+            raise ParserError(lineno, message)
 
     def tok_is(self, kind):
         return self.this_tok.kind == kind

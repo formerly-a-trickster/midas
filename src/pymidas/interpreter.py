@@ -10,8 +10,13 @@ class Break(BaseException):
 
 class Return(BaseException):
     def __init__(self, val):
-
         self.val = val
+
+
+class RuntimeError(BaseException):
+    def __init__(self, lineno, msg):
+        self.lineno = lineno
+        self.msg = msg
 
 
 class Environment(object):

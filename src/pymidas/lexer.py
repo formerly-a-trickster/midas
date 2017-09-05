@@ -34,6 +34,12 @@ def is_alpha_num(char: str) -> bool:
     return is_alpha(char) or is_numeric(char)
 
 
+class LexerError(Exception):
+    def __init__(self, msg, lineno):
+        self.msg = msg
+        self.lineno = lineno
+
+
 class Token():
     def __init__(self, lexeme, kind, length, lineno, colno):
         self.lexeme = lexeme
@@ -49,10 +55,6 @@ class Token():
             return "(%s @ %i %i)" % (self.lexeme, self.lineno, self.colno)
 
 
-class LexerError(Exception):
-    pass
-
-
 class Lexer():
     def __init__(self):
         self.buffer = None
@@ -62,6 +64,7 @@ class Lexer():
         self.colno = 0
 
     def feed(self, buf):
+        self.index = 0
         self.buffer = buf
 
     def char_next(self) -> str:
@@ -172,7 +175,7 @@ class Lexer():
         elif char == "\0":
             return self.tok(Tok.EOF)
         else:
-            raise LexerError("Unknown character: '%s'" % char)
+            raise LexerError("Unknown character: '%s'" % char, self.lineno)
 
     def tok(self, kind) -> Token:
         lexeme = self.buffer[self.start:self.index]

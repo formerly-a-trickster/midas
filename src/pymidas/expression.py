@@ -1,5 +1,5 @@
 from typing import List
-from parser import Token
+import lexer as Lex
 import tokens as Tok
 
 ASSIGN  = "EXP_ASSIGN"
@@ -88,7 +88,7 @@ class Ident(Exp):
 
 
 class Literal(Exp):
-    def __init__(self, tok: Token):
+    def __init__(self, tok: Lex.Token):
         super().__init__(LITERAL)
         self.tok = tok
 
