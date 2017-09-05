@@ -3,6 +3,17 @@ import statement as Stm
 import expression as Exp
 import tokens as Tok
 
+
+class Break(BaseException):
+    pass
+
+
+class Return(BaseException):
+    def __init__(self, val):
+
+        self.val = val
+
+
 class Environment(object):
     def __init__(self, parent=None):
         self.parent = parent
@@ -24,6 +35,10 @@ class Environment(object):
         else:
             raise Exception("Undeclared variable: " + key)
 
+    def __str__(self):
+        res = str(self.values) + "\n" + str(self.parent)
+        return res
+
     def declare(self, key, value):
         if key not in self.values:
             self.values[key] = value
@@ -31,19 +46,9 @@ class Environment(object):
             raise Exception("Redeclaring variable: " + key)
 
 
-class Break(BaseException):
-    pass
-
-
-class Return(BaseException):
-    def __init__(self, val):
-
-        self.val = val
-
-
 class Interpreter(object):
     def __init__(self):
-        self.globals = Environment()
+        self.globals = Environment(None)
         self.context = self.globals
 
     def enter_scope(self):
@@ -61,24 +66,35 @@ class Interpreter(object):
     def execute(self, stm: Stm.Stm):
         stm.accept(self)
 
+    def contextualExecute(self, stmts: List[Stm.Stm], ctx: Environment):
+        prev_ctx = self.context
+        self.context = ctx
+        try:
+            for stm in stmts:
+                self.execute(stm)
+        finally:
+            self.context = prev_ctx
+
     def visitStmVarDecl(self, stm: Stm.VarDecl):
         val = self.evaluate(stm.exp)
         self.context.declare(stm.name, val)
 
     def visitStmFunDecl(self, stm: Stm.FunDecl):
-        pass
+        fun = Function(stm.formals, self.context, stm.body)
+        self.context.declare(stm.name, fun)
 
     def visitStmBlock(self, stm: Stm.Block):
         self.enter_scope()
         for stm in stm.block:
             self.execute(stm)
+
         self.exit_scope()
 
     def visitStmIf(self, stm: Stm.If):
         cond = self.evaluate(stm.cond)
         if is_truthy(cond):
             self.execute(stm.then_block)
-        else:
+        elif stm.else_block is not None:
             self.execute(stm.else_block)
 
     def visitStmWhile(self, stm: Stm.While):
@@ -92,7 +108,8 @@ class Interpreter(object):
         raise Break
 
     def visitStmReturn(self, stm: Stm.Return):
-        pass
+        val = self.evaluate(stm.ret_exp)
+        raise Return(val)
 
     def visitStmPrint(self, stm: Stm.Print):
         val = self.evaluate(stm.print_exp)
@@ -117,7 +134,7 @@ class Interpreter(object):
             if exp.op == Tok.PLUS:
                 return left + right
             elif exp.op == Tok.MINUS:
-                return left + right
+                return left - right
             elif exp.op == Tok.SLASH:
                 return left / right
             elif exp.op == Tok.SLASH_SLASH:
@@ -151,7 +168,8 @@ class Interpreter(object):
             elif exp.op == Tok.PLUS_PLUS:
                 return stringify(left) + stringify(right)
         else:
-            raise Exception("type mismatch")
+            raise Exception("type mismatch %s <> %s" %
+                            (type(left), type(right)))
 
 
     def visitExpUnary(self, exp: Exp.Unary):
@@ -165,7 +183,15 @@ class Interpreter(object):
             return not is_truthy(val)
 
     def visitExpCall(self, exp: Exp.Call):
-        pass
+        args = []
+        for arg in exp.params:
+            args.append(self.evaluate(arg))
+        fun = self.evaluate(exp.callee)
+
+        if isinstance(fun, Function):
+            return fun.call(self, args)
+        else:
+            raise Exception("Attempted to call non-function")
 
     def visitExpIdent(self, exp: Exp.Ident):
         return self.context[exp.name]
@@ -213,3 +239,25 @@ def stringify(val) -> str:
         return "true"
     else:
         return str(val)
+
+
+class Function(object):
+    def __init__(self,
+                 params: List[str],
+                 closure: Environment,
+                 body: Stm.Block):
+        self.params = params
+        self.closure = closure
+        self.body = body
+
+    def call(self, intpr: Interpreter, args: List):
+        this_ctx = Environment(self.closure)
+        for name, value in zip(self.params, args):
+            this_ctx.declare(name, value)
+
+        val = None
+        try:
+            intpr.contextualExecute(self.body.block, this_ctx)
+        except Return as ret:
+            val = ret.val
+        return val

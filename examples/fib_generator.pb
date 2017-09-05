@@ -17,6 +17,6 @@ end
 
 var fibGen = fibGenerator();
 
-for (var i = 2 ; i <= 20; i = i + 1) do
+for (var i = 2 ; i <= 100; i = i + 1) do
     print i ++ ", " ++ fibGen();
 end
