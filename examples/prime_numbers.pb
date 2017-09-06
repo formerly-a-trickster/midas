@@ -1,6 +1,8 @@
 fun isPrime(num) do
-    if (num <= 2) return true;
-    if (num % 2 == 0) return false;
+    if (num <= 2)
+        return true;
+    if (num % 2 == 0)
+        return false;
 
     for (var i = 3; i < num; i = i + 2) do
         if (num % i == 0) return false;

@@ -3,7 +3,7 @@
 Midas is a small programming language, currently in development, with no formal
 specification and only experimental implementations.
 
-Midas code can be run by a prototype tree walk interpreter written in Java,
+Midas code can be run by a prototype tree walk interpreter written in Python,
 while the proper interpreter will be implemented in C.
 
 ## Features
@@ -49,14 +49,14 @@ print count();     # Prints 2.
 
 ## Try it out
 
-The interpreter requires at least Java 8 to run. It can be run in REPL mode, or
+The interpreter requires at least Python 3 to run. It can be run in REPL mode, or
 run one of the source files in the "examples" folder.
 
 If running from Windows, open a console window in the root directory and type
-the following in order to run the point\_distance.pb file:
+the following in order to run the point_distance.pb file:
 
 ```
-> jmidas.bat examples\point\_distance.pb
+> pmidas.bat examples\point_distance.pb
 ```
 
 If running from a \*nix environment, you can use the "jmidas.sh" script to the
