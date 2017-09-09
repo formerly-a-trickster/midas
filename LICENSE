@@ -1,9 +1,6 @@
-    Parts of the Java implementation of the interpreter is
-    Copyright (c) 2015 Robert Nystrom, licensed under the
-    MIT license.
+    MIT License
 
-    The rest is (c) 2017 Gabriel Ionescu, likewise licensed
-    under the MIT license.
+    Copyright (c) 2017 Gabriel Ionescu
 
     Permission is hereby granted, free of charge, to any
     person obtaining a copy of this software and associated
