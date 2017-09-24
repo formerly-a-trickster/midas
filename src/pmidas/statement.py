@@ -20,6 +20,22 @@ class Stm(object):
         raise NotImplemented
 
 
+class Block(Stm):
+    def __init__(self, block: List[Stm]):
+        super().__init__(BLOCK)
+        self.block = block
+
+    def __str__(self, i=0):
+        res = " " * i + "[\n"
+        for stm in self.block:
+            res += stm.__str__(i + 4)
+        res += " " * i + "]\n"
+        return res
+
+    def accept(self, visitor):
+        return visitor.visitStmBlock(self)
+
+
 class VarDecl(Stm):
     def __init__(self, name: str, exp: E.Exp):
         super().__init__(VAR_DECL)
@@ -34,7 +50,7 @@ class VarDecl(Stm):
 
 
 class FunDecl(Stm):
-    def __init__(self, name: str, formals: List[str], body: Stm):
+    def __init__(self, name: str, formals: List[str], body: Block):
         super().__init__(FUN_DECL)
         self.name = name
         self.formals = formals
@@ -50,22 +66,6 @@ class FunDecl(Stm):
 
     def accept(self, visitor):
         return visitor.visitStmFunDecl(self)
-
-
-class Block(Stm):
-    def __init__(self, block: List[Stm]):
-        super().__init__(BLOCK)
-        self.block = block
-
-    def __str__(self, i=0):
-        res = " " * i + "[\n"
-        for stm in self.block:
-            res += stm.__str__(i + 4)
-        res += " " * i + "]\n"
-        return res
-
-    def accept(self, visitor):
-        return visitor.visitStmBlock(self)
 
 
 class If(Stm):

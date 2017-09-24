@@ -44,6 +44,18 @@ class Environment(object):
         res = str(self.values) + "\n" + str(self.parent)
         return res
 
+    def getAt(self, distance: int, name: str):
+        context = self
+        for i in range(distance):
+            context = context.parent
+        return context.values[name]
+
+    def setAt(self, distance: int, name: str, val):
+        context = self
+        for i in range(distance):
+            context = context.parent
+        context.values[name] = val
+
     def declare(self, key, value):
         if key not in self.values:
             self.values[key] = value
@@ -55,12 +67,23 @@ class Interpreter(object):
     def __init__(self):
         self.globals = Environment(None)
         self.context = self.globals
+        self.locals = {} # Dict[Exp, int]
 
-    def enter_scope(self):
+    def enterScope(self):
         self.context = Environment(self.context)
 
-    def exit_scope(self):
+    def exitScope(self):
         self.context = self.context.parent
+
+    def resolve(self, exp: Exp, depth: int):
+        self.locals[exp] = depth
+
+    def lookUpVariable(self, name: str, exp: Exp):
+        if exp in self.locals:
+            distance = self.locals[exp]
+            return self.context.getAt(distance, name)
+        else:
+            return self.globals[name]
 
     def interpret(self, ast: List[Stm.Stm]):
         # XXX runtime errors should be caught here
@@ -89,11 +112,10 @@ class Interpreter(object):
         self.context.declare(stm.name, fun)
 
     def visitStmBlock(self, stm: Stm.Block):
-        self.enter_scope()
+        self.enterScope()
         for stm in stm.block:
             self.execute(stm)
-
-        self.exit_scope()
+        self.exitScope()
 
     def visitStmIf(self, stm: Stm.If):
         cond = self.evaluate(stm.cond)
@@ -103,11 +125,13 @@ class Interpreter(object):
             self.execute(stm.else_block)
 
     def visitStmWhile(self, stm: Stm.While):
+        startCtx = self.context
         try:
             while is_truthy(self.evaluate(stm.cond)):
                 self.execute(stm.body)
         except Break:
-            return
+            while self.context != startCtx:
+                self.exitScope()
 
     def visitStmBreak(self, stm: Stm.Break):
         raise Break
@@ -129,7 +153,11 @@ class Interpreter(object):
 
     def visitExpAssign(self, exp: Exp.Assign):
         val = self.evaluate(exp.exp)
-        self.context[exp.name] = val
+        if exp in self.locals:
+            distance = self.locals[exp]
+            self.context.setAt(distance, exp.name, val)
+        else:
+            self.globals[exp.name] = val
         return val
 
     def visitExpBinary(self, exp: Exp.Binary):
@@ -199,7 +227,7 @@ class Interpreter(object):
             raise Exception("Attempted to call non-function")
 
     def visitExpIdent(self, exp: Exp.Ident):
-        return self.context[exp.name]
+        return self.lookUpVariable(exp.name, exp)
 
     def visitExpLiteral(self, exp: Exp.Literal):
         kind = exp.tok.kind
