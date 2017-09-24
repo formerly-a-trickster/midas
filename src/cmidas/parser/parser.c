@@ -59,15 +59,15 @@ static struct tok *tok_next   (T par);
 static       bool  tok_matches(T par, enum tok_t);
 static       void  tok_consume(T par, enum tok_t, const char *);
 
-static struct stm *stm_new_var_decl (const char *, struct exp *);
-static struct stm *stm_new_fun_decl (const char *, Vector_T, struct stm *);
-static struct stm *stm_new_block    (Vector_T);
-static struct stm *stm_new_if       (struct exp *, struct stm *, struct stm *);
-static struct stm *stm_new_while    (struct exp *, struct stm *);
-static struct stm *stm_new_break    (void);
-static struct stm *stm_new_return   (struct exp *);
-static struct stm *stm_new_print    (struct exp *);
-static struct stm *stm_new_exp_stm  (struct exp *);
+static struct stm *stm_new_var_decl(const char *, struct exp *);
+static struct stm *stm_new_fun_decl(const char *, Vector_T, struct stm *);
+static struct stm *stm_new_block   (Vector_T);
+static struct stm *stm_new_if      (struct exp *, struct stm *, struct stm *);
+static struct stm *stm_new_while   (struct exp *, struct stm *);
+static struct stm *stm_new_break   (void);
+static struct stm *stm_new_return  (struct exp *);
+static struct stm *stm_new_print   (struct exp *);
+static struct stm *stm_new_exp_stm (struct exp *);
 
 static struct exp *exp_new_assign (const char *, struct exp *);
 static struct exp *exp_new_binary (enum tok_t, struct exp *, struct exp *);
@@ -828,10 +828,10 @@ call(T par)
                 exp = expression(par);
                 Vector_push(params, &exp);
             } while (tok_matches(par, TOK_COMMA));
-        }
 
-        tok_consume(par, TOK_PAREN_RIGHT,
-                "Expected a closing paren after arguments.");
+            tok_consume(par, TOK_PAREN_RIGHT,
+                    "Expected a closing paren after arguments.");
+        }
 
         callee = exp_new_call(callee, params);
     }

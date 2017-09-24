@@ -6,9 +6,8 @@ CFLAGS = -std=c89 -pedantic -Wextra -Wall -g -I$(SRC)/include -O3
 
 MAIN   = $(addprefix $(SRC)/, main.c)
 PARSER = $(addprefix $(SRC)/parser/, parser.c lexer.c)
-INTPR  = $(addprefix $(SRC)/interpreter/, interpreter.c environ.c value.c)
-UTIL   = $(addprefix $(SRC)/util/, hash.c vector.c)
-SOURCE = $(MAIN) $(PARSER) $(INTPR) $(UTIL)
+UTIL   = $(addprefix $(SRC)/util/, vector.c)
+SOURCE = $(MAIN) $(PARSER) $(UTIL)
 
 TARGET = $(addprefix $(BIN)/, cmidas.elf)
 
