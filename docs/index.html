@@ -26,9 +26,9 @@
 <code><span class="comment"># Using a closure like an object</span>
 <span class="keyword">fun</span> <span class="name">makePoint</span>(x, y) <span class="keyword">do</span>
     <span class="keyword">fun</span> <span class="name">closure</span>(method) <span class="keyword">do</span>
-        <span class="control">if</span> (method == "x")
+        <span class="control">if</span> method == "x"
           return x;
-        <span class="control">if</span> (method == "y")
+        <span class="control">if</span> method == "y"
           return y;
         <span class="keyword">print</span> "Unknown method" ++ method;
     <span class="keyword">end</span>
@@ -84,7 +84,7 @@ muffins = "English";
 </code>
 
 <code><span class="comment"># Branching constructs</span>
-<span class="control">if</span> (condition) <span class="keyword">do</span>
+<span class="control">if</span> condition <span class="keyword">do</span>
     <span class="comment"># then block</span>
 <span class="keyword">end</span>
 <span class="control">else</span> <span class="keyword">do</span>
@@ -93,11 +93,11 @@ muffins = "English";
 </code>
 
 <code><span class="comment"># Looping constructs</span>
-<span class="control">for</span> (<span class="keyword">var</span> <span class="name">i</span> = <span class="literal">0</span>; i &lt; <span class="literal">10</span>; i = i + <span class="literal">1</span>) <span class="keyword">do</span>
+<span class="control">for</span> <span class="keyword">var</span> <span class="name">i</span> = <span class="literal">0</span>; i &lt; <span class="literal">10</span>; i = i + <span class="literal">1</span> <span class="keyword">do</span>
     <span class="comment"># loop block</span>
 <span class="keyword">end</span>
 
-<span class="control">while</span> (condition) <span class="keyword">do</span>
+<span class="control">while</span> condition <span class="keyword">do</span>
     <span class="comment"># loop block</span>
 <span class="keyword">end</span>
 </code>
