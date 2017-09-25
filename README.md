@@ -56,12 +56,12 @@ If running from Windows, open a console window in the root directory and type
 the following in order to run the point_distance.pb file:
 
 ```
-> pmidas.bat examples\point_distance.pb
+> midas.bat examples\point_distance.pb
 ```
 
-If running from a \*nix environment, you can use the "jmidas.sh" script to the
+If running from a \*nix environment, you can use the "midas.sh" script to the
 same effect:
 
 ```
-$ ./jmidas.sh examples/point_distance.pb
+$ ./midas.sh examples/point_distance.pb
 ```
