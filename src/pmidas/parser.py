@@ -126,12 +126,8 @@ class Parser():
         return Stm.Block(stmts)
 
     def if_cond(self):
-        # if_stm -> ^if^ "(" expression ")" statement ( "else" statement )?
-        self.tok_consume(Tok.PAREN_LEFT,
-                "Expected an opening paren after `if` keyword")
+        # if_stm -> ^if^ expression statement ( "else" statement )?
         cond = self.expression()
-        self.tok_consume(Tok.PAREN_RIGHT,
-                "Expected a closing paren after the if condition")
         then_block = self.statement()
 
         if self.tok_matches(Tok.ELSE):
@@ -141,12 +137,8 @@ class Parser():
         return Stm.If(cond, then_block, else_block)
 
     def while_cond(self):
-        # while_stm -> ^while^ "(" expresion ")" statement
-        self.tok_consume(Tok.PAREN_LEFT,
-                "Expected an opening paren after `while` keyword")
+        # while_stm -> ^while^ expresion statement
         cond = self.expression()
-        self.tok_consume(Tok.PAREN_RIGHT,
-                "Expected a closing paren after the while condition")
         self.loop_depth += 1
         body = self.statement()
         self.loop_depth -= 1
@@ -154,14 +146,11 @@ class Parser():
         return Stm.While(cond, body)
 
     def for_cond(self):
-        # for_stm -> ^for^ "("
-        #                      ( var_decl | exp_stm | ";" )
-        #                      expression? ";"
-        #                      assignment?
-        #                  ")" statement
+        # for_stm -> ^for^ ( var_decl | exp_stm | ";" )
+        #                  expression? ";"
+        #                  assignment?
+        #                  statement
         # NB: var_decl and exp_stm already contain a semicolon
-        self.tok_consume(Tok.PAREN_LEFT,
-                "Expected an opening paren after the `for` keyword")
         if self.tok_matches(Tok.VAR):
             init = self.var_decl()
         elif self.tok_matches(Tok.SEMICOLON):
@@ -178,8 +167,6 @@ class Parser():
 
         if not self.tok_matches(Tok.PAREN_RIGHT):
             incr = self.assignment()
-            self.tok_consume(Tok.PAREN_RIGHT,
-                    "Expected a closing paren after the for construct")
         else:
             incr = None
 

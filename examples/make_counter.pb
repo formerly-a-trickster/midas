@@ -11,6 +11,6 @@ end
 
 var count = makeCounter();
 
-for (var i = 0; i < 10; i = i + 1) do
+for var i = 0; i < 10; i = i + 1 do
     print count();
 end

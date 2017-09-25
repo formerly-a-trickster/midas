@@ -12,7 +12,7 @@ end
 # Heron's method of computing square roots
 fun heronSqrt(num) do
     var guess = 1;
-    for (var i = 0; i < 10; i = i + 1) do
+    for var i = 0; i < 10; i = i + 1 do
         guess = (guess + num / guess) / 2;
     end
     return guess;
