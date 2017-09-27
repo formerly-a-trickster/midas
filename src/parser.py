@@ -10,7 +10,7 @@ class ParserError(Exception):
         self.msg = msg
 
 
-class Parser():
+class Parser(object):
     def __init__(self):
         self.lex = Lex.Lexer()
         self.path = None
@@ -174,27 +174,21 @@ class Parser():
         body = self.statement()
         self.loop_depth -= 1
 
-        if incr != None:
+        if incr is not None:
             incr_stm = Stm.Exp(incr)
             if body.kind == Stm.BLOCK:
                 body.block.append(incr_stm)
             else:
-                stmts = []
-                stmts.append(body)
-                stmts.append(incr_stm)
-                body = Stm.Block(stmts)
+                body = Stm.Block([body, incr_stm])
 
-        if cond == None:
+        if cond is None:
             tok = Lex.Token("true", Tok.TRUE, 4, 0, 0)
             cond = Exp.Literal(tok)
 
         loop = Stm.While(cond, body)
 
-        if init != None:
-            stmts = []
-            stmts.append(init)
-            stmts.append(loop)
-            loop = Stm.Block(stmts)
+        if init is not None:
+            loop = Stm.Block([init, loop])
 
         return loop
 
