@@ -16,10 +16,12 @@ language, like objects and generators.
 # Using a closure like an object
 fun makePoint(x, y) do
     fun closure(method) do
-        if (method == "x")
+        if (method == "x") do
           return x;
-        if (method == "y")
+        end
+        if (method == "y") do
           return y;
+        end
         print "Unknown method" ++ method;
     end
 

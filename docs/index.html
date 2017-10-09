@@ -26,10 +26,12 @@
 <code><span class="comment"># Using a closure like an object</span>
 <span class="keyword">fun</span> <span class="name">makePoint</span>(x, y) <span class="keyword">do</span>
     <span class="keyword">fun</span> <span class="name">closure</span>(method) <span class="keyword">do</span>
-        <span class="control">if</span> method == "x"
+        <span class="control">if</span> method == "x" <span class="keyword">do</span>
           return x;
-        <span class="control">if</span> method == "y"
+        <span class="keyword">end</span>
+        <span class="control">if</span> method == "y" <span class="keyword">do</span>
           return y;
+        <span class="keyword">end</span>
         <span class="keyword">print</span> "Unknown method" ++ method;
     <span class="keyword">end</span>
 
@@ -41,7 +43,7 @@
 <span class="keyword">print</span> point_a("y");     <span class="comment"># Prints 3.</span>
 </code>
 
-<code><span class="comment"># Using closures like a generators</span>
+<code><span class="comment"># Using closures like a generator</span>
 <span class="keyword">fun</span> <span class="name">makeCounter</span>() <span class="keyword">do</span>
     <span class="keyword">var</span> <span class="name">i</span> = <span class="literal">0</span>;
     <span class="keyword">fun</span> <span class="name">counter</span>() <span class="keyword">do</span>
@@ -86,7 +88,8 @@ muffins = "English";
 <code><span class="comment"># Branching constructs</span>
 <span class="control">if</span> condition <span class="keyword">do</span>
     <span class="comment"># then block</span>
-<span class="keyword">end</span>
+<span class="control">elif</span> condition <span class="keyword">do</span>
+    <span class="comment"># else then block</span>
 <span class="control">else</span> <span class="keyword">do</span>
     <span class="comment"># else block</span>
 <span class="keyword">end</span>
