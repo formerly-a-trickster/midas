@@ -1,3 +1,4 @@
+from typing import List
 import lexer as Lex
 import tokens as Tok
 import statement as Stm
@@ -27,7 +28,7 @@ class Parser(object):
     def program(self):
         # program -> statement* "EOF"
         stmts = []
-        while not self.tok_is(Tok.EOF):
+        while not self.tok_is([Tok.EOF]):
             stm = self.declaration()
             stmts.append(stm)
         return stmts
@@ -118,22 +119,35 @@ class Parser(object):
     def block(self):
         # block -> ^do^ declaration* "end"
         stmts = []
-        while not self.tok_is(Tok.END) and not self.tok_is(Tok.EOF):
+        while not self.tok_is([Tok.END, Tok.EOF]):
             stm = self.declaration()
             stmts.append(stm)
-        self.tok_consume(Tok.END,
-                "Missing `end` keyword after block")
+        self.tok_consume(Tok.END, "Missing `end` keyword after block")
         return Stm.Block(stmts)
 
     def if_cond(self):
-        # if_stm -> ^if^ expression statement ( "else" statement )?
+        # if_stm -> ^if^ expression "do" declaration*
+        #           ( "elif" expression "do" declaration* )*
+        #           ( "else" "do" declaration* )?
+        #           "end"
         cond = self.expression()
-        then_block = self.statement()
+        self.tok_consume(Tok.DO, "Expected `do` keyword after if condition")
+        stmts = []
+        while not self.tok_is([Tok.ELIF, Tok.ELSE, Tok.END]):
+            stm = self.declaration()
+            stmts.append(stm)
 
-        if self.tok_matches(Tok.ELSE):
-            else_block = self.statement()
+        then_block = Stm.Block(stmts)
+        else_block = None
+        if self.tok_matches(Tok.ELIF):
+            else_block = self.if_cond()
+        elif self.tok_matches(Tok.ELSE):
+            self.tok_consume(Tok.DO,
+                    "Expected `do` keywork after else keyword")
+            else_block = self.block()
         else:
-            else_block = None
+            self.tok_matches(Tok.END)
+
         return Stm.If(cond, then_block, else_block)
 
     def while_cond(self):
@@ -389,8 +403,8 @@ class Parser(object):
             lineno = self.this_tok.lineno
             raise ParserError(lineno, message)
 
-    def tok_is(self, kind):
-        return self.this_tok.kind == kind
+    def tok_is(self, kind_arr: List) -> bool:
+        return any(map(lambda x: x == self.this_tok.kind, kind_arr))
 
     def tok_was(self, kind):
         return self.prev_tok.kind == kind

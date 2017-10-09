@@ -1,17 +1,9 @@
-var a = 100;
+var cats = 101;
 
-if a == 100 do
-    var a = 20;
-    print "this is the then block";
-    print a;
-end
+if cats < 100 do
+    print "We have enough space on our boat.";
+elif cats > 100 do
+    print "We're gonna need a bigger boat.";
 else do
-    var a = 30;
-    print "this is the else block";
-    print a;
+    print "That's exactly a boatload of cats.";
 end
-
-print a;
-
-print "3434" ++ "1212";
-

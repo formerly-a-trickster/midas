@@ -1,6 +1,7 @@
 fun fibonacci(n) do
-    if n <= 1
+    if n <= 1 do
         return n;
+    end
     return fibonacci(n-2) + fibonacci(n-1);
 end
 

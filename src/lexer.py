@@ -4,6 +4,7 @@ keywords = {
     "and"   : Tok.AND,
     "break" : Tok.BREAK,
     "do"    : Tok.DO,
+    "elif"  : Tok.ELIF,
     "else"  : Tok.ELSE,
     "end"   : Tok.END,
     "false" : Tok.FALSE,

@@ -1,9 +1,15 @@
 # We can use closures as a kind of object
 fun makePoint(x, y) do
     fun closure(method) do
-        if (method == "x") return x;
-        if (method == "y") return y;
-        if (method == "str") return "(" ++ x ++ ", " ++ y ++ ")";
+        if (method == "x") do
+            return x;
+        end
+        if (method == "y") do
+            return y;
+        end
+        if (method == "str") do
+            return "(" ++ x ++ ", " ++ y ++ ")";
+        end
         print "Unknown method " ++ method;
     end
     return closure;

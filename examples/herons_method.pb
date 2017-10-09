@@ -9,8 +9,7 @@ fun heronSqrt(n) do
 end
 
 fun printSqrt(n) do
-    print "The square root of " ++ n
-       ++ " is " ++ heronSqrt(n);
+    print "The square root of " ++ n ++ " is " ++ heronSqrt(n);
 end
 
 printSqrt(256);

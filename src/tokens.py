@@ -31,6 +31,7 @@ TRUE = "TOK_TRUE"
 AND = "TOK_AND"
 BREAK = "TOK_BREAK"
 DO = "TOK_DO"
+ELIF = "TOK_ELIF"
 ELSE = "TOK_ELSE"
 END = "TOK_END"
 FOR = "TOK_FOR"
@@ -80,6 +81,7 @@ to_str = {
     "TOK_AND"   : "and",
     "TOK_BREAK" : "break",
     "TOK_DO"    : "do",
+    "TOK_ELIF"  : "elif",
     "TOK_ELSE"  : "else",
     "TOK_END"   : "end",
     "TOK_FOR"   : "for",
